@@ -10,4 +10,10 @@ path = "src/main.rs"
 
 [dependencies]
 clap.workspace = true
+serde_json.workspace = true
 session_engine = { path = "../../session_engine" }
+
+[dev-dependencies]
+session_engine = { path = "../../session_engine" }
+tempfile = "3.14"
+

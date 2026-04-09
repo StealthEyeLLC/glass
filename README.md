@@ -16,7 +16,7 @@ This repository is the Glass v0 **monorepo spine**: session/pack/sanitization (P
 | `collector/` | Linux collector binary (lifecycle stub only) |
 | `bridge/` | Local API / resync contracts (types + docs; no browser server yet) |
 | `viewer/` | TypeScript static replay shell (Tier B); live mode is explicitly absent |
-| `tools/glass-pack` | CLI: validate/list packs |
+| `tools/glass-pack` | CLI: validate / inspect packs; strict kinds + share-safe vs raw-dev expectations |
 | `tools/golden_scenes/` | Golden-scene harness scaffold |
 | `docs/` | Phase 0 tracker, boundaries, test strategy, status |
 | `tests/fixtures/` | Sanitization and pack fixtures |
@@ -38,12 +38,17 @@ cargo fmt --check && cargo clippy --workspace --all-targets -- -D warnings && ca
 cd viewer && npm ci && npm run build && npm test && npm run lint
 ```
 
-### `glass-pack` CLI (scaffold)
+### `glass-pack` CLI
 
 ```bash
 cargo run -p glass-pack -- validate path/to/file.glass_pack
+cargo run -p glass-pack -- validate path/to/share.glass_pack --strict-kinds --expect-share-safe
+cargo run -p glass-pack -- validate path/to/dev.glass_pack --expect-raw-dev
 cargo run -p glass-pack -- info path/to/file.glass_pack
+cargo run -p glass-pack -- info path/to/file.glass_pack --json
 ```
+
+Procfs dev → share flow: `glass-collector normalize-procfs` (raw pack) → `glass-collector export-procfs-pack` (sanitized) → `glass-pack validate … --expect-share-safe`. Details: `tools/glass-pack/README.md`.
 
 ## Status
 

@@ -16,6 +16,7 @@
 | Bridge | `glass_bridge::resync` types + **provisional** threshold constant |
 | Graph | `graph_engine` minimal counting helper over events |
 | HVT | `collector/config/hvt_rules.toml` (5 patterns) + CI count test |
+| `tools/glass-pack` | **`glass-pack validate`** / **`info`** on `.glass_pack`; **`--strict-kinds`** (alias `--strict`); **`--expect-share-safe`** / **`--expect-raw-dev`** for manifest lane checks; **`--json`**. Rules implemented in `session_engine::pack` (`validate_share_safe_export_manifest`, `validate_raw_dev_pack_manifest`, `pack_artifact_lane_hint`) |
 | Tests | See `docs/TEST_STRATEGY.md` |
 | CI | `.github/workflows/ci.yml` |
 
@@ -38,5 +39,5 @@ See `docs/PHASE0_FREEZE_TRACKER.md` — Open freeze decisions.
 
 1. Close remaining Phase 0 items (golden method F-01, resync numbers F-03/F-04, sanitization policy F-05).
 2. **Optional:** teach Tier B viewer to accept `glass.pack.v0.scaffold_seg` (parse `events.seg` v1 in TS) + align F-07 pack file cap in browser.
-3. Extend normalization + share-safe export for additional adapters; IPC socket when F-IPC closes; tighten F-05 / path heuristics with human review.
+3. Extend normalization + share-safe export for additional adapters; IPC socket when F-IPC closes; tighten F-05 / path heuristics with human review; optional **`glass-pack`** checks for non-procfs pack types when they land.
 4. WebGPU scene replay (Phase 6) — separate track.

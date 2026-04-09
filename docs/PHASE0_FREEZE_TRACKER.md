@@ -55,6 +55,7 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | `resolution_quality` | **Fixed string v0** | `linux_pid_ephemeral_procfs_poll` — documents PID reuse and poll-only visibility. |
 | Normalized `kind` names | **Frozen for procfs v0** | `process_poll_sample`, `process_seen_in_poll_gap`, `process_absent_in_poll_gap` — distinct from `process_start` / `process_end`. |
 | Share export `attrs.exe` | **Provisional** | Entire non-empty `exe` string replaced with `[REDACTED_ABS_PATH]` on `sanitize_events_for_share` — not basename-preserving; human may tune for operator UX (F-05). |
+| `glass-pack --expect-share-safe` | **Provisional** | Checks manifest fields aligned with `export-procfs-pack`; does not prove content safety or non-leakage beyond current sanitization profile. |
 | Human-owned | Open | Namespace-aware identity, cgroup/container correlation, eBPF-correlated stable IDs — deferred. |
 
 ---

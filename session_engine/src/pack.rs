@@ -220,3 +220,52 @@ pub fn validate_glass_pack_bytes_strict(bytes: &[u8]) -> Result<(), PackError> {
     read_glass_pack_bytes_strict(bytes)?;
     Ok(())
 }
+
+/// Manifest checks for packs from the **export lane** (`export-procfs-pack` / `materialize_share_safe_procfs_pack_bytes`).
+///
+/// **Honest:** passing this does **not** mean the pack is safe to post publicly — see `docs/SANITIZATION_TRUST_CRITERIA.md`
+/// and `share_safe_recommended` (still typically false).
+pub fn validate_share_safe_export_manifest(m: &SessionManifest) -> Result<(), &'static str> {
+    if !m.sanitized {
+        return Err("sanitized must be true for share-safe export expectation");
+    }
+    if m.export_sanitization_profile
+        .as_deref()
+        .unwrap_or("")
+        .is_empty()
+    {
+        return Err("export_sanitization_profile missing or empty");
+    }
+    if m.sanitization_profile_version
+        .as_deref()
+        .unwrap_or("")
+        .is_empty()
+    {
+        return Err("sanitization_profile_version missing or empty");
+    }
+    if m.human_readable_redaction_summary.is_empty() {
+        return Err("human_readable_redaction_summary is empty");
+    }
+    Ok(())
+}
+
+/// Expectation for **unsanitized** dev packs (`normalize-procfs` output).
+pub fn validate_raw_dev_pack_manifest(m: &SessionManifest) -> Result<(), &'static str> {
+    if m.sanitized {
+        return Err(
+            "sanitized is true; pack looks export-sanitized (omit --expect-raw-dev or use --expect-share-safe)",
+        );
+    }
+    Ok(())
+}
+
+/// Diagnostic label for tooling (`glass-pack info`); not a security claim.
+pub fn pack_artifact_lane_hint(m: &SessionManifest) -> &'static str {
+    if validate_share_safe_export_manifest(m).is_ok() {
+        "share_safe_export_markers_complete"
+    } else if !m.sanitized {
+        "raw_dev_or_unsanitized"
+    } else {
+        "sanitized_incomplete_or_nonstandard"
+    }
+}

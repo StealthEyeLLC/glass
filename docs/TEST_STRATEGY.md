@@ -50,7 +50,10 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 
 | Tool | Obligation |
 |------|------------|
-| `glass-pack validate` / `info` | Pack validation (JSONL + seg variants); `info` prints `events_blob` |
+| `glass-pack validate` / `info` | Pack validation; `info` / `info --json` prints sanitization markers + `artifact_lane_hint`; **`--strict-kinds`**; **`--expect-share-safe`** / **`--expect-raw-dev`** |
+| `glass-pack` `tests/cli_smoke.rs` | Subprocess: share-safe + raw-dev expectations, strict JSON validate, `info --json` |
+| `glass-pack` unit tests (in `main.rs`) | Share-safe vs raw bytes + incomplete sanitized manifest |
+| `session_engine::tests::pack_manifest_expectations` | `validate_share_safe_export_manifest` / `validate_raw_dev_pack_manifest` / `pack_artifact_lane_hint` |
 | `glass-collector capabilities` | JSON `FidelityReport` (procfs active summary on Linux when enabled) |
 | `glass-collector sample-procfs` | Linux: bounded JSON array of `RawObservation` (`--twice` optional); non-Linux: `[]` + stderr |
 | `glass-collector normalize-procfs` | **Unsanitized** dev pack: `--output out.glass_pack` and/or `--events-json-stdout`; Linux poll or `--from-raw-json` |

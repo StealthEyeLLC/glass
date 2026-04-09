@@ -26,9 +26,10 @@ pub use export::{apply_sanitization_to_manifest, materialize_share_safe_procfs_p
 pub use manifest::SessionManifest;
 pub use manifest::{PACK_FORMAT_SCAFFOLD_SEG_V0, PACK_FORMAT_SCAFFOLD_V0};
 pub use pack::{
-    read_glass_pack, read_glass_pack_bytes, read_glass_pack_bytes_level,
+    pack_artifact_lane_hint, read_glass_pack, read_glass_pack_bytes, read_glass_pack_bytes_level,
     read_glass_pack_bytes_strict, validate_glass_pack_bytes, validate_glass_pack_bytes_strict,
-    write_glass_pack, write_glass_pack_scaffold_seg_to_vec, write_glass_pack_to_vec,
+    validate_raw_dev_pack_manifest, validate_share_safe_export_manifest, write_glass_pack,
+    write_glass_pack_scaffold_seg_to_vec, write_glass_pack_to_vec,
 };
 pub use procfs_normalize::{
     normalize_procfs_batch, normalize_procfs_observation, ProcfsNormalizeError,

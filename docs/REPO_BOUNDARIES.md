@@ -10,6 +10,7 @@
 | `session_engine/` | Event envelope, session ordering, pack bytes, **pure** sanitization, **procfs** `RawObservation` DTO → `NormalizedEventEnvelope` mapping (`procfs_normalize`) | UI, network transport, collection |
 | `graph_engine/` | Derived graph structures from events | Telemetry collection, rendering |
 | `bridge/` | Local API contracts (types/docs now; server later) | Privileged collection, WebGPU |
+| `tools/glass-pack` | Pack ZIP validate/info; calls `session_engine` read/validate APIs | Collector telemetry, sanitization implementation, viewer UI |
 | `viewer/` | Operator UI, static replay shell | Authoritative session/event truth |
 | `schema/` | Canonical JSON Schema + migration notes | Rust/TS type implementations (those live next to consumers until codegen) |
 
