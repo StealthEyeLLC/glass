@@ -1,0 +1,15 @@
+# Normalize line endings in the repo (Rust/CI expect LF for most text).
+* text=auto
+
+*.rs text eol=lf
+*.toml text eol=lf
+*.lock text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.sh text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.mjs text eol=lf
+*.ps1 text eol=crlf
