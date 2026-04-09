@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, "feat/**"]
+  pull_request:
+    branches: [main, master]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  rust:
+    name: Rust (fmt, clippy, test, gates)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: fmt
+        run: cargo fmt --all -- --check
+      - name: clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: test (workspace — includes sanitization, HVT, resync, layout)
+        run: cargo test --workspace
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: golden harness script (scaffold)
+        run: node tools/golden_scenes/capture.mjs
+      # Focused re-runs mirror build-plan job names (cheap no-op after cache)
+      - name: job alias — sanitization fixtures
+        run: cargo test -p session_engine --test sanitization_fixtures
+      - name: job alias — HVT policy
+        run: cargo test -p integration_tests --test hvt_policy
+      - name: job alias — bootstrap layout + resync + golden files
+        run: cargo test -p integration_tests --test repo_layout --test resync_scaffold --test golden_scaffold
+
+  viewer:
+    name: Viewer (build, test, lint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: install
+        working-directory: viewer
+        run: npm ci
+      - name: build
+        working-directory: viewer
+        run: npm run build
+      - name: test
+        working-directory: viewer
+        run: npm test
+      - name: lint
+        working-directory: viewer
+        run: npm run lint

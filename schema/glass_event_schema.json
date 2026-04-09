@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://glass.dev/schema/glass.event.v0.json",
+  "title": "Glass normalized event envelope (v0 scaffold)",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "event_id",
+    "session_id",
+    "ts_ns",
+    "seq",
+    "kind",
+    "actor",
+    "attrs",
+    "source"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "glass.event.v0" },
+    "event_id": { "type": "string" },
+    "session_id": { "type": "string" },
+    "ts_ns": { "type": "integer", "minimum": 0 },
+    "seq": { "type": "integer", "minimum": 0 },
+    "kind": { "type": "string" },
+    "actor": { "$ref": "#/$defs/entityRef" },
+    "subject": { "$ref": "#/$defs/entityRef" },
+    "parent": { "$ref": "#/$defs/entityRef" },
+    "attrs": { "type": "object" },
+    "source": { "type": "object" }
+  },
+  "$defs": {
+    "entityRef": {
+      "type": "object",
+      "required": ["entity_type", "entity_id"],
+      "properties": {
+        "entity_type": { "type": "string" },
+        "entity_id": { "type": "string" },
+        "resolution_quality": { "type": "string" }
+      }
+    }
+  }
+}

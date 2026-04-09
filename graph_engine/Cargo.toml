@@ -1,0 +1,9 @@
+[package]
+name = "graph_engine"
+version.workspace = true
+edition.workspace = true
+description = "Glass graph derivation from session facts (no UI, no collection)"
+
+[dependencies]
+session_engine = { path = "../session_engine" }
+serde.workspace = true

@@ -1,0 +1,17 @@
+[package]
+name = "session_engine"
+version.workspace = true
+edition.workspace = true
+description = "Glass session spine: normalized events, manifest, pack I/O, pure sanitization"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+zip.workspace = true
+regex.workspace = true
+
+[dev-dependencies]
+pretty_assertions = "1.4"
+tempfile = "3.14"
+zip.workspace = true

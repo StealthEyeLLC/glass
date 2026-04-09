@@ -1,0 +1,23 @@
+[
+  {
+    "schema_version": "glass.event.v0",
+    "event_id": "evt_host",
+    "session_id": "ses_matrix",
+    "ts_ns": 13,
+    "seq": 1,
+    "kind": "network_connect_attempt",
+    "actor": {
+      "entity_type": "process",
+      "entity_id": "proc_a",
+      "resolution_quality": "direct"
+    },
+    "attrs": {
+      "host": "vault.corp"
+    },
+    "source": {
+      "adapter": "fixture",
+      "quality": "direct",
+      "time_domain": "session_monotonic"
+    }
+  }
+]

@@ -1,0 +1,54 @@
+[
+  {
+    "schema_version": "glass.event.v0",
+    "event_id": "evt_1",
+    "session_id": "ses_matrix",
+    "ts_ns": 20,
+    "seq": 1,
+    "kind": "file_read",
+    "actor": {
+      "entity_type": "process",
+      "entity_id": "proc_stable",
+      "resolution_quality": "direct"
+    },
+    "subject": {
+      "entity_type": "file",
+      "entity_id": "file_stable",
+      "resolution_quality": "direct"
+    },
+    "attrs": {
+      "path": "/workspace/project/src/main.ts"
+    },
+    "source": {
+      "adapter": "fixture",
+      "quality": "direct",
+      "time_domain": "session_monotonic"
+    }
+  },
+  {
+    "schema_version": "glass.event.v0",
+    "event_id": "evt_2",
+    "session_id": "ses_matrix",
+    "ts_ns": 21,
+    "seq": 2,
+    "kind": "file_write",
+    "actor": {
+      "entity_type": "process",
+      "entity_id": "proc_stable",
+      "resolution_quality": "direct"
+    },
+    "subject": {
+      "entity_type": "file",
+      "entity_id": "file_stable",
+      "resolution_quality": "direct"
+    },
+    "attrs": {
+      "path": "/workspace/project/src/main.ts"
+    },
+    "source": {
+      "adapter": "fixture",
+      "quality": "direct",
+      "time_domain": "session_monotonic"
+    }
+  }
+]

@@ -1,0 +1,25 @@
+# High-value-target path patterns (spec §16.2A). Not a secret scanner — explicit list only.
+# Phase 0: cap and pattern count enforced by CI (`integration_tests/tests/hvt_policy.rs`).
+
+version = 1
+cap = 20
+
+[[pattern]]
+id = "dot_env"
+description = "Project .env file"
+
+[[pattern]]
+id = "aws_credentials"
+description = "AWS shared credentials file"
+
+[[pattern]]
+id = "ssh_private_key"
+description = "Default SSH private key path"
+
+[[pattern]]
+id = "npmrc"
+description = "Project .npmrc"
+
+[[pattern]]
+id = "ssh_config"
+description = "SSH client config"

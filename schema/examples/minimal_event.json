@@ -1,0 +1,27 @@
+{
+  "schema_version": "glass.event.v0",
+  "event_id": "evt_000000000001",
+  "session_id": "ses_example",
+  "ts_ns": 1,
+  "seq": 1,
+  "kind": "file_read",
+  "actor": {
+    "entity_type": "process",
+    "entity_id": "proc_1",
+    "resolution_quality": "direct"
+  },
+  "subject": {
+    "entity_type": "file",
+    "entity_id": "file_1"
+  },
+  "attrs": {
+    "path": "/workspace/project/src/main.ts",
+    "bytes": 100,
+    "result": "success"
+  },
+  "source": {
+    "adapter": "scaffold",
+    "quality": "direct",
+    "time_domain": "session_monotonic"
+  }
+}

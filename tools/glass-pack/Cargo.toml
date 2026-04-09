@@ -1,0 +1,13 @@
+[package]
+name = "glass-pack"
+version.workspace = true
+edition.workspace = true
+description = "CLI: validate and inspect .glass_pack archives"
+
+[[bin]]
+name = "glass-pack"
+path = "src/main.rs"
+
+[dependencies]
+clap.workspace = true
+session_engine = { path = "../../session_engine" }

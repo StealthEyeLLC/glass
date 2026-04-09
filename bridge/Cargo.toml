@@ -1,0 +1,8 @@
+[package]
+name = "glass_bridge"
+version.workspace = true
+edition.workspace = true
+description = "Local bridge: HTTP/WS contracts and resync semantics (no embedded browser server in this scaffold)"
+
+[dependencies]
+serde.workspace = true

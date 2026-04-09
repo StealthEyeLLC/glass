@@ -1,0 +1,27 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# Node / viewer
+viewer/node_modules/
+viewer/dist/
+viewer/.vite/
+*.tsbuildinfo
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Glass local sessions (developer)
+.glass_sessions/
+*.glass_pack.local
+
+# Golden scene artifacts (large); baselines tracked only when small
+tools/golden_scenes/output/
+
+# Env
+.env
+.env.*

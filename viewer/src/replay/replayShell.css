@@ -1,0 +1,124 @@
+/* Tier B static replay — minimal utility styling only */
+.glass-replay-root {
+  font-family: system-ui, sans-serif;
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 12px;
+  line-height: 1.4;
+}
+
+.glass-banner {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.glass-drop-zone {
+  border: 2px dashed #888;
+  padding: 16px;
+  margin: 8px 0;
+  border-radius: 4px;
+}
+
+.glass-file-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.glass-error {
+  color: #a40000;
+  background: #ffecec;
+  padding: 8px;
+  border-radius: 4px;
+  margin: 8px 0;
+}
+
+.glass-meta,
+.glass-inspector {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px;
+  margin: 8px 0;
+  font-size: 0.9rem;
+}
+
+.glass-sanitized {
+  background: #fff8e1;
+  border: 1px solid #e0c96e;
+  border-radius: 4px;
+  padding: 8px;
+  margin: 8px 0;
+}
+
+.glass-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.glass-controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.glass-scrub {
+  width: 100%;
+  margin: 8px 0;
+}
+
+.glass-timeline {
+  max-height: 10rem;
+  overflow: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 4px;
+  margin: 8px 0;
+}
+
+.glass-timeline button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 4px 6px;
+  margin: 2px 0;
+  border: none;
+  background: #f5f5f5;
+  cursor: pointer;
+  font: inherit;
+}
+
+.glass-timeline button[data-active="true"] {
+  background: #cce5ff;
+}
+
+.glass-entity-chip {
+  display: inline-block;
+  margin: 4px 6px 4px 0;
+  padding: 2px 8px;
+  border: 1px solid #888;
+  border-radius: 3px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.glass-entity-chip[data-selected="true"] {
+  background: #ddd;
+  font-weight: 600;
+}
+
+.glass-status-line {
+  font-size: 0.85rem;
+  color: #444;
+  margin: 4px 0;
+}
+
+.glass-inspector pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.8rem;
+}

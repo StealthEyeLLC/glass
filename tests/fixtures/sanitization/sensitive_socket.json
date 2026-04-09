@@ -1,0 +1,23 @@
+[
+  {
+    "schema_version": "glass.event.v0",
+    "event_id": "evt_sock",
+    "session_id": "ses_matrix",
+    "ts_ns": 14,
+    "seq": 1,
+    "kind": "ipc_connect",
+    "actor": {
+      "entity_type": "process",
+      "entity_id": "proc_a",
+      "resolution_quality": "direct"
+    },
+    "attrs": {
+      "socket_path": "/var/run/agent_auth.sock"
+    },
+    "source": {
+      "adapter": "fixture",
+      "quality": "direct",
+      "time_domain": "session_monotonic"
+    }
+  }
+]

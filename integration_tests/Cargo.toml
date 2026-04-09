@@ -1,0 +1,14 @@
+[package]
+name = "integration_tests"
+version.workspace = true
+edition.workspace = true
+description = "Cross-crate integration and repo bootstrap tests"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+session_engine = { path = "../session_engine" }
+glass_bridge = { path = "../bridge" }
+toml.workspace = true
+serde.workspace = true
