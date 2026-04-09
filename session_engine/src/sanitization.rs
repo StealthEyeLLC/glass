@@ -67,6 +67,7 @@ pub fn sanitize_events_for_share(
         );
         redact_argv(&mut e2.attrs);
         redact_socket_paths(&mut e2.attrs);
+        redact_procfs_exe_in_attrs(&mut e2.attrs);
         out.push(e2);
     }
 
@@ -79,6 +80,7 @@ pub fn sanitize_events_for_share(
     }
     summary.push("rule:argv_tail -> [ARG_REDACTED]".to_string());
     summary.push("rule:sensitive_socket_path -> [REDACTED_SOCK]".to_string());
+    summary.push("rule:procfs_exe_field -> [REDACTED_ABS_PATH]".to_string());
 
     SanitizationResult {
         events: out,
@@ -102,6 +104,21 @@ fn redact_argv(attrs: &mut Value) {
             continue;
         }
         *v = Value::String("[ARG_REDACTED]".to_string());
+    }
+}
+
+/// `attrs.exe` from procfs-style events carries full filesystem paths — export lane redacts to a single token (not a path-preserving transform).
+fn redact_procfs_exe_in_attrs(attrs: &mut Value) {
+    let Some(obj) = attrs.as_object_mut() else {
+        return;
+    };
+    if let Some(Value::String(s)) = obj.get("exe") {
+        if !s.is_empty() && !s.starts_with('[') {
+            obj.insert(
+                "exe".to_string(),
+                Value::String("[REDACTED_ABS_PATH]".to_string()),
+            );
+        }
     }
 }
 
@@ -201,5 +218,31 @@ mod tests {
         let s = r.events[0].attrs["endpoint"].as_str().unwrap();
         assert!(!s.contains("192.168"));
         assert!(s.contains("REDACTED") || s.contains("[REDACTED_IPV4]"));
+    }
+
+    #[test]
+    fn redacts_procfs_exe_field() {
+        let mut e = NormalizedEventEnvelope::minimal_stub(1, "ses", "process_poll_sample");
+        e.attrs = serde_json::json!({
+            "exe": "/home/alice/.local/bin/myapp",
+            "comm": "myapp",
+            "pid": 1
+        });
+        let before = causality_fingerprint(std::slice::from_ref(&e));
+        let r = sanitize_events_for_share(
+            &[e],
+            SanitizationProfile {
+                home_dir_prefix: None,
+            },
+        );
+        assert_eq!(before, causality_fingerprint(&r.events));
+        assert_eq!(
+            r.events[0].attrs["exe"].as_str().unwrap(),
+            "[REDACTED_ABS_PATH]"
+        );
+        assert!(r
+            .human_readable_redaction_summary
+            .iter()
+            .any(|l| l.contains("procfs_exe")));
     }
 }

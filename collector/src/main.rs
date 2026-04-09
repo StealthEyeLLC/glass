@@ -5,9 +5,48 @@ use std::path::PathBuf;
 use clap::{Parser, Subcommand};
 use glass_collector::{
     build_fidelity_report, default_adapter_stack, ingest_procfs_raw_to_session_log,
-    CollectorAdapter, CollectorConfig, PrivilegeMode, ProcfsProcessAdapter, SelfSilencePolicy,
+    CollectorAdapter, CollectorConfig, PrivilegeMode, ProcfsProcessAdapter, RawObservation,
+    SelfSilencePolicy,
 };
-use session_engine::{write_glass_pack, SessionManifest};
+use session_engine::{materialize_share_safe_procfs_pack_bytes, write_glass_pack, SessionManifest};
+
+fn load_procfs_observations_for_cli(
+    session: String,
+    max_samples: usize,
+    twice: bool,
+    from_raw_json: Option<PathBuf>,
+) -> Result<Vec<RawObservation>, String> {
+    match from_raw_json {
+        Some(path) => {
+            let s = std::fs::read_to_string(&path)
+                .map_err(|e| format!("read {}: {e}", path.display()))?;
+            serde_json::from_str(&s).map_err(|e| format!("parse raw JSON: {e}"))
+        }
+        None => {
+            if !cfg!(target_os = "linux") {
+                return Err("on non-Linux use --from-raw-json or run on Linux.".to_string());
+            }
+            let mut a = ProcfsProcessAdapter::new(session);
+            a.max_samples_per_poll = max_samples;
+            let mut batch = a.poll_raw().map_err(|e| format!("poll: {e}"))?;
+            if twice {
+                match a.poll_raw() {
+                    Ok(b2) => batch.extend(b2),
+                    Err(e) => eprintln!("second poll: {e}"),
+                }
+            }
+            Ok(batch)
+        }
+    }
+}
+
+fn exit_on_procfs_load_err(cmd: &str, err: String) -> ! {
+    eprintln!("{cmd}: {err}");
+    if err.contains("non-Linux") {
+        std::process::exit(2);
+    }
+    std::process::exit(1);
+}
 
 #[derive(Parser, Debug)]
 #[command(
@@ -46,12 +85,26 @@ enum Command {
         max_samples: usize,
         #[arg(long, default_value_t = false)]
         twice: bool,
-        /// Output `.glass_pack` (JSONL scaffold). Required unless `--events-json-stdout`.
+        /// Output **unsanitized** `.glass_pack` (JSONL scaffold). Omit if `--events-json-stdout` only.
         #[arg(long)]
         output: Option<PathBuf>,
         #[arg(long, default_value_t = false)]
         events_json_stdout: bool,
         /// Read `RawObservation[]` JSON instead of polling (fixtures / non-Linux).
+        #[arg(long)]
+        from_raw_json: Option<PathBuf>,
+    },
+    /// Procfs → normalize → **share-safe** pack only (`sanitize_events_for_share` on the export lane; ingest path unchanged).
+    ExportProcfsPack {
+        #[arg(long, default_value = "glass-collector-export")]
+        session: String,
+        #[arg(long, default_value_t = 512)]
+        max_samples: usize,
+        #[arg(long, default_value_t = false)]
+        twice: bool,
+        /// Output `.glass_pack` with `sanitized: true` and redaction summary (Tier B–compatible).
+        #[arg(long)]
+        output: PathBuf,
         #[arg(long)]
         from_raw_json: Option<PathBuf>,
     },
@@ -121,41 +174,14 @@ fn main() {
                 );
                 std::process::exit(2);
             }
-            let observations = match from_raw_json {
-                Some(path) => {
-                    let s = std::fs::read_to_string(&path).unwrap_or_else(|e| {
-                        eprintln!("normalize-procfs: read {}: {e}", path.display());
-                        std::process::exit(1);
-                    });
-                    serde_json::from_str(&s).unwrap_or_else(|e| {
-                        eprintln!("normalize-procfs: parse raw JSON: {e}");
-                        std::process::exit(1);
-                    })
-                }
-                None => {
-                    if !cfg!(target_os = "linux") {
-                        eprintln!(
-                            "normalize-procfs: on non-Linux use --from-raw-json or run on Linux."
-                        );
-                        std::process::exit(2);
-                    }
-                    let mut a = ProcfsProcessAdapter::new(session.clone());
-                    a.max_samples_per_poll = max_samples;
-                    let mut batch = match a.poll_raw() {
-                        Ok(b) => b,
-                        Err(e) => {
-                            eprintln!("normalize-procfs: poll: {e}");
-                            std::process::exit(1);
-                        }
-                    };
-                    if twice {
-                        match a.poll_raw() {
-                            Ok(b2) => batch.extend(b2),
-                            Err(e) => eprintln!("normalize-procfs: second poll: {e}"),
-                        }
-                    }
-                    batch
-                }
+            let observations = match load_procfs_observations_for_cli(
+                session.clone(),
+                max_samples,
+                twice,
+                from_raw_json,
+            ) {
+                Ok(v) => v,
+                Err(e) => exit_on_procfs_load_err("normalize-procfs", e),
             };
 
             let log =
@@ -189,14 +215,65 @@ fn main() {
                 std::process::exit(1);
             }
             eprintln!(
-                "normalize-procfs: wrote {} event(s) to {}",
+                "normalize-procfs: wrote {} unsanitized event(s) to {}",
                 log.len(),
                 out.display()
             );
         }
+        Some(Command::ExportProcfsPack {
+            session,
+            max_samples,
+            twice,
+            output,
+            from_raw_json,
+        }) => {
+            let observations = match load_procfs_observations_for_cli(
+                session.clone(),
+                max_samples,
+                twice,
+                from_raw_json,
+            ) {
+                Ok(v) => v,
+                Err(e) => exit_on_procfs_load_err("export-procfs-pack", e),
+            };
+
+            let log =
+                match ingest_procfs_raw_to_session_log(observations, &SelfSilencePolicy::default())
+                {
+                    Ok(l) => l,
+                    Err(e) => {
+                        eprintln!("export-procfs-pack: session: {e}");
+                        std::process::exit(1);
+                    }
+                };
+
+            let session_id = log
+                .events()
+                .first()
+                .map(|e| e.session_id.as_str())
+                .unwrap_or(session.as_str());
+
+            let bytes = match materialize_share_safe_procfs_pack_bytes(log.events(), session_id) {
+                Ok(b) => b,
+                Err(e) => {
+                    eprintln!("export-procfs-pack: materialize: {e}");
+                    std::process::exit(1);
+                }
+            };
+
+            if let Err(e) = std::fs::write(&output, bytes) {
+                eprintln!("export-procfs-pack: write {}: {e}", output.display());
+                std::process::exit(1);
+            }
+            eprintln!(
+                "export-procfs-pack: wrote {} share-safe sanitized event(s) to {}",
+                log.len(),
+                output.display()
+            );
+        }
         None => {
             eprintln!(
-                "glass-collector {}: no live capture loop. Subcommands: `capabilities`, `sample-procfs`, `normalize-procfs`.",
+                "glass-collector {}: no live capture loop. Subcommands: `capabilities`, `sample-procfs`, `normalize-procfs`, `export-procfs-pack`.",
                 env!("CARGO_PKG_VERSION")
             );
             eprintln!("Default invocation exits without emitting a long-running stream.");

@@ -16,6 +16,10 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `session_engine::tests::sanitization_fixtures` | Fixture matrix + causality |
 | `session_engine::tests::export_manifest` | Sanitization → manifest fields (`share_safe_recommended` stays false until human review) |
 | `session_engine::tests::procfs_normalize` | DTO → envelope mapping; strict kinds; `SessionLog::append_procfs_dtos` + strict pack roundtrip |
+| `session_engine::tests::procfs_share_safe_export` | `materialize_share_safe_procfs_pack_bytes` → strict validate + exe redacted |
+| `session_engine::tests::sanitization_fixtures` | Includes `procfs_exe_path.json` matrix |
+| `session_engine::sanitization` (unit) | `redacts_procfs_exe_field` |
+| `glass_collector::tests::export_procfs_share_safe` | Ingest → share-safe bytes → strict reload |
 | `session_engine::tests::envelope_validation` | Procfs normalized kinds accepted in strict set |
 | `graph_engine::tests::smoke` | Graph crate consumes session facts |
 | `bridge::tests::resync_contract` | Resync constants + recovery enum |
@@ -39,7 +43,7 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 |-------|------------|
 | `replayModel.test.ts` | Pure replay reducer: load lifecycle, play/pause/tick, seek/step, empty pack, entity selection |
 | `staticReplay.test.ts` | Mounted shell: metadata + sanitized summary, timeline/inspector binding, play timer (fake), scrub, errors, empty pack |
-| `tierBReplay.integration.test.ts` | ZIP → `loadGlassPack` → `reduceReplay` (Node env / `fflate`); sanitized + empty JSONL |
+| `tierBReplay.integration.test.ts` | ZIP → `loadGlassPack` → `reduceReplay` (Node env / `fflate`); sanitized + empty JSONL; **sanitized `process_poll_sample`** strict_kinds + replay |
 | `loadPack.test.ts` | `.glass_pack` validation mirrors Rust; empty JSONL; bad manifest/JSONL/wrong format (**`@vitest-environment node`**) — jsdom VM can break `fflate` `zipSync`; real browser unaffected |
 
 ## Tools
@@ -49,7 +53,8 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `glass-pack validate` / `info` | Pack validation (JSONL + seg variants); `info` prints `events_blob` |
 | `glass-collector capabilities` | JSON `FidelityReport` (procfs active summary on Linux when enabled) |
 | `glass-collector sample-procfs` | Linux: bounded JSON array of `RawObservation` (`--twice` optional); non-Linux: `[]` + stderr |
-| `glass-collector normalize-procfs` | `--output out.glass_pack` and/or `--events-json-stdout`; Linux poll or `--from-raw-json`; uses `procfs_poll_dev` manifest |
+| `glass-collector normalize-procfs` | **Unsanitized** dev pack: `--output out.glass_pack` and/or `--events-json-stdout`; Linux poll or `--from-raw-json` |
+| `glass-collector export-procfs-pack` | **Share-safe** pack: `--output share.glass_pack` (required); same poll / `--from-raw-json` as normalize; Tier B–compatible after sanitize |
 | `viewer` `KNOWN_EVENT_KINDS_V0` | Must match Rust strict set (procfs kinds added for Tier B `strict_kinds` loads) |
 
 ## CI jobs

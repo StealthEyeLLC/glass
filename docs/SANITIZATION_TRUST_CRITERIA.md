@@ -18,5 +18,8 @@ Record in release notes who ran the manual spot-check (role + date).
 
 ## Implementation reference
 
-- Code: `session_engine::sanitization`
+- Code: `session_engine::sanitization` (recursive string rules + argv + socket keys + **`attrs.exe`** → `[REDACTED_ABS_PATH]` for share export)
+- Export wiring: `session_engine::export::materialize_share_safe_procfs_pack_bytes` (procfs lane); CLI `glass-collector export-procfs-pack`
 - Fixtures: `tests/fixtures/sanitization/`
+
+**Does not claim:** complete secret scanning, stable identity after redaction, or that `comm` / numeric PIDs are safe for every audience — operators still follow §28.4 before recommending share.

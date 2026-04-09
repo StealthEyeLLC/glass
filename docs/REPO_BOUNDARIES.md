@@ -29,7 +29,7 @@
 
 - **`glass_collector::raw::RawObservation`** — pre-normalization host facts; may contain secrets.
 - **`session_engine::NormalizedEventEnvelope`** — canonical normalized shape for session/pack/graph.
-- **Procfs path (v0):** `session_engine::procfs_normalize` maps procfs-shaped DTOs into envelopes (`process_poll_sample`, `process_seen_in_poll_gap`, `process_absent_in_poll_gap`). The collector exposes `procfs_session::ingest_procfs_raw_to_session_log` (self-silence → DTO → `SessionLog::append_procfs_dtos`). Other adapters remain unnormalized here. Type separation is still tested in `collector/tests/raw_vs_normalized_boundary.rs`.
+- **Procfs path (v0):** `session_engine::procfs_normalize` maps procfs-shaped DTOs into envelopes (`process_poll_sample`, `process_seen_in_poll_gap`, `process_absent_in_poll_gap`). The collector exposes `procfs_session::ingest_procfs_raw_to_session_log` (self-silence → DTO → `SessionLog::append_procfs_dtos`). **Share-safe export** is explicit: `materialize_share_safe_procfs_pack_bytes` + `glass-collector export-procfs-pack` — never applied on the raw ingest hot path. Other adapters remain unnormalized here. Type separation is still tested in `collector/tests/raw_vs_normalized_boundary.rs`.
 
 ## Static vs live
 

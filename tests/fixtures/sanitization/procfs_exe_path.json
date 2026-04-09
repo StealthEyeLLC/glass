@@ -1,0 +1,26 @@
+[
+  {
+    "schema_version": "glass.event.v0",
+    "event_id": "evt_procfs_exe",
+    "session_id": "ses_matrix",
+    "ts_ns": 1,
+    "seq": 1,
+    "kind": "process_poll_sample",
+    "actor": {
+      "entity_type": "process",
+      "entity_id": "procfs_pid:1",
+      "resolution_quality": "linux_pid_ephemeral_procfs_poll"
+    },
+    "attrs": {
+      "exe": "/usr/local/secret/project/bin/tool",
+      "comm": "tool",
+      "pid": 1,
+      "semantics": "procfs_poll_snapshot"
+    },
+    "source": {
+      "adapter": "procfs_process",
+      "quality": "procfs_derived",
+      "time_domain": "collector_monotonic_ns"
+    }
+  }
+]

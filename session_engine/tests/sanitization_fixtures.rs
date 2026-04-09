@@ -108,6 +108,23 @@ fn matrix_tilde_path_redacted() {
 }
 
 #[test]
+fn matrix_procfs_exe_path_redacted() {
+    let evs = load_case("procfs_exe_path");
+    let before = causality_fingerprint(&evs);
+    let out = sanitize_events_for_share(
+        &evs,
+        SanitizationProfile {
+            home_dir_prefix: None,
+        },
+    );
+    assert_eq!(before, causality_fingerprint(&out.events));
+    let s = serde_json::to_string(&out.events).unwrap();
+    assert!(!s.contains("secret/project"));
+    assert!(s.contains("[REDACTED_ABS_PATH]"));
+    assert!(s.contains("tool"), "comm remains visible");
+}
+
+#[test]
 fn matrix_causality_preserves_subject_edges() {
     let mut evs = load_case("causality_negative");
     evs[0].subject = Some(EntityRef {

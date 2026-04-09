@@ -11,5 +11,6 @@ Categories:
 - `internal_hostname.json` — `.corp` / `.local` / `.internal` suffix handling (provisional rules)
 - `sensitive_socket.json` — socket path under `/var/run` + `.sock`
 - `causality_negative.json` — public paths only; seq / entity ids must be unchanged after sanitize
+- `procfs_exe_path.json` — `process_poll_sample` with `attrs.exe` absolute path → `[REDACTED_ABS_PATH]` on export profile
 
 Add new files when new redaction rules ship; update human freeze doc when defaults change.

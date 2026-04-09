@@ -22,7 +22,7 @@ pub use events_seg::{
     write_segment_file, SegError, EVENT_SEG_FORMAT_VERSION, EVENT_SEG_MAGIC,
     PROVISIONAL_MAX_SEG_RECORD_BYTES,
 };
-pub use export::apply_sanitization_to_manifest;
+pub use export::{apply_sanitization_to_manifest, materialize_share_safe_procfs_pack_bytes};
 pub use manifest::SessionManifest;
 pub use manifest::{PACK_FORMAT_SCAFFOLD_SEG_V0, PACK_FORMAT_SCAFFOLD_V0};
 pub use pack::{
