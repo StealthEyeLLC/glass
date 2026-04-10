@@ -41,13 +41,17 @@ pub fn unix_epoch_millis_now() -> u64 {
         .unwrap_or(0)
 }
 
-/// Runtime for one F-IPC TCP connection: optional procfs-backed snapshot feed + in-memory store.
+/// Runtime for one F-IPC TCP connection: optional per-RPC snapshot feeds + in-memory store.
 #[derive(Debug, Clone)]
 pub struct IpcDevTcpRuntime {
     pub store: Arc<SnapshotStore>,
     /// When `Some` and the snapshot request `session_id` matches, serve from
     /// [`crate::procfs_ipc_feed::ProcfsSnapshotFeedConfig::poll_normalized_json`] (per RPC).
     pub procfs_feed: Option<crate::procfs_ipc_feed::ProcfsSnapshotFeedConfig>,
+    /// When `Some` and the request `session_id` matches, serve from
+    /// [`crate::file_lane_ipc_feed::FileLaneSnapshotFeedConfig::poll_normalized_json`] (per RPC).
+    /// Checked **after** `procfs_feed` — use a **distinct** `session_id` from procfs feeds.
+    pub file_lane_feed: Option<crate::file_lane_ipc_feed::FileLaneSnapshotFeedConfig>,
     /// When `Some` and the request `session_id` matches, F-IPC may include
     /// `retained_snapshot_unix_ms` from the last successful retained poll (see `procfs_retained_loop`).
     pub retained_poll_meta: Option<Arc<RetainedPollMeta>>,
@@ -282,6 +286,25 @@ fn bounded_snapshot_events(
                 }
                 Err(e) => {
                     eprintln!("ipc-serve: procfs snapshot poll/ingest failed: {e}");
+                    (Vec::new(), "v0:empty".to_string(), None)
+                }
+            };
+        }
+    }
+    if let Some(ref feed) = runtime.file_lane_feed {
+        if session_id == feed.session_id {
+            return match feed.poll_normalized_json() {
+                Ok(full) => {
+                    if full.is_empty() {
+                        (Vec::new(), "v0:empty".to_string(), None)
+                    } else {
+                        let n = cap.min(full.len());
+                        let slice: Vec<serde_json::Value> = full.iter().take(n).cloned().collect();
+                        (slice, format!("v0:off:{n}"), None)
+                    }
+                }
+                Err(e) => {
+                    eprintln!("ipc-serve: file-lane snapshot poll/ingest failed: {e}");
                     (Vec::new(), "v0:empty".to_string(), None)
                 }
             };

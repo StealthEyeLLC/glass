@@ -1,6 +1,7 @@
 //! `GET /sessions/:id/snapshot` backed by collector F-IPC (provisional TCP).
 
 use std::net::TcpListener;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
@@ -11,9 +12,9 @@ use glass_bridge::http_types::SNAPSHOT_CURSOR_EMPTY;
 use glass_bridge::{app_router, BridgeConfig, CollectorIpcClientConfig};
 use glass_collector::ipc::PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION;
 use glass_collector::{
-    handle_ipc_dev_tcp_connection, retained_procfs_poll_tick, AdapterId, IpcDevTcpRuntime,
-    ProcfsSnapshotFeedConfig, RawObservation, RawObservationKind, RawSourceQuality,
-    RetainedPollMeta, SnapshotStore,
+    handle_ipc_dev_tcp_connection, retained_procfs_poll_tick, AdapterId,
+    FileLaneSnapshotFeedConfig, IpcDevTcpRuntime, ProcfsSnapshotFeedConfig, RawObservation,
+    RawObservationKind, RawSourceQuality, RetainedPollMeta, SnapshotStore,
 };
 use http_body_util::BodyExt;
 use tower::ServiceExt;
@@ -30,6 +31,7 @@ async fn snapshot_populated_via_collector_fipc() {
     let runtime = Arc::new(IpcDevTcpRuntime {
         store,
         procfs_feed: None,
+        file_lane_feed: None,
         retained_poll_meta: None,
     });
     let secret = Arc::<str>::from("fipc-test-secret");
@@ -116,6 +118,7 @@ async fn empty_session_snapshot_cursor_via_fipc() {
     let runtime = Arc::new(IpcDevTcpRuntime {
         store: Arc::new(SnapshotStore::new()),
         procfs_feed: None,
+        file_lane_feed: None,
         retained_poll_meta: None,
     });
     let secret = Arc::<str>::from("sec");
@@ -185,6 +188,7 @@ async fn snapshot_via_procfs_fixture_normalized_envelope() {
             twice: false,
             from_raw_json: Some(path),
         }),
+        file_lane_feed: None,
         retained_poll_meta: None,
     });
     let secret = Arc::<str>::from("bridge-procfs-ipc-secret");
@@ -229,6 +233,87 @@ async fn snapshot_via_procfs_fixture_normalized_envelope() {
 }
 
 #[tokio::test]
+async fn snapshot_via_file_lane_fixture_normalized_envelope() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("fl_raw.json");
+    let o = RawObservation::new(
+        1,
+        "bridge_file_lane_sess",
+        10,
+        RawObservationKind::FileSeenInPollSnapshot,
+        RawSourceQuality::DirectoryPollDerived,
+        AdapterId::FsFileLane,
+        serde_json::json!({
+            "semantics": "bounded_directory_poll_snapshot",
+            "relative_path": "fixture.txt",
+            "size_bytes": 2,
+            "modified_unix_secs": 1,
+            "poll_monotonic_ns": 10,
+            "scan": { "files_seen_total": 1, "samples_returned": 1, "truncated_by_sample_budget": false, "state_budget_truncated": false, "max_depth": 4 },
+            "watch_root": "/tmp/bridge-fl",
+            "first_poll_baseline": true,
+        }),
+    );
+    std::fs::write(&path, serde_json::to_string(&vec![o]).unwrap()).unwrap();
+
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let runtime = Arc::new(IpcDevTcpRuntime {
+        store: Arc::new(SnapshotStore::new()),
+        procfs_feed: None,
+        file_lane_feed: Some(FileLaneSnapshotFeedConfig {
+            session_id: "bridge_file_lane_sess".to_string(),
+            watch_root: PathBuf::from("."),
+            max_samples: 512,
+            max_depth: 8,
+            twice: false,
+            from_raw_json: Some(path),
+        }),
+        retained_poll_meta: None,
+    });
+    let secret = Arc::<str>::from("bridge-fl-ipc-secret");
+    let rt = runtime.clone();
+    let sec = secret.clone();
+    thread::spawn(move || {
+        let (stream, _) = listener.accept().expect("accept");
+        handle_ipc_dev_tcp_connection(stream, sec.as_ref(), rt.as_ref()).expect("handle");
+    });
+    thread::sleep(Duration::from_millis(40));
+
+    let cfg = BridgeConfig {
+        bind: "127.0.0.1:0".parse().unwrap(),
+        bearer_token: Arc::from("bridge-http-token"),
+        allow_non_loopback: false,
+        collector_ipc: Some(CollectorIpcClientConfig {
+            addr,
+            shared_secret: secret,
+            timeout: Duration::from_secs(2),
+        }),
+    };
+    let app = app_router(&cfg);
+    let res = app
+        .oneshot(
+            Request::builder()
+                .uri("/sessions/bridge_file_lane_sess/snapshot")
+                .header("Authorization", "Bearer bridge-http-token")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let b = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&b).unwrap();
+    assert_eq!(v["session_id"], "bridge_file_lane_sess");
+    let events = v["events"].as_array().unwrap();
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0]["kind"], "file_poll_snapshot");
+    assert_eq!(v["snapshot_cursor"], "v0:off:1");
+    assert_eq!(v["live_session_ingest"], false);
+    assert_eq!(v["collector_ipc"]["status"], "ok");
+}
+
+#[tokio::test]
 async fn snapshot_retained_store_includes_retained_unix_ms() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("br_ret.json");
@@ -263,6 +348,7 @@ async fn snapshot_retained_store_includes_retained_unix_ms() {
     let runtime = Arc::new(IpcDevTcpRuntime {
         store,
         procfs_feed: None,
+        file_lane_feed: None,
         retained_poll_meta: Some(meta),
     });
     let secret = Arc::<str>::from("bridge-retained-secret");

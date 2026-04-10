@@ -6,6 +6,7 @@
 //! - **Adapters** — capability-first; **no** claim of complete eBPF/procfs capture until implemented.
 //! - **[`ipc`] / [`ipc_dev_tcp`]** — versioned F-IPC messages; **provisional** dev TCP server (not final transport).
 //! - **[`procfs_ipc_feed`]** — procfs or fixture `RawObservation[]` → normalize → JSON for bounded F-IPC snapshots (`ipc-serve --procfs-session`).
+//! - **[`file_lane_ipc_feed`]** — file-lane poll or fixture → normalize → JSON for bounded F-IPC snapshots (`ipc-serve --file-lane-session`).
 //! - **[`procfs_retained_loop`]** — optional background poll → bounded retained [`SnapshotStore`] (`ipc-serve --procfs-retained-session`); **not** live deltas.
 //! - **[`self_silence`]** — suppress Glass-owned processes **before** any normalization input.
 //!
@@ -14,6 +15,7 @@
 pub mod adapters;
 pub mod capability;
 pub mod config;
+pub mod file_lane_ipc_feed;
 pub mod file_session;
 pub mod ipc;
 pub mod ipc_dev_tcp;
@@ -34,6 +36,7 @@ pub use capability::{
     AdapterCapabilityManifest, AdapterId, FidelityMode, FidelityReport, ObservationLane,
 };
 pub use config::CollectorConfig;
+pub use file_lane_ipc_feed::FileLaneSnapshotFeedConfig;
 pub use ipc::{
     validate_ipc_auth_version, CollectorIpcError, CollectorIpcMessage, FipcBridgeToCollector,
     FipcCollectorToBridge, IpcAuthHandshake, IpcMessageKind, IpcPayload,
