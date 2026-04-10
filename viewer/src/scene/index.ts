@@ -25,6 +25,7 @@ export {
 } from "./drawablePrimitivesV0.js";
 export { sceneToDrawablePrimitives } from "./sceneToDrawablePrimitives.js";
 export {
+  exportTagSummaryToJsonLines,
   listSemanticTagsForPrimitives,
   listSemanticTagsForScene,
   listSemanticTagsForSceneWebGpuExpansion,

@@ -57,3 +57,14 @@ export function listSemanticTagsForSceneWebGpuExpansion(
 ): readonly DrawablePrimitiveSemanticTag[] {
   return listSemanticTagsForWebGpuPrimitiveExpansion(sceneToDrawablePrimitives(scene, layout));
 }
+
+/**
+ * Stable JSONL: one `{"i":<index>,"tag":<string>}` per line, UTF-8, trailing newline when non-empty.
+ * For golden fixtures and tooling only — does not add semantic claims beyond the input tag strings.
+ */
+export function exportTagSummaryToJsonLines(tags: readonly string[]): string {
+  if (tags.length === 0) {
+    return "";
+  }
+  return tags.map((tag, i) => JSON.stringify({ i, tag })).join("\n") + "\n";
+}
