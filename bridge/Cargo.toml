@@ -2,7 +2,19 @@
 name = "glass_bridge"
 version.workspace = true
 edition.workspace = true
-description = "Local bridge: HTTP/WS contracts and resync semantics (no embedded browser server in this scaffold)"
+description = "Local bridge: loopback HTTP/WebSocket skeleton, resync contracts (spec §18 / §18A)."
 
 [dependencies]
 serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+clap.workspace = true
+axum = { version = "0.8", features = ["macros", "ws"] }
+tokio = { version = "1", features = ["net", "rt-multi-thread", "macros", "signal"] }
+tower = "0.5"
+
+[dev-dependencies]
+http-body-util = "0.1"
+tower = { version = "0.5", features = ["util"] }
+tokio-tungstenite = "0.28"
+futures-util = "0.3"

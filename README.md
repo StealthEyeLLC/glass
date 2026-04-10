@@ -14,7 +14,7 @@ This repository is the Glass v0 **monorepo spine**: session/pack/sanitization (P
 | `session_engine/` | Events, session append model, `.glass_pack` I/O, **pure** sanitization |
 | `graph_engine/` | Graph derivation (stub crate; no presentation) |
 | `collector/` | Linux collector binary (lifecycle stub only) |
-| `bridge/` | Local API / resync contracts (types + docs; no browser server yet) |
+| `bridge/` | Local loopback bridge binary (`glass_bridge`) + resync types — skeleton HTTP/WS (no live ingest) |
 | `viewer/` | TypeScript static replay shell (Tier B): `glass.pack.v0.scaffold` (`events.jsonl`) and `glass.pack.v0.scaffold_seg` (`events.seg`); live mode is explicitly absent |
 | `tools/glass-pack` | CLI: validate / inspect packs; strict kinds + share-safe vs raw-dev expectations |
 | `tools/golden_scenes/` | Golden-scene harness scaffold |
@@ -49,6 +49,17 @@ cargo run -p glass-pack -- info path/to/file.glass_pack --json
 ```
 
 Procfs dev → share flow: `glass-collector normalize-procfs` (raw pack) → `glass-collector export-procfs-pack` (sanitized) → `glass-pack validate … --expect-share-safe`. Details: `tools/glass-pack/README.md`.
+
+### Local bridge (Phase 5 skeleton)
+
+Requires a bearer token (same string for HTTP `Authorization: Bearer …` and optional WS `?access_token=` on loopback):
+
+```bash
+cargo run -p glass_bridge -- --help
+cargo run -p glass_bridge -- --token dev-local-only
+```
+
+Default listen: `127.0.0.1:9781`. No collector telemetry is served yet — see `docs/IMPLEMENTATION_STATUS.md` and `docs/PRIVILEGE_SEPARATION.md`.
 
 ## Status
 

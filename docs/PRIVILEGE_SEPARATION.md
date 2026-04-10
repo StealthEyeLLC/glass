@@ -15,7 +15,7 @@
 | Privilege / role types | `glass_collector::privilege` (`PrivilegeMode`, `CollectorProcessRole`, `PrivilegeContext`) | **Real types** — runtime probe still “not implemented” |
 | IPC contract (JSON-serializable) | `glass_collector::ipc` (`CollectorIpcMessage`, `IpcPayload`, `IpcAuthHandshake`, `validate_ipc_auth_version`) | **Skeleton** — no socket, no crypto |
 | Auth version constant | `PROVISIONAL_IPC_AUTH_TOKEN_VERSION` (`0`) | **Provisional** — see `docs/PHASE0_FREEZE_TRACKER.md` |
-| Bridge crate | `glass_bridge` | **Contracts only** — no HTTP server |
+| Bridge crate | `glass_bridge` | **Loopback HTTP + WebSocket skeleton** (`glass_bridge` binary): `/health`, `/capabilities`, `/sessions/:id/snapshot`, `/ws` — **no** embedded collector, **no** live ingest, **no** privileged syscalls; bearer token at startup (`GLASS_BRIDGE_TOKEN` / `--token`). Browser WS may use `?access_token=` on loopback (provisional; see crate rustdoc). |
 
 ## Collector vs bridge boundary
 

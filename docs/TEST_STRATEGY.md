@@ -23,6 +23,7 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `session_engine::tests::envelope_validation` | Procfs normalized kinds accepted in strict set |
 | `graph_engine::tests::smoke` | Graph crate consumes session facts |
 | `bridge::tests::resync_contract` | Resync constants + recovery enum |
+| `bridge::tests::http_contract` | Loopback-only config; `/health` unauthenticated; bearer gate on `/capabilities` + snapshot; bounded `SessionSnapshotResponse`; WS bad-request without upgrade; real WS handshake + hello JSON (no fabricated deltas); `serve_listener` + `tokio-tungstenite` client |
 | `integration_tests::repo_layout` | Monorepo shape |
 | `integration_tests::hvt_policy` | HVT count ≤ cap |
 | `integration_tests::golden_scaffold` | Golden harness files exist |

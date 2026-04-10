@@ -82,8 +82,8 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | **Decision-ready options** | Event count ceiling, byte ceiling of queued deltas, or both (AND) |
 | **Proposed default** | Keep `10_000` events **or** add `4 MiB` bytes — **human picks** |
 | **Rationale** | Viewer recovery contract (spec §18A.3) needs numeric tests |
-| **Code / tests** | `glass_bridge::resync::PROVISIONAL_BACKLOG_EVENT_THRESHOLD` |
-| **Provisional OK?** | **Yes** for Phase 1–4 — bridge server not built |
+| **Code / tests** | `glass_bridge::resync::PROVISIONAL_BACKLOG_EVENT_THRESHOLD`; also exposed in `GET /capabilities` JSON (`bridge_api_version` 1 skeleton) — **byte ceiling** still unset |
+| **Provisional OK?** | **Yes** — threshold numeric is still human-owned (F-03); server skeleton does not implement queued deltas |
 
 ### F-IPC — Collector ↔ bridge local IPC (credentials + path)
 
@@ -104,8 +104,8 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | **Decision-ready options** | Extend `ResyncHint` with `reason` enum + `snapshot_cursor` opaque string vs structured `{ seq, byte_offset }` |
 | **Proposed default** | Opaque cursor string + `reason: "backlog" \| "ipc_gap"` |
 | **Rationale** | Bridge + viewer must agree before Phase 5 |
-| **Code / tests** | `glass_bridge::resync::ResyncHint` (stub) |
-| **Provisional OK?** | **Yes** — not wired |
+| **Code / tests** | `glass_bridge::resync::ResyncHint` (stub); `SessionSnapshotResponse.resync_hint` field present (always `null` until ingest + hint semantics freeze) |
+| **Provisional OK?** | **Yes** — WS delta + hint payloads not wired |
 
 ### F-05 — Sanitization socket / path policy
 
