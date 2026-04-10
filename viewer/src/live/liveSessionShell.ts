@@ -543,12 +543,12 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   }
 
   async function paintLiveVisual(): Promise<void> {
-    const spec = buildCurrentLiveVisualSpec();
+    const scene = compileLiveToGlassSceneV0({ model, lastReconcile });
     const result = await paintLiveVisualSurface(
       visualCanvas,
       visualCanvasWebGpu,
       visualCanvasTextOverlay,
-      spec,
+      scene,
       undefined,
       webGpuBundle,
     );

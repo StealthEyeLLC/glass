@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { createInitialLiveSessionModelState } from "./applyLiveSessionMessage.js";
 import { buildLiveVisualSpec } from "./liveVisualModel.js";
+import { compileLiveToGlassSceneV0 } from "../scene/compileLiveScene.js";
 import {
   renderLiveVisualIntoContext,
   renderLiveVisualOnCanvas,
@@ -94,8 +95,8 @@ describe("renderLiveVisualOnCanvas", () => {
   it("returns true and sizes canvas when 2D path runs (vitest.setup stubs jsdom)", () => {
     const canvas = document.createElement("canvas");
     const m = createInitialLiveSessionModelState("sid");
-    const spec = buildLiveVisualSpec(m, null);
-    const ok = renderLiveVisualOnCanvas(canvas, spec, { widthCss: 200, heightCss: 100 });
+    const scene = compileLiveToGlassSceneV0({ model: m, lastReconcile: null });
+    const ok = renderLiveVisualOnCanvas(canvas, scene, { widthCss: 200, heightCss: 100 });
     expect(ok).toBe(true);
     expect(canvas.width).toBeGreaterThan(0);
     expect(canvas.height).toBeGreaterThan(0);
@@ -104,8 +105,11 @@ describe("renderLiveVisualOnCanvas", () => {
   it("returns false when getContext returns null", () => {
     const spy = vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
     const canvas = document.createElement("canvas");
-    const spec = buildLiveVisualSpec(createInitialLiveSessionModelState("sid"), null);
-    expect(renderLiveVisualOnCanvas(canvas, spec)).toBe(false);
+    const scene = compileLiveToGlassSceneV0({
+      model: createInitialLiveSessionModelState("sid"),
+      lastReconcile: null,
+    });
+    expect(renderLiveVisualOnCanvas(canvas, scene)).toBe(false);
     spy.mockRestore();
   });
 });

@@ -1,21 +1,18 @@
 /**
- * Minimal WebGPU bootstrap renderer for the bounded live visual — same geometry intent as Canvas 2D.
- * Does not draw text labels (use textual panels + legend); band + ticks + HTTP chip quads only.
+ * Minimal WebGPU bootstrap renderer for the bounded live visual — consumes the same `DrawablePrimitive[]`
+ * as Canvas 2D (`sceneToDrawablePrimitives` / `buildBoundedVisualGeometryPrimitives`).
+ * Does not draw text labels (use textual panels + legend); solid fills + stroke rects expanded to thin quads only.
  */
 
+import type { GlassSceneV0 } from "../scene/glassSceneV0.js";
+import {
+  buildBoundedVisualGeometryPrimitives,
+  expandStrokeRectToFillRects,
+  type DrawablePrimitive,
+} from "../scene/drawablePrimitivesV0.js";
+import { sceneToDrawablePrimitives } from "../scene/sceneToDrawablePrimitives.js";
 import { hasNavigatorGpu } from "./liveWebGpuProbe.js";
-import {
-  buildLiveVisualMarkersLayout,
-  LIVE_VISUAL_BAND_LAYOUT,
-  LIVE_VISUAL_TICK_GEOMETRY,
-  LIVE_VISUAL_TICK_INACTIVE,
-  liveVisualTickActiveFill,
-} from "./liveVisualMarkers.js";
-import {
-  LIVE_VISUAL_MODE_FILL,
-  type LiveVisualSpec,
-  liveVisualDensity01,
-} from "./liveVisualModel.js";
+import type { LiveVisualSpec } from "./liveVisualModel.js";
 import type { LiveVisualCanvasLayout } from "./liveVisualCanvas.js";
 
 const WGSL = `
@@ -117,6 +114,39 @@ export function pxRectToTriangleList(
   return [...a, ...b, ...d, ...b, ...c2, ...d];
 }
 
+function appendFillPrimitiveToParts(
+  parts: number[],
+  p: Extract<DrawablePrimitive, { kind: "fill_rect" }>,
+  cw: number,
+  ch: number,
+): void {
+  const rgba = hexToRgba01(p.fillColorHex);
+  parts.push(...pxRectToTriangleList(p.x, p.y, p.width, p.height, cw, ch, rgba));
+}
+
+/**
+ * Interleaved vertex data from drawable primitives: `vec2 pos` + `vec4 color` per vertex, triangle list.
+ * Stroke rects are expanded to thin fill quads (same visual intent as Canvas `strokeRect`).
+ */
+export function buildDrawablePrimitivesWebGpuVertexData(
+  primitives: readonly DrawablePrimitive[],
+  layout: LiveVisualCanvasLayout,
+): Float32Array {
+  const cw = layout.widthCss;
+  const ch = layout.heightCss;
+  const parts: number[] = [];
+  for (const p of primitives) {
+    if (p.kind === "fill_rect") {
+      appendFillPrimitiveToParts(parts, p, cw, ch);
+    } else {
+      for (const f of expandStrokeRectToFillRects(p)) {
+        appendFillPrimitiveToParts(parts, f, cw, ch);
+      }
+    }
+  }
+  return new Float32Array(parts);
+}
+
 export interface LiveVisualWebGpuBundle {
   device: GPUDevice;
   context: GPUCanvasContext;
@@ -163,7 +193,7 @@ export async function tryInitWebGpuCanvas(
 }
 
 /**
- * Build interleaved vertex data: `vec2 pos` + `vec4 color` per vertex, triangle list.
+ * Build interleaved vertex data from a live visual spec (test / legacy entry); prefer `buildDrawablePrimitivesWebGpuVertexData(sceneToDrawablePrimitives(scene), layout)`.
  */
 export function buildLiveVisualWebGpuVertexData(
   spec: LiveVisualSpec,
@@ -171,36 +201,7 @@ export function buildLiveVisualWebGpuVertexData(
 ): Float32Array {
   const w = layout.widthCss;
   const h = layout.heightCss;
-  const cw = w;
-  const ch = h;
-  const bg = hexToRgba01("#f1f5f9");
-  const parts: number[] = [];
-  parts.push(...pxRectToTriangleList(0, 0, w, h, cw, ch, bg));
-
-  const bandColor = hexToRgba01(LIVE_VISUAL_MODE_FILL[spec.mode]);
-  const density = liveVisualDensity01(spec.eventTailCount);
-  const bandW = 16 + density * (w - 32);
-  const bandH = LIVE_VISUAL_BAND_LAYOUT.height;
-  const bandY = LIVE_VISUAL_BAND_LAYOUT.originY;
-  parts.push(...pxRectToTriangleList(16, bandY, bandW, bandH, cw, ch, bandColor));
-
-  const markers = buildLiveVisualMarkersLayout(spec, w);
-  const tickTop = bandY + LIVE_VISUAL_TICK_GEOMETRY.insetTop;
-  const tickH = bandH - LIVE_VISUAL_TICK_GEOMETRY.insetTop - LIVE_VISUAL_TICK_GEOMETRY.insetBottom;
-  const tw = LIVE_VISUAL_TICK_GEOMETRY.widthPx;
-  for (const t of markers.ticks) {
-    const rgba = hexToRgba01(t.active ? liveVisualTickActiveFill(t.kind) : LIVE_VISUAL_TICK_INACTIVE);
-    const left = t.centerX - tw / 2;
-    parts.push(...pxRectToTriangleList(left, tickTop, tw, tickH, cw, ch, rgba));
-  }
-
-  const chip = markers.httpReconcile;
-  if (chip.show) {
-    const rgba = hexToRgba01("#f8fafc");
-    parts.push(...pxRectToTriangleList(chip.x, chip.y, chip.width, chip.height, cw, ch, rgba));
-  }
-
-  return new Float32Array(parts);
+  return buildDrawablePrimitivesWebGpuVertexData(buildBoundedVisualGeometryPrimitives(spec, w, h), layout);
 }
 
 /**
@@ -209,7 +210,7 @@ export function buildLiveVisualWebGpuVertexData(
  */
 export async function renderLiveVisualWebGpuFrame(
   canvas: HTMLCanvasElement,
-  spec: LiveVisualSpec,
+  scene: GlassSceneV0,
   layout: LiveVisualCanvasLayout,
   bundle: LiveVisualWebGpuBundle,
 ): Promise<boolean> {
@@ -231,7 +232,8 @@ export async function renderLiveVisualWebGpuFrame(
       alphaMode: "premultiplied",
     });
 
-    const data = buildLiveVisualWebGpuVertexData(spec, layout);
+    const primitives = sceneToDrawablePrimitives(scene, layout);
+    const data = buildDrawablePrimitivesWebGpuVertexData(primitives, layout);
     if (data.length === 0) {
       return false;
     }

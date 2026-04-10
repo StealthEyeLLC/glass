@@ -13,3 +13,12 @@ export {
 export { compileLiveToGlassSceneV0, type LiveSceneCompileInput } from "./compileLiveScene.js";
 export { compileReplayToGlassSceneV0 } from "./compileReplayScene.js";
 export { liveVisualSpecFromScene } from "./sceneToLiveVisualSpec.js";
+export {
+  DRAWABLE_PRIMITIVES_V0,
+  buildBoundedVisualGeometryPrimitives,
+  expandStrokeRectToFillRects,
+  type DrawablePrimitive,
+  type DrawablePrimitiveFillRect,
+  type DrawablePrimitiveStrokeRect,
+} from "./drawablePrimitivesV0.js";
+export { sceneToDrawablePrimitives } from "./sceneToDrawablePrimitives.js";

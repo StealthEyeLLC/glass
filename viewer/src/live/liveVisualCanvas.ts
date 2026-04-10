@@ -2,23 +2,21 @@
  * Canvas 2D rendering for the bounded live visual.
  *
  * Responsibility split:
- * - **Geometry** (`renderLiveVisualGeometryIntoContext`): background, density band, ticks, HTTP chip box — matches WebGPU layer.
+ * - **Geometry** (`renderLiveVisualGeometryIntoContext`): consumes `DrawablePrimitive[]` from
+ *   `buildBoundedVisualGeometryPrimitives` / `sceneToDrawablePrimitives` — same list as WebGPU.
  * - **Text overlay** (`renderLiveVisualTextOverlayIntoContext`): mode / wire / reconcile / honesty lines + chip label — stacked transparently when WebGPU draws geometry.
  * - **Full** (`renderLiveVisualIntoContext` / `renderLiveVisualOnCanvas`): geometry + text (Canvas-only fallback).
  */
 
+import type { GlassSceneV0 } from "../scene/glassSceneV0.js";
+import { buildBoundedVisualGeometryPrimitives } from "../scene/drawablePrimitivesV0.js";
+import { sceneToDrawablePrimitives } from "../scene/sceneToDrawablePrimitives.js";
+import { liveVisualSpecFromScene } from "../scene/sceneToLiveVisualSpec.js";
 import {
   buildLiveVisualMarkersLayout,
   LIVE_VISUAL_BAND_LAYOUT,
-  LIVE_VISUAL_TICK_GEOMETRY,
-  LIVE_VISUAL_TICK_INACTIVE,
-  liveVisualTickActiveFill,
 } from "./liveVisualMarkers.js";
-import {
-  LIVE_VISUAL_MODE_FILL,
-  type LiveVisualSpec,
-  liveVisualDensity01,
-} from "./liveVisualModel.js";
+import type { LiveVisualSpec } from "./liveVisualModel.js";
 
 export interface LiveVisualCanvasLayout {
   widthCss: number;
@@ -30,8 +28,25 @@ const DEFAULT_LAYOUT: LiveVisualCanvasLayout = {
   heightCss: 132,
 };
 
+/** Rasterize drawable primitives to a 2D context (CSS pixel space; caller sets DPR transform). */
+export function renderDrawablePrimitivesToCanvas2D(
+  ctx: CanvasRenderingContext2D,
+  primitives: readonly DrawablePrimitive[],
+): void {
+  for (const p of primitives) {
+    if (p.kind === "fill_rect") {
+      ctx.fillStyle = p.fillColorHex;
+      ctx.fillRect(p.x, p.y, p.width, p.height);
+    } else {
+      ctx.strokeStyle = p.strokeColorHex;
+      ctx.lineWidth = p.lineWidthCss;
+      ctx.strokeRect(p.x, p.y, p.width, p.height);
+    }
+  }
+}
+
 /**
- * WebGPU-aligned geometry only (no text). Same layout math as `liveVisualWebGpu` vertex builder.
+ * WebGPU-aligned geometry only (no text). Same primitive list as `liveVisualWebGpu` vertex builder.
  */
 export function renderLiveVisualGeometryIntoContext(
   ctx: CanvasRenderingContext2D,
@@ -39,41 +54,8 @@ export function renderLiveVisualGeometryIntoContext(
   widthCss: number,
   heightCss: number,
 ): void {
-  const w = widthCss;
-  const h = heightCss;
-
-  ctx.fillStyle = "#f1f5f9";
-  ctx.fillRect(0, 0, w, h);
-
-  const bandColor = LIVE_VISUAL_MODE_FILL[spec.mode];
-  const density = liveVisualDensity01(spec.eventTailCount);
-  const bandW = 16 + density * (w - 32);
-  const bandH = LIVE_VISUAL_BAND_LAYOUT.height;
-  const bandY = LIVE_VISUAL_BAND_LAYOUT.originY;
-  ctx.fillStyle = bandColor;
-  ctx.fillRect(16, bandY, bandW, bandH);
-
-  const markers = buildLiveVisualMarkersLayout(spec, w);
-  const tickTop = bandY + LIVE_VISUAL_TICK_GEOMETRY.insetTop;
-  const tickBot = bandY + bandH - LIVE_VISUAL_TICK_GEOMETRY.insetBottom;
-  const tw = LIVE_VISUAL_TICK_GEOMETRY.widthPx;
-  for (const t of markers.ticks) {
-    ctx.fillStyle = t.active ? liveVisualTickActiveFill(t.kind) : LIVE_VISUAL_TICK_INACTIVE;
-    ctx.fillRect(t.centerX - tw / 2, tickTop, tw, tickBot - tickTop);
-  }
-
-  const chip = markers.httpReconcile;
-  if (chip.show) {
-    ctx.fillStyle = "#f8fafc";
-    ctx.fillRect(chip.x, chip.y, chip.width, chip.height);
-    ctx.strokeStyle = "#64748b";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(chip.x, chip.y, chip.width, chip.height);
-  }
-
-  ctx.strokeStyle = "#cbd5e1";
-  ctx.lineWidth = 1;
-  ctx.strokeRect(16, bandY, w - 32, bandH);
+  const primitives = buildBoundedVisualGeometryPrimitives(spec, widthCss, heightCss);
+  renderDrawablePrimitivesToCanvas2D(ctx, primitives);
 }
 
 /**
@@ -184,13 +166,20 @@ export function renderLiveVisualTextOverlayOnCanvas(
   return true;
 }
 
+function layoutForScene(
+  scene: GlassSceneV0,
+  layout: LiveVisualCanvasLayout | undefined,
+): LiveVisualCanvasLayout {
+  return layout ?? { widthCss: scene.bounds.widthCss, heightCss: scene.bounds.heightCss };
+}
+
 /**
- * Draw the current spec (full). Returns false if 2D context is unavailable (caller may show fallback text).
+ * Draw the current scene (geometry primitives + text). Returns false if 2D context is unavailable (caller may show fallback text).
  */
 export function renderLiveVisualOnCanvas(
   canvas: HTMLCanvasElement,
-  spec: LiveVisualSpec,
-  layout: LiveVisualCanvasLayout = DEFAULT_LAYOUT,
+  scene: GlassSceneV0,
+  layout?: LiveVisualCanvasLayout,
 ): boolean {
   let ctx: CanvasRenderingContext2D | null = null;
   try {
@@ -202,16 +191,20 @@ export function renderLiveVisualOnCanvas(
     return false;
   }
 
+  const lay = layoutForScene(scene, layout);
+  const spec = liveVisualSpecFromScene(scene);
   const dpr = typeof window !== "undefined" && window.devicePixelRatio ? window.devicePixelRatio : 1;
-  const w = layout.widthCss;
-  const h = layout.heightCss;
+  const w = lay.widthCss;
+  const h = lay.heightCss;
   canvas.style.width = `${w}px`;
   canvas.style.height = `${h}px`;
   canvas.width = Math.floor(w * dpr);
   canvas.height = Math.floor(h * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  renderLiveVisualIntoContext(ctx, spec, w, h);
+  const primitives = sceneToDrawablePrimitives(scene, lay);
+  renderDrawablePrimitivesToCanvas2D(ctx, primitives);
+  drawLiveVisualTextLabelsIntoContext(ctx, spec, w, h);
 
   return true;
 }

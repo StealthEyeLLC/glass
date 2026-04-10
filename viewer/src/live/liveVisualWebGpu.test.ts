@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createInitialLiveSessionModelState } from "./applyLiveSessionMessage.js";
 import { buildLiveVisualSpec } from "./liveVisualModel.js";
+import { compileLiveToGlassSceneV0 } from "../scene/compileLiveScene.js";
+import { sceneToDrawablePrimitives } from "../scene/sceneToDrawablePrimitives.js";
 import {
+  buildDrawablePrimitivesWebGpuVertexData,
   buildLiveVisualWebGpuVertexData,
   hexToRgba01,
   pxRectToTriangleList,
@@ -38,5 +41,25 @@ describe("buildLiveVisualWebGpuVertexData", () => {
     const data = buildLiveVisualWebGpuVertexData(spec, layout);
     expect(data.length).toBeGreaterThan(0);
     expect(data.length % 6).toBe(0);
+  });
+});
+
+describe("buildDrawablePrimitivesWebGpuVertexData", () => {
+  it("matches scene-derived primitives for the same layout", () => {
+    const scene = compileLiveToGlassSceneV0({
+      model: createInitialLiveSessionModelState("sid"),
+      lastReconcile: null,
+    });
+    const layout = { widthCss: 200, heightCss: 100 };
+    const fromScene = buildDrawablePrimitivesWebGpuVertexData(
+      sceneToDrawablePrimitives(scene, layout),
+      layout,
+    );
+    const fromSpec = buildLiveVisualWebGpuVertexData(
+      buildLiveVisualSpec(createInitialLiveSessionModelState("sid"), null),
+      layout,
+    );
+    expect(fromScene.length).toBe(fromSpec.length);
+    expect([...fromScene]).toEqual([...fromSpec]);
   });
 });

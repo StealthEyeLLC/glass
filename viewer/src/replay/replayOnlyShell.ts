@@ -4,7 +4,6 @@ import { attachPackDropHandlers, wirePackFileInput } from "./dragDrop.js";
 import { renderLiveVisualOnCanvas } from "../live/liveVisualCanvas.js";
 import { GLASS_SCENE_V0 } from "../scene/glassSceneV0.js";
 import { compileReplayToGlassSceneV0 } from "../scene/compileReplayScene.js";
-import { liveVisualSpecFromScene } from "../scene/sceneToLiveVisualSpec.js";
 import {
   currentEvent,
   cursorFraction,
@@ -194,8 +193,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
 
   function paintReplayScene(): void {
     const scene = compileReplayToGlassSceneV0(state);
-    const spec = liveVisualSpecFromScene(scene);
-    void renderLiveVisualOnCanvas(sceneCanvas, spec);
+    void renderLiveVisualOnCanvas(sceneCanvas, scene);
   }
 
   function dispatch(a: ReplayAction): void {

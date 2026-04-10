@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createInitialLiveSessionModelState } from "./applyLiveSessionMessage.js";
-import { buildLiveVisualSpec } from "./liveVisualModel.js";
+import { compileLiveToGlassSceneV0 } from "../scene/compileLiveScene.js";
 
 vi.mock("./liveVisualWebGpu.js", () => ({
   renderLiveVisualWebGpuFrame: vi.fn(),
@@ -15,6 +15,13 @@ const minimalBundle = {
   format: "rgba8unorm" as GPUTextureFormat,
 };
 
+function liveScene() {
+  return compileLiveToGlassSceneV0({
+    model: createInitialLiveSessionModelState("s"),
+    lastReconcile: null,
+  });
+}
+
 describe("paintLiveVisualSurface", () => {
   beforeEach(() => {
     vi.mocked(renderLiveVisualWebGpuFrame).mockReset();
@@ -24,12 +31,12 @@ describe("paintLiveVisualSurface", () => {
     const c2d = document.createElement("canvas");
     const cgpu = document.createElement("canvas");
     const cover = document.createElement("canvas");
-    const spec = buildLiveVisualSpec(createInitialLiveSessionModelState("s"), null);
+    const scene = liveScene();
     const r = await paintLiveVisualSurface(
       c2d,
       cgpu,
       cover,
-      spec,
+      scene,
       { widthCss: 200, heightCss: 100 },
       null,
     );
@@ -46,12 +53,12 @@ describe("paintLiveVisualSurface", () => {
     const c2d = document.createElement("canvas");
     const cgpu = document.createElement("canvas");
     const cover = document.createElement("canvas");
-    const spec = buildLiveVisualSpec(createInitialLiveSessionModelState("s"), null);
+    const scene = liveScene();
     const r = await paintLiveVisualSurface(
       c2d,
       cgpu,
       cover,
-      spec,
+      scene,
       { widthCss: 200, heightCss: 100 },
       minimalBundle,
     );
@@ -68,12 +75,12 @@ describe("paintLiveVisualSurface", () => {
     const c2d = document.createElement("canvas");
     const cgpu = document.createElement("canvas");
     const cover = document.createElement("canvas");
-    const spec = buildLiveVisualSpec(createInitialLiveSessionModelState("s"), null);
+    const scene = liveScene();
     const r = await paintLiveVisualSurface(
       c2d,
       cgpu,
       cover,
-      spec,
+      scene,
       { widthCss: 200, heightCss: 100 },
       minimalBundle,
     );
@@ -90,12 +97,12 @@ describe("paintLiveVisualSurface", () => {
     const cgpu = document.createElement("canvas");
     const cover = document.createElement("canvas");
     const overlayCtxSpy = vi.spyOn(cover, "getContext").mockReturnValue(null);
-    const spec = buildLiveVisualSpec(createInitialLiveSessionModelState("s"), null);
+    const scene = liveScene();
     const r = await paintLiveVisualSurface(
       c2d,
       cgpu,
       cover,
-      spec,
+      scene,
       { widthCss: 200, heightCss: 100 },
       minimalBundle,
     );
