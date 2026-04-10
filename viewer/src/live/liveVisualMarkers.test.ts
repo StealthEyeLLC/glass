@@ -2,9 +2,13 @@ import { describe, expect, it } from "vitest";
 import { createInitialLiveSessionModelState } from "./applyLiveSessionMessage.js";
 import { buildLiveVisualSpec } from "./liveVisualModel.js";
 import {
+  buildLiveVisualLegendHonestyRow,
+  buildLiveVisualLegendPrimaryRow,
   buildLiveVisualMarkersLayout,
+  formatLiveVisualLegendBlock,
   LIVE_VISUAL_BAND_LAYOUT,
   LIVE_VISUAL_TICK_INACTIVE,
+  liveVisualTickAbbrev,
   liveVisualTickActiveFill,
 } from "./liveVisualMarkers.js";
 
@@ -103,5 +107,38 @@ describe("liveVisualTickActiveFill", () => {
 describe("LIVE_VISUAL_TICK_INACTIVE", () => {
   it("is a fixed dim neutral", () => {
     expect(LIVE_VISUAL_TICK_INACTIVE).toBe("#e2e8f0");
+  });
+});
+
+describe("live visual legend (same tick semantics as layout)", () => {
+  it("abbrev matches tick kinds used by buildLiveVisualMarkersLayout order", () => {
+    expect(liveVisualTickAbbrev("replace")).toBe("R");
+    expect(liveVisualTickAbbrev("append")).toBe("A");
+    expect(liveVisualTickAbbrev("resync_wire")).toBe("Rz");
+  });
+
+  it("primary row names replace, append, resync wire, and HTTP reconcile chip", () => {
+    const row = buildLiveVisualLegendPrimaryRow();
+    expect(row).toContain("R = ");
+    expect(row).toContain("replace slot");
+    expect(row).toContain("A = ");
+    expect(row).toContain("append slot");
+    expect(row).toContain("Rz = ");
+    expect(row).toContain("resync wire slot");
+    expect(row).toContain("HTTP = ");
+    expect(row).toContain("reconcile");
+  });
+
+  it("honesty row states slots are not a timeline", () => {
+    const h = buildLiveVisualLegendHonestyRow();
+    expect(h.toLowerCase()).toContain("not a timeline");
+    expect(h).toContain("at most one");
+  });
+
+  it("formatLiveVisualLegendBlock joins primary and honesty", () => {
+    const b = formatLiveVisualLegendBlock();
+    expect(b).toContain(buildLiveVisualLegendPrimaryRow());
+    expect(b).toContain(buildLiveVisualLegendHonestyRow());
+    expect(b.indexOf("\n")).toBeGreaterThan(0);
   });
 });

@@ -44,6 +44,7 @@ import {
   type LiveSessionLogSource,
   type LiveSessionLogState,
 } from "./liveSessionLog.js";
+import { formatLiveVisualLegendBlock } from "./liveVisualMarkers.js";
 import { buildLiveVisualSpec } from "./liveVisualModel.js";
 import { renderLiveVisualOnCanvas } from "./liveVisualCanvas.js";
 import "./liveSessionShell.css";
@@ -323,7 +324,10 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   visualFallback.textContent =
     "Canvas 2D context unavailable — textual panels above remain authoritative for this session.";
   visualFallback.hidden = true;
-  visualSurface.append(visualCanvas, visualFallback);
+  const visualLegend = el("p", "glass-live-visual-legend");
+  visualLegend.setAttribute("data-testid", "live-visual-legend");
+  visualLegend.textContent = formatLiveVisualLegendBlock();
+  visualSurface.append(visualCanvas, visualFallback, visualLegend);
 
   const eventList = el("div", "glass-live-event-list");
   eventList.setAttribute("data-testid", "live-event-list");
@@ -428,6 +432,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     const spec = buildLiveVisualSpec(model, lastReconcile);
     const ok = renderLiveVisualOnCanvas(visualCanvas, spec);
     visualFallback.hidden = ok;
+    visualLegend.textContent = formatLiveVisualLegendBlock();
   }
 
   function renderCaps(): void {

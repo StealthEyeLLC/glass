@@ -208,3 +208,11 @@
   color: #b45309;
   margin: 0.35rem 0 0;
 }
+
+.glass-live-visual-legend {
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: #475569;
+  margin: 0.4rem 0 0;
+  white-space: pre-line;
+}

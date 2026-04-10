@@ -94,3 +94,45 @@ export const LIVE_VISUAL_TICK_GEOMETRY = {
   insetBottom: 5,
   widthPx: 2,
 } as const;
+
+/** Short labels matching canvas ticks (same semantics as `LiveVisualBandTick.kind`). */
+export function liveVisualTickAbbrev(kind: LiveVisualTickKind): string {
+  switch (kind) {
+    case "replace":
+      return "R";
+    case "append":
+      return "A";
+    case "resync_wire":
+      return "Rz";
+  }
+}
+
+const TICK_SLOT_LEGEND: Record<LiveVisualTickKind, string> = {
+  replace: "replace slot (active when last-applied wire indicates tail replace)",
+  append: "append slot (active when last-applied wire indicates tail append)",
+  resync_wire:
+    "resync wire slot (active when last-applied wire is session_resync_required)",
+};
+
+/** One-line legend naming the three fixed slots + HTTP chip (plain, implementation-facing). */
+export function buildLiveVisualLegendPrimaryRow(): string {
+  const kinds: LiveVisualTickKind[] = ["replace", "append", "resync_wire"];
+  const tickParts = kinds.map(
+    (k) => `${liveVisualTickAbbrev(k)} = ${TICK_SLOT_LEGEND[k]}`,
+  );
+  const httpPart =
+    "HTTP = bounded HTTP reconcile chip (when a reconcile summary line exists)";
+  return [...tickParts, httpPart].join(" · ");
+}
+
+/**
+ * Slots are not a timeline — matches the honesty model for `buildLiveVisualMarkersLayout`
+ * inactive ticks (dimmed positions, not historical events).
+ */
+export function buildLiveVisualLegendHonestyRow(): string {
+  return "Fixed slots are positional labels on the band, not a timeline; at most one R/A/Rz tick is active for the current last-applied wire state.";
+}
+
+export function formatLiveVisualLegendBlock(): string {
+  return `${buildLiveVisualLegendPrimaryRow()}\n${buildLiveVisualLegendHonestyRow()}`;
+}
