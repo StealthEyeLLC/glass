@@ -77,6 +77,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         bearer_token: Arc::from(cli.token.into_boxed_str()),
         allow_non_loopback: cli.allow_non_loopback,
         collector_ipc,
+        session_delta_wire_v0: false,
     };
     serve(config).await?;
     Ok(())

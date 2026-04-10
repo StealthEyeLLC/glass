@@ -102,10 +102,10 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | Field | Content |
 |-------|---------|
 | **Status** | **Landed** — `glass_bridge::live_session_ws`; wire notes `docs/contracts/live_session_ws_skeleton_v1.md`. **F-03 v0** outbound queue + backpressure: see **F-03** row above. |
-| **What it does** | After `live_session_subscribe`, bridge **polls** collector F-IPC on a **provisional** interval and emits `session_snapshot_replaced` when the bounded snapshot **fingerprint** changes. Pending outbound JSON is bounded per connection; overflow **coalesces** to the latest snapshot view + **`session_resync_required`**. |
+| **What it does** | After `live_session_subscribe`, bridge **polls** collector F-IPC on a **provisional** interval and emits `session_snapshot_replaced` when the bounded snapshot **fingerprint** changes. Optional **`session_delta`** v0 when server + client opt in **and** fingerprint unchanged vs prior poll (`docs/contracts/live_session_ws_session_delta_v0.md`). Pending outbound JSON is bounded per connection; overflow **coalesces** to the latest snapshot view + **`session_resync_required`**. |
 | **What it is not** | Push-based live ingest, durable append-only delta log, or frozen **HTTP** live-era `resync_hint` extensions (**F-04 live-era** row). |
 | **Additive reasons** | WebSocket-only `LIVE_WS_REASON_*` — **separate** from frozen HTTP `RESYNC_HINT_REASON_*`. |
-| **Tests** | `bridge/tests/ws_live_session.rs` (multi-accept F-IPC harness); `live_session_ws` unit tests for `F03OutboundQueue`. |
+| **Tests** | `bridge/tests/ws_live_session.rs` (multi-accept F-IPC harness; delta wire + capabilities); `live_session_ws` unit tests for `F03OutboundQueue` + delta overflow coalesce. |
 
 ---
 

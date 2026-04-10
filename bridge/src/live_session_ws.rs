@@ -11,6 +11,12 @@
 //! queued line lengths) triggers coalesce to the **latest** `session_snapshot_replaced` payload, then a
 //! mandatory `session_resync_required` — no silent continuity. See `docs/F03_LIVE_BACKLOG_FREEZE_PROPOSAL.md`
 //! and `docs/PHASE0_FREEZE_TRACKER.md`.
+//!
+//! **`session_delta` v0 wire:** optional additive frames when `GLASS_BRIDGE_SESSION_DELTA_WIRE_V0=1` **and**
+//! the client sends `session_delta_wire: true` on subscribe — emitted **only** on F-IPC polls where the
+//! bounded **fingerprint is unchanged** (honest “no replacement since last poll” liveness). Fingerprint
+//! changes use **`session_snapshot_replaced` only** — never `session_delta` as a substitute for replacement.
+//! See `docs/contracts/live_session_ws_session_delta_v0.md`.
 
 use std::collections::VecDeque;
 use std::time::Duration;
@@ -146,6 +152,25 @@ impl F03OutboundQueue {
         F03PushOutcome::Queued
     }
 
+    /// Enqueue a `session_delta` line. On F-03 overflow, coalesce using the **latest bounded snapshot** line
+    /// (same rule as snapshot-only traffic).
+    pub(crate) fn push_session_delta_or_coalesce(
+        &mut self,
+        delta_line: String,
+        latest_snapshot_line_for_overflow: String,
+        max_events: usize,
+        max_bytes: usize,
+    ) -> F03PushOutcome {
+        if self.would_overflow_adding(&delta_line, max_events, max_bytes) {
+            self.clear();
+            self.push_inner(latest_snapshot_line_for_overflow);
+            self.push_inner(resync_required_line(LIVE_WS_REASON_QUEUE_OVERFLOW));
+            return F03PushOutcome::CoalescedEscalated;
+        }
+        self.push_inner(delta_line);
+        F03PushOutcome::Queued
+    }
+
     /// Mandatory continuity / poll-failure resync — never silent. Uses same OR thresholds; coalesces if needed.
     pub(crate) fn push_mandatory_resync(
         &mut self,
@@ -179,6 +204,18 @@ fn resync_required_line(reason: &'static str) -> String {
     resync_required_envelope(reason).to_string()
 }
 
+/// Env `GLASS_BRIDGE_SESSION_DELTA_WIRE_V0=1` (or `true`, case-insensitive) enables server-side
+/// `session_delta` v0 negotiation (still requires client subscribe opt-in + F-IPC).
+pub fn session_delta_wire_v0_enabled_from_env() -> bool {
+    match std::env::var("GLASS_BRIDGE_SESSION_DELTA_WIRE_V0") {
+        Ok(s) => {
+            let t = s.trim();
+            t == "1" || t.eq_ignore_ascii_case("true") || t.eq_ignore_ascii_case("yes")
+        }
+        Err(_) => false,
+    }
+}
+
 fn poll_interval_duration() -> Duration {
     std::env::var("GLASS_BRIDGE_LIVE_WS_POLL_MS")
         .ok()
@@ -191,6 +228,7 @@ fn poll_interval_duration() -> Duration {
 /// Initial WebSocket hello (extends legacy `glass.bridge.ws.hello`).
 pub fn ws_hello_json(state: &AppState) -> Value {
     let ipc = state.collector_ipc.is_some();
+    let delta_wire = ipc && state.session_delta_wire_v0;
     json!({
         "type": "glass.bridge.ws.hello",
         "bridge_api_version": 1,
@@ -198,6 +236,7 @@ pub fn ws_hello_json(state: &AppState) -> Value {
         "live_session_delta_skeleton": ipc,
         "live_session_protocol": LIVE_SESSION_WS_PROTOCOL_V1,
         "collector_fipc_configured": ipc,
+        "session_delta_wire_v0_server": delta_wire,
         "provisional_backlog_event_threshold": crate::resync::PROVISIONAL_BACKLOG_EVENT_THRESHOLD,
         "f03_v0_live_ws": {
             "queue_max_events": F03_V0_LIVE_WS_QUEUE_MAX_EVENTS,
@@ -208,7 +247,7 @@ pub fn ws_hello_json(state: &AppState) -> Value {
             "resync_on_poll_failure": true,
         },
         "recovery_strategy": "snapshot_and_cursor",
-        "note": "live_session: optional subscribe via {\"msg\":\"live_session_subscribe\",\"session_id\":\"…\",\"protocol\":1}; bounded polling — not production live ingest"
+        "note": "live_session: subscribe via {\"msg\":\"live_session_subscribe\",\"session_id\":\"…\",\"protocol\":1}; optional \"session_delta_wire\":true when session_delta_wire_v0_server is true — see docs/contracts/live_session_ws_session_delta_v0.md"
     })
 }
 
@@ -268,7 +307,10 @@ pub async fn run_ws_session(mut socket: WebSocket, state: AppState) {
             continue;
         };
 
-        run_subscribed_loop(&mut socket, cfg, sid.to_string()).await;
+        let want_delta_wire = v.get("session_delta_wire").and_then(|x| x.as_bool()) == Some(true);
+        let emit_session_delta = state.session_delta_wire_v0 && want_delta_wire;
+
+        run_subscribed_loop(&mut socket, cfg, sid.to_string(), emit_session_delta).await;
         return;
     }
 }
@@ -277,6 +319,7 @@ async fn run_subscribed_loop(
     socket: &mut WebSocket,
     cfg: CollectorIpcClientConfig,
     session_id: String,
+    emit_session_delta: bool,
 ) {
     let max_e = F03_V0_LIVE_WS_QUEUE_MAX_EVENTS;
     let max_b = F03_V0_LIVE_WS_QUEUE_MAX_BYTES;
@@ -306,6 +349,7 @@ async fn run_subscribed_loop(
         "protocol": LIVE_SESSION_WS_PROTOCOL_V1,
         "session_id": session_id,
         "continuity_model": "bounded_f_ipc_polling_not_durable",
+        "session_delta_wire_active": emit_session_delta,
         "honesty": "Updates reflect collector bounded snapshot changes only; retained loops replace tails — not append-only history. Use GET /sessions/:id/snapshot for authoritative bounded contract (F-04)."
     });
     if send_json(socket, &sub_hello).await.is_err() {
@@ -315,6 +359,7 @@ async fn run_subscribed_loop(
     let mut outbound = F03OutboundQueue::new();
     let mut interval = tokio::time::interval(poll_interval_duration());
     interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+    let mut ws_seq: u64 = 0;
 
     loop {
         tokio::select! {
@@ -329,7 +374,17 @@ async fn run_subscribed_loop(
                         continue;
                     }
                 };
+
                 if snap.fp == last_fp {
+                    if emit_session_delta {
+                        let dline = session_delta_envelope(&session_id, ws_seq, &snap);
+                        ws_seq = ws_seq.saturating_add(1);
+                        let coalesce = snapshot_replaced_envelope(&session_id, &snap);
+                        let _ = outbound.push_session_delta_or_coalesce(dline, coalesce, max_e, max_b);
+                        if flush_outbound(socket, &mut outbound).await.is_err() {
+                            break;
+                        }
+                    }
                     continue;
                 }
 
@@ -468,6 +523,23 @@ async fn poll_snapshot(
     })
 }
 
+fn session_delta_envelope(session_id: &str, ws_seq: u64, s: &PolledSnapshot) -> String {
+    let v = json!({
+        "type": "glass.bridge.live_session.v1",
+        "msg": "session_delta",
+        "protocol": LIVE_SESSION_WS_PROTOCOL_V1,
+        "session_id": session_id,
+        "session_delta_wire": "v0",
+        "ws_seq": ws_seq,
+        "snapshot_cursor": s.snapshot_cursor,
+        "continuity": "poll_tick_unchanged_bounded_fingerprint",
+        "guarantee": "same_bounded_fingerprint_as_prior_successful_poll_not_append_only_log",
+        "events": [],
+        "honesty": "Empty events: F-IPC poll observed the same bounded snapshot fingerprint as the prior poll. Fingerprint changes are delivered only as session_snapshot_replaced. Not durable ingest; not F-04 HTTP tokens."
+    });
+    v.to_string()
+}
+
 fn snapshot_replaced_envelope(session_id: &str, s: &PolledSnapshot) -> String {
     let take = s.events.len().min(PROVISIONAL_LIVE_WS_EVENTS_SAMPLE_MAX);
     let sample: Vec<Value> = s.events.iter().take(take).cloned().collect();
@@ -595,6 +667,23 @@ mod tests {
             q2.push_snapshot_replaced_or_coalesce(big.into(), 100, 9),
             F03PushOutcome::CoalescedEscalated
         );
+    }
+
+    #[test]
+    fn f03_session_delta_overflow_coalesces_to_snapshot_plus_resync() {
+        let max_e = 1usize;
+        let max_b = 1_000_000;
+        let mut q = F03OutboundQueue::new();
+        assert_eq!(
+            q.push_snapshot_replaced_or_coalesce("snap1".into(), max_e, max_b),
+            F03PushOutcome::Queued
+        );
+        let o =
+            q.push_session_delta_or_coalesce("delta1".into(), "snap_latest".into(), max_e, max_b);
+        assert_eq!(o, F03PushOutcome::CoalescedEscalated);
+        let lines = q.test_queued_line_strings();
+        assert!(lines.iter().any(|l| l.contains("session_resync_required")));
+        assert!(lines.contains(&"snap_latest"));
     }
 
     #[test]

@@ -57,6 +57,7 @@ async fn snapshot_populated_via_collector_fipc() {
             shared_secret: secret,
             timeout: Duration::from_secs(2),
         }),
+        session_delta_wire_v0: false,
     };
     let app = app_router(&cfg);
     let res = app
@@ -100,6 +101,7 @@ async fn capabilities_shows_fipc_configured() {
             shared_secret: Arc::from("s"),
             timeout: Duration::from_secs(1),
         }),
+        session_delta_wire_v0: false,
     };
     let app = app_router(&cfg);
     let res = app
@@ -151,6 +153,7 @@ async fn empty_session_snapshot_cursor_via_fipc() {
             shared_secret: secret,
             timeout: Duration::from_secs(2),
         }),
+        session_delta_wire_v0: false,
     };
     let app = app_router(&cfg);
     let res = app
@@ -203,6 +206,7 @@ async fn known_empty_session_snapshot_cursor_v0_off_zero_no_resync_hint() {
             shared_secret: secret,
             timeout: Duration::from_secs(2),
         }),
+        session_delta_wire_v0: false,
     };
     let app = app_router(&cfg);
     let res = app
@@ -264,6 +268,7 @@ async fn v0_empty_cursor_disambiguated_by_snapshot_origin_unknown_vs_empty_per_r
             shared_secret: secret,
             timeout: Duration::from_secs(2),
         }),
+        session_delta_wire_v0: false,
     };
     let app = app_router(&cfg);
     let res = app
@@ -340,6 +345,7 @@ async fn snapshot_via_procfs_fixture_normalized_envelope() {
             shared_secret: secret,
             timeout: Duration::from_secs(2),
         }),
+        session_delta_wire_v0: false,
     };
     let app = app_router(&cfg);
     let res = app
@@ -426,6 +432,7 @@ async fn snapshot_via_file_lane_fixture_normalized_envelope() {
             shared_secret: secret,
             timeout: Duration::from_secs(2),
         }),
+        session_delta_wire_v0: false,
     };
     let app = app_router(&cfg);
     let res = app
@@ -521,6 +528,7 @@ async fn snapshot_file_lane_retained_includes_retained_unix_ms() {
             shared_secret: secret,
             timeout: Duration::from_secs(2),
         }),
+        session_delta_wire_v0: false,
     };
     let app = app_router(&cfg);
     let res = app
@@ -603,6 +611,7 @@ async fn snapshot_retained_store_includes_retained_unix_ms() {
             shared_secret: secret,
             timeout: Duration::from_secs(2),
         }),
+        session_delta_wire_v0: false,
     };
     let app = app_router(&cfg);
     let res = app
@@ -661,6 +670,7 @@ async fn snapshot_truncation_emits_bounded_resync_hint() {
             shared_secret: secret,
             timeout: Duration::from_secs(2),
         }),
+        session_delta_wire_v0: false,
     };
     let app = app_router(&cfg);
     let res = app

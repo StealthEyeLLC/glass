@@ -37,6 +37,8 @@ pub fn app_router(config: &BridgeConfig) -> Router {
     let state = AppState {
         bearer_token: config.bearer_token.clone(),
         collector_ipc: config.collector_ipc.clone(),
+        session_delta_wire_v0: config.session_delta_wire_v0
+            || crate::live_session_ws::session_delta_wire_v0_enabled_from_env(),
     };
 
     let protected = Router::new()
@@ -89,6 +91,7 @@ async fn capabilities(State(state): State<AppState>) -> Json<CapabilitiesRespons
     Json(CapabilitiesResponse::for_bridge_state(
         state.collector_ipc.is_some(),
         PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION,
+        state.session_delta_wire_v0,
     ))
 }
 

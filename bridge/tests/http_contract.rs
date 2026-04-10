@@ -23,6 +23,7 @@ fn test_config() -> BridgeConfig {
         bearer_token: Arc::from("test-secret-token"),
         allow_non_loopback: false,
         collector_ipc: None,
+        session_delta_wire_v0: false,
     }
 }
 
@@ -84,6 +85,7 @@ async fn capabilities_accepts_valid_bearer() {
     assert_eq!(v["resync"]["recovery_strategy"], "snapshot_and_cursor");
     assert_eq!(v["live_session_ingest"], false);
     assert_eq!(v["websocket"]["live_session_delta_skeleton"], false);
+    assert_eq!(v["websocket"]["session_delta_wire_v0"], false);
     assert_eq!(
         v["websocket"]["delta_stream_status"],
         "handshake_only_no_live_deltas"
@@ -103,6 +105,7 @@ fn bridge_config_rejects_non_loopback_collector_ipc_endpoint() {
             shared_secret: Arc::from("x"),
             timeout: Duration::from_secs(1),
         }),
+        session_delta_wire_v0: false,
     };
     assert_eq!(
         cfg.validate(),
@@ -148,6 +151,7 @@ async fn snapshot_returns_503_when_fipc_configured_but_collector_unreachable() {
             shared_secret: Arc::from("unused"),
             timeout: Duration::from_millis(200),
         }),
+        session_delta_wire_v0: false,
     };
     let app = app_router(&cfg);
     let res = app
@@ -173,6 +177,7 @@ async fn config_rejects_non_loopback_without_opt_in() {
         bearer_token: Arc::from("t"),
         allow_non_loopback: false,
         collector_ipc: None,
+        session_delta_wire_v0: false,
     };
     let e = cfg.validate().unwrap_err();
     assert!(matches!(e, BridgeConfigError::LoopbackOnly));
@@ -185,6 +190,7 @@ async fn config_allows_non_loopback_when_flag_set() {
         bearer_token: Arc::from("t"),
         allow_non_loopback: true,
         collector_ipc: None,
+        session_delta_wire_v0: false,
     };
     assert!(cfg.validate().is_ok());
 }
@@ -207,6 +213,7 @@ async fn spawn_test_server() -> SocketAddr {
         bearer_token: Arc::from("test-secret-token"),
         allow_non_loopback: false,
         collector_ipc: None,
+        session_delta_wire_v0: false,
     };
     tokio::spawn({
         let cfg = cfg.clone();

@@ -6,8 +6,8 @@
 //!   inside this process — optional **F-IPC** talks to a separate `glass-collector ipc-serve`
 //!   process over **provisional TCP loopback** for **bounded snapshots** only (`docs/PRIVILEGE_SEPARATION.md`).
 //! - **Honest scope:** structural routes, auth scaffolding, bounded snapshot JSON shape (F-04 frozen on
-//!   HTTP), optional **live-session WebSocket skeleton** (`live_session_ws`) that **polls** F-IPC when
-//!   configured — bounded **replacement** notices only, not a finished live delta pipeline.
+//!   HTTP), optional **live-session WebSocket** (`live_session_ws`) that **polls** F-IPC when configured —
+//!   bounded **replacement** + optional **`session_delta`** v0 (same-fingerprint poll ticks), not push ingest.
 //!
 //! ## Auth
 //!
@@ -37,6 +37,9 @@ use thiserror::Error;
 pub struct AppState {
     pub bearer_token: Arc<str>,
     pub collector_ipc: Option<CollectorIpcClientConfig>,
+    /// `GLASS_BRIDGE_SESSION_DELTA_WIRE_V0=1` at process start — allows opt-in `session_delta` on WS when
+    /// combined with client `live_session_subscribe.session_delta_wire: true` and F-IPC polling honesty rules.
+    pub session_delta_wire_v0: bool,
 }
 
 /// Configuration for bridge → collector F-IPC client (provisional TCP).
@@ -56,6 +59,8 @@ pub struct BridgeConfig {
     pub allow_non_loopback: bool,
     /// When set, `GET /sessions/:id/snapshot` uses collector F-IPC; on failure returns HTTP 503.
     pub collector_ipc: Option<CollectorIpcClientConfig>,
+    /// Enables `session_delta` v0 wire (OR with `GLASS_BRIDGE_SESSION_DELTA_WIRE_V0`); tests set explicitly.
+    pub session_delta_wire_v0: bool,
 }
 
 /// Configuration validation error (e.g. non-loopback bind without opt-in).

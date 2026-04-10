@@ -60,6 +60,7 @@ async fn capabilities_reflects_live_session_skeleton_when_fipc_configured() {
             shared_secret: Arc::from("s"),
             timeout: Duration::from_secs(1),
         }),
+        session_delta_wire_v0: false,
     };
     let app = app_router(&cfg);
     let res = app
@@ -80,6 +81,7 @@ async fn capabilities_reflects_live_session_skeleton_when_fipc_configured() {
         v["websocket"]["delta_stream_status"],
         "live_session_delta_skeleton_polling"
     );
+    assert_eq!(v["websocket"]["session_delta_wire_v0"], false);
 }
 
 #[tokio::test]
@@ -139,6 +141,7 @@ async fn retained_file_lane_change_emits_session_snapshot_replaced() {
             shared_secret: secret.clone(),
             timeout: Duration::from_secs(3),
         }),
+        session_delta_wire_v0: false,
     };
     let cfg_clone = bridge_cfg.clone();
     tokio::spawn(async move {
@@ -160,6 +163,7 @@ async fn retained_file_lane_change_emits_session_snapshot_replaced() {
     assert_eq!(hello["type"], "glass.bridge.ws.hello");
     assert_eq!(hello["live_session_delta_skeleton"], true);
     assert_eq!(hello["collector_fipc_configured"], true);
+    assert_eq!(hello["session_delta_wire_v0_server"], false);
     let f03 = &hello["f03_v0_live_ws"];
     assert_eq!(
         f03["queue_max_events"].as_u64().unwrap() as usize,
@@ -197,6 +201,7 @@ async fn retained_file_lane_change_emits_session_snapshot_replaced() {
     assert_eq!(sh["type"], "glass.bridge.live_session.v1");
     assert_eq!(sh["msg"], "session_hello");
     assert_eq!(sh["session_id"], "ws_live_sess");
+    assert_eq!(sh["session_delta_wire_active"], false);
 
     // Deterministic: mutate the collector store directly (same process) to simulate a retained
     // tail replacement — avoids flaking on second directory-poll ingest timing.
@@ -261,6 +266,194 @@ async fn retained_file_lane_change_emits_session_snapshot_replaced() {
 }
 
 #[tokio::test]
+async fn capabilities_session_delta_wire_when_bridge_config_and_fipc() {
+    let cfg = BridgeConfig {
+        bind: "127.0.0.1:0".parse().unwrap(),
+        bearer_token: Arc::from("t"),
+        allow_non_loopback: false,
+        collector_ipc: Some(CollectorIpcClientConfig {
+            addr: "127.0.0.1:9".parse().unwrap(),
+            shared_secret: Arc::from("s"),
+            timeout: Duration::from_secs(1),
+        }),
+        session_delta_wire_v0: true,
+    };
+    let app = app_router(&cfg);
+    let res = app
+        .oneshot(
+            Request::builder()
+                .uri("/capabilities")
+                .header("Authorization", "Bearer t")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let b = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&b).unwrap();
+    assert_eq!(v["live_session_ingest"], true);
+    assert_eq!(v["websocket"]["session_delta_wire_v0"], true);
+}
+
+#[tokio::test]
+async fn session_delta_emitted_after_snapshot_replaced_when_wire_enabled() {
+    std::env::set_var("GLASS_BRIDGE_LIVE_WS_POLL_MS", "40");
+
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("fl_delta.json");
+    let o1 = file_lane_obs(1, "a.txt");
+    std::fs::write(&path, serde_json::to_string(&vec![o1]).unwrap()).unwrap();
+
+    let store = Arc::new(SnapshotStore::new());
+    let feed = FileLaneSnapshotFeedConfig {
+        session_id: "ws_delta_sess".to_string(),
+        watch_root: PathBuf::from("."),
+        max_samples: 512,
+        max_depth: 8,
+        twice: false,
+        from_raw_json: Some(path.clone()),
+    };
+    let meta = Arc::new(RetainedPollMeta::new("ws_delta_sess"));
+    retained_file_lane_poll_tick(store.as_ref(), &feed, 256, Some(meta.as_ref())).unwrap();
+
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let runtime = Arc::new(IpcDevTcpRuntime {
+        store,
+        procfs_feed: None,
+        file_lane_feed: None,
+        retained_poll_meta: None,
+        file_lane_retained_poll_meta: Some(meta),
+    });
+    let secret = Arc::<str>::from("ws-delta-secret");
+    let rt_loop = runtime.clone();
+    let sec_loop = secret.clone();
+    thread::spawn(move || loop {
+        let Ok((stream, _)) = listener.accept() else {
+            break;
+        };
+        let rt = rt_loop.clone();
+        let sec = sec_loop.clone();
+        thread::spawn(move || {
+            let _ = handle_ipc_dev_tcp_connection(stream, sec.as_ref(), rt.as_ref());
+        });
+    });
+    thread::sleep(Duration::from_millis(40));
+
+    let listener_b = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let baddr = listener_b.local_addr().unwrap();
+    let bridge_cfg = BridgeConfig {
+        bind: baddr,
+        bearer_token: Arc::from("bridge-delta-token"),
+        allow_non_loopback: false,
+        collector_ipc: Some(CollectorIpcClientConfig {
+            addr,
+            shared_secret: secret.clone(),
+            timeout: Duration::from_secs(3),
+        }),
+        session_delta_wire_v0: true,
+    };
+    let cfg_clone = bridge_cfg.clone();
+    tokio::spawn(async move {
+        let _ = glass_bridge::serve_listener(listener_b, &cfg_clone).await;
+    });
+    tokio::time::sleep(Duration::from_millis(80)).await;
+
+    let url = format!(
+        "ws://127.0.0.1:{}/ws?access_token=bridge-delta-token",
+        baddr.port()
+    );
+    let (mut ws, _) = connect_async(url).await.expect("ws connect");
+
+    let msg = ws.next().await.expect("hello").expect("ok");
+    let tokio_tungstenite::tungstenite::Message::Text(t) = msg else {
+        panic!("expected text");
+    };
+    let hello: serde_json::Value = serde_json::from_str(&t).unwrap();
+    assert_eq!(hello["session_delta_wire_v0_server"], true);
+
+    let sub = serde_json::json!({
+        "msg": "live_session_subscribe",
+        "session_id": "ws_delta_sess",
+        "protocol": LIVE_SESSION_WS_PROTOCOL_V1,
+        "session_delta_wire": true
+    });
+    ws.send(tokio_tungstenite::tungstenite::Message::Text(
+        sub.to_string().into(),
+    ))
+    .await
+    .unwrap();
+
+    let msg = ws.next().await.expect("session_hello").expect("ok");
+    let tokio_tungstenite::tungstenite::Message::Text(t) = msg else {
+        panic!("expected text");
+    };
+    let sh: serde_json::Value = serde_json::from_str(&t).unwrap();
+    assert_eq!(sh["session_delta_wire_active"], true);
+
+    runtime.store.set_session_events(
+        "ws_delta_sess",
+        vec![
+            serde_json::json!({"kind": "file_poll_snapshot", "seq": 1, "note": "delta_test"}),
+            serde_json::json!({"kind": "file_poll_snapshot", "seq": 2, "note": "delta_test"}),
+        ],
+    );
+
+    let got_replaced = timeout(Duration::from_secs(6), async {
+        while let Some(m) = ws.next().await {
+            let Ok(m) = m else { break };
+            let tokio_tungstenite::tungstenite::Message::Text(t) = m else {
+                continue;
+            };
+            let Ok(v) = serde_json::from_str::<serde_json::Value>(&t) else {
+                continue;
+            };
+            if v["msg"] == "session_snapshot_replaced" {
+                return Some(v);
+            }
+        }
+        None
+    })
+    .await
+    .expect("timeout")
+    .expect("session_snapshot_replaced");
+
+    assert_eq!(got_replaced["msg"], "session_snapshot_replaced");
+
+    // After a replacement, unchanged polls emit session_delta (may follow leading poll_tick deltas).
+    let got_delta = timeout(Duration::from_secs(6), async {
+        while let Some(m) = ws.next().await {
+            let Ok(m) = m else { break };
+            let tokio_tungstenite::tungstenite::Message::Text(t) = m else {
+                continue;
+            };
+            let Ok(v) = serde_json::from_str::<serde_json::Value>(&t) else {
+                continue;
+            };
+            if v["msg"] == "session_delta" {
+                return Some(v);
+            }
+        }
+        None
+    })
+    .await
+    .expect("timeout 2")
+    .expect("session_delta");
+
+    assert_eq!(got_delta["session_delta_wire"], "v0");
+    assert_eq!(
+        got_delta["continuity"],
+        "poll_tick_unchanged_bounded_fingerprint"
+    );
+    assert_eq!(got_delta["events"], serde_json::json!([]));
+    assert!(got_delta["ws_seq"].as_u64().is_some());
+
+    let _ = ws.close(None).await;
+    std::env::remove_var("GLASS_BRIDGE_LIVE_WS_POLL_MS");
+}
+
+#[tokio::test]
 async fn http_snapshot_still_matches_frozen_bounded_contract_after_ws_branch() {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let addr = listener.local_addr().unwrap();
@@ -291,6 +484,7 @@ async fn http_snapshot_still_matches_frozen_bounded_contract_after_ws_branch() {
             shared_secret: secret,
             timeout: Duration::from_secs(2),
         }),
+        session_delta_wire_v0: false,
     };
     let app = app_router(&cfg);
     let res = app

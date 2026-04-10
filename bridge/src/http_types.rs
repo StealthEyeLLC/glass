@@ -21,7 +21,8 @@ pub struct CapabilitiesResponse {
     pub bridge_api_version: u32,
     pub resync: ResyncCapabilities,
     pub websocket: WebSocketCapability,
-    /// False until a live WS delta stream exists (honest; not a product claim).
+    /// True only when `session_delta_wire_v0` is enabled **and** collector F-IPC is configured — additive WS
+    /// `session_delta` v0 wire may be used (honest; not durable ingest).
     pub live_session_ingest: bool,
     pub collector_fipc: CollectorFipcCapability,
 }
@@ -47,6 +48,8 @@ pub struct WebSocketCapability {
     pub delta_stream_status: &'static str,
     /// True when `GET /ws` can run bounded live-session subscribe + F-IPC polling (**not** final live ingest).
     pub live_session_delta_skeleton: bool,
+    /// Bridge env + F-IPC: `session_delta` v0 wire may be negotiated per subscribe (`session_delta_wire: true`).
+    pub session_delta_wire_v0: bool,
 }
 
 /// Status of collector F-IPC for this snapshot (omitted when HTTP route did not use F-IPC).
@@ -117,8 +120,10 @@ impl CapabilitiesResponse {
     pub fn for_bridge_state(
         collector_fipc_configured: bool,
         fipc_wire_protocol_version: u32,
+        session_delta_wire_v0: bool,
     ) -> Self {
         let ws_skeleton = collector_fipc_configured;
+        let delta_wire = collector_fipc_configured && session_delta_wire_v0;
         Self {
             bridge_api_version: 1,
             resync: ResyncCapabilities {
@@ -133,8 +138,9 @@ impl CapabilitiesResponse {
                     "handshake_only_no_live_deltas"
                 },
                 live_session_delta_skeleton: ws_skeleton,
+                session_delta_wire_v0: delta_wire,
             },
-            live_session_ingest: false,
+            live_session_ingest: delta_wire,
             collector_fipc: CollectorFipcCapability {
                 transport: "provisional_tcp_loopback",
                 configured: collector_fipc_configured,
