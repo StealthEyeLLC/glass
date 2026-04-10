@@ -47,7 +47,7 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | `PROVISIONAL_MAX_FS_DELTA_PER_DIRECTION` | `64` | `glass_collector::adapters::fs_file_lane` | Cap on created/missing/changed rows per poll direction |
 | `PROVISIONAL_MAX_FS_SCAN_PATHS_FOR_STATE` | `4096` | `glass_collector::adapters::fs_file_lane` | Max paths stored between polls for gap comparison (sample emission may be lower) |
 | `PROVISIONAL_DEFAULT_FS_MAX_DEPTH` | `8` | `glass_collector::adapters::fs_file_lane` | Default max recursion depth under declared watch root |
-| `PROVISIONAL_MAX_RETAINED_SNAPSHOT_EVENTS` | `2048` | `glass_collector::procfs_retained_loop` | Max normalized events kept in `SnapshotStore` per retained session after each poll (tail) |
+| `PROVISIONAL_MAX_RETAINED_SNAPSHOT_EVENTS` | `2048` | `glass_collector::procfs_retained_loop`, `glass_collector::file_lane_retained_loop` (shared constant) | Max normalized events kept in `SnapshotStore` per retained session after each poll (tail); per-mode max-events CLI may clamp lower |
 | Sanitization regex / socket heuristic | IPv4 private ranges, `.local`/`.internal`/`.corp`, `.sock` + `/var/run` paths | `session_engine::sanitization` | F-05 |
 
 ---
@@ -76,7 +76,7 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | `resolution_quality` | **Fixed string v0** | `declared_root_relative_path_directory_poll_not_kernel_inode_identity`. |
 | Default adapter stack | **Inactive file lane** | `FsFileLaneAdapter::default()` has **no** `watch_root` → `implementation_active: false` until an operator configures a root (CLI `sample-file-lane` / tests construct `with_watch_root`). |
 | Gap semantics when state budget truncates | **Explicit** | Payload `state_budget_truncated` when scan hits `PROVISIONAL_MAX_FS_SCAN_PATHS_FOR_STATE` — poll-gap deltas may be incomplete. |
-| Human-owned | Open | fanotify/inotify live semantics, rename atomicity, share-safe path redaction for file `attrs` (F-05), retained/merged multi-feed snapshot policy if product needs beyond per-session procfs + file-lane + store. |
+| Human-owned | Open | fanotify/inotify live semantics, rename atomicity, share-safe path redaction for file `attrs` (F-05), merged multi-feed snapshot policy if product needs beyond per-session procfs + file-lane + separate retained stores (v0: **retained procfs** and **retained file-lane** are separate session ids; bridge snapshot is single-session). |
 
 ---
 
@@ -113,7 +113,7 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | **Decision-ready options** | Unix socket path under XDG_RUNTIME_DIR vs fixed `/run/glass/…`; SO_PEERCRED vs shared secret file; challenge nonce length; replace NDJSON/TCP when frozen |
 | **Proposed default** | Abstract or path Unix socket + versioned envelope (`PROVISIONAL_IPC_AUTH_TOKEN_VERSION`) + peer cred check where available |
 | **Rationale** | Privilege separation (§10.3B / §18.4) requires a frozen contract before production bridge |
-| **Code / tests** | `glass_collector::ipc` (`FipcBridgeToCollector`, `FipcCollectorToBridge`, `PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION`), `glass_collector::ipc_dev_tcp`, `glass_collector::procfs_ipc_feed`, `glass_collector::file_lane_ipc_feed`, `glass_collector::procfs_retained_loop`, `collector/tests/ipc_fipc_tcp.rs`, `glass_bridge` `ipc_client` + `bridge/tests/snapshot_fipc.rs`, `docs/PRIVILEGE_SEPARATION.md` |
+| **Code / tests** | `glass_collector::ipc` (`FipcBridgeToCollector`, `FipcCollectorToBridge`, `PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION`), `glass_collector::ipc_dev_tcp`, `glass_collector::procfs_ipc_feed`, `glass_collector::file_lane_ipc_feed`, `glass_collector::procfs_retained_loop`, `glass_collector::file_lane_retained_loop`, `collector/tests/ipc_fipc_tcp.rs`, `glass_bridge` `ipc_client` + `bridge/tests/snapshot_fipc.rs`, `docs/PRIVILEGE_SEPARATION.md` |
 | **Provisional OK?** | **Yes** — TCP loopback is **explicitly dev/skeleton**; Unix socket + credential story still human-owned |
 
 ### F-04 — `resync_hint` JSON wire shape
@@ -125,7 +125,7 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | **Proposed default** | Opaque cursor string + `reason: "backlog" \| "ipc_gap"` |
 | **Rationale** | Bridge + viewer must agree before Phase 5 |
 | **Code / tests** | `glass_bridge::resync::ResyncHint` (stub); `SessionSnapshotResponse.resync_hint` field present (always `null` until ingest + hint semantics freeze) |
-| **Bounded snapshot cursor (related, not resync_hint)** | F-IPC `BoundedSnapshotReply.snapshot_cursor` remains **`v0:off:{n}`** (events returned after caps) or **`v0:empty`**. **`--procfs-session`**: re-poll each RPC. **`--file-lane-session`**: re-poll file-lane tree or fixture each RPC (same RPC shape; **distinct** session id from procfs/retained). **`--procfs-retained-session`**: F-IPC reads `SnapshotStore`; each loop tick **replaces** the session row with a bounded **tail** of the latest normalized poll (not append-only deltas). Optional **`retained_snapshot_unix_ms`** (also on bridge HTTP JSON) is last successful retained tick wall time — **provisional**, not a freshness contract. Human still owns incremental cursor / resync for live ingest. |
+| **Bounded snapshot cursor (related, not resync_hint)** | F-IPC `BoundedSnapshotReply.snapshot_cursor` remains **`v0:off:{n}`** (events returned after caps) or **`v0:empty`**. **`--procfs-session`**: re-poll each RPC. **`--file-lane-session`**: re-poll file-lane tree or fixture each RPC (same RPC shape; **distinct** session id from other modes). **`--procfs-retained-session`** / **`--file-lane-retained-session`**: F-IPC reads `SnapshotStore` for that session id; each loop tick **replaces** the session row with a bounded **tail** of the latest normalized poll (polling-derived; not live syscall truth; not append-only deltas). Optional **`retained_snapshot_unix_ms`** (also on bridge HTTP JSON) when the snapshot session matches that retained loop’s meta — last successful retained tick wall time — **telemetry hint**, not a freshness SLA. Human still owns incremental cursor / resync for live ingest. |
 | **Provisional OK?** | **Yes** — WS delta + hint payloads not wired |
 
 ### F-05 — Sanitization socket / path policy

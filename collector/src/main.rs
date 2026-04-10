@@ -9,10 +9,11 @@ use std::sync::Arc;
 use glass_collector::{
     build_fidelity_report, default_adapter_stack, ingest_file_lane_raw_to_session_log,
     ingest_procfs_raw_to_session_log, load_file_lane_observations_for_cli,
-    load_procfs_observations_for_cli, run_ipc_dev_tcp_listener, spawn_retained_procfs_loop,
-    CollectorAdapter, CollectorConfig, FileLaneSnapshotFeedConfig, IpcDevTcpListenConfig,
-    IpcDevTcpRuntime, PrivilegeMode, ProcfsProcessAdapter, ProcfsSnapshotFeedConfig,
-    RetainedPollMeta, RetainedProcfsLoopConfig, SelfSilencePolicy, SnapshotStore,
+    load_procfs_observations_for_cli, run_ipc_dev_tcp_listener, spawn_retained_file_lane_loop,
+    spawn_retained_procfs_loop, CollectorAdapter, CollectorConfig, FileLaneSnapshotFeedConfig,
+    IpcDevTcpListenConfig, IpcDevTcpRuntime, PrivilegeMode, ProcfsProcessAdapter,
+    ProcfsSnapshotFeedConfig, RetainedFileLaneLoopConfig, RetainedPollMeta,
+    RetainedProcfsLoopConfig, SelfSilencePolicy, SnapshotStore,
 };
 use session_engine::{materialize_share_safe_procfs_pack_bytes, write_glass_pack, SessionManifest};
 
@@ -36,6 +37,7 @@ struct Args {
 }
 
 #[derive(Subcommand, Debug)]
+#[allow(clippy::large_enum_variant)] // `ipc-serve` carries many optional paths; boxing would churn CLI code.
 enum Command {
     /// Print JSON fidelity / adapter capability report (stdout).
     Capabilities {
@@ -160,6 +162,13 @@ enum Command {
         file_lane_twice: bool,
         #[arg(long)]
         file_lane_from_raw_json: Option<PathBuf>,
+        /// Background file-lane poll → bounded `SnapshotStore` for this session (no per-RPC repoll). **Distinct** session id from per-RPC file-lane / procfs modes.
+        #[arg(long)]
+        file_lane_retained_session: Option<String>,
+        #[arg(long, default_value_t = 1000_u64)]
+        file_lane_retained_interval_ms: u64,
+        #[arg(long, default_value_t = 256_usize)]
+        file_lane_retained_max_events: usize,
     },
 }
 
@@ -382,6 +391,9 @@ fn main() {
             file_lane_max_depth,
             file_lane_twice,
             file_lane_from_raw_json,
+            file_lane_retained_session,
+            file_lane_retained_interval_ms,
+            file_lane_retained_max_events,
         }) => {
             let bind: std::net::SocketAddr = listen.parse().unwrap_or_else(|e| {
                 eprintln!("ipc-serve: invalid --listen: {e}");
@@ -429,6 +441,30 @@ fn main() {
                 if a == b {
                     eprintln!(
                         "ipc-serve: --procfs-retained-session and --file-lane-session must not use the same session id"
+                    );
+                    std::process::exit(2);
+                }
+            }
+            if let (Some(a), Some(b)) = (&procfs_session, &file_lane_retained_session) {
+                if a == b {
+                    eprintln!(
+                        "ipc-serve: --procfs-session and --file-lane-retained-session must not use the same session id"
+                    );
+                    std::process::exit(2);
+                }
+            }
+            if let (Some(a), Some(b)) = (&procfs_retained_session, &file_lane_retained_session) {
+                if a == b {
+                    eprintln!(
+                        "ipc-serve: --procfs-retained-session and --file-lane-retained-session must not use the same session id"
+                    );
+                    std::process::exit(2);
+                }
+            }
+            if let (Some(a), Some(b)) = (&file_lane_session, &file_lane_retained_session) {
+                if a == b {
+                    eprintln!(
+                        "ipc-serve: --file-lane-session and --file-lane-retained-session must not use the same session id"
                     );
                     std::process::exit(2);
                 }
@@ -504,6 +540,49 @@ fn main() {
                     procfs_retained_interval_ms
                 );
             }
+            let mut file_lane_retained_poll_meta = None;
+            if let Some(rs) = file_lane_retained_session {
+                let watch_root = if file_lane_from_raw_json.is_some() {
+                    file_lane_watch_root
+                        .clone()
+                        .unwrap_or_else(|| PathBuf::from("."))
+                } else {
+                    let Some(root) = file_lane_watch_root.clone() else {
+                        eprintln!(
+                            "ipc-serve: --file-lane-retained-session requires --file-lane-watch-root or --file-lane-from-raw-json"
+                        );
+                        std::process::exit(2);
+                    };
+                    if !root.is_dir() {
+                        eprintln!(
+                            "ipc-serve: --file-lane-watch-root must be an existing directory ({})",
+                            root.display()
+                        );
+                        std::process::exit(2);
+                    }
+                    root
+                };
+                let feed = FileLaneSnapshotFeedConfig {
+                    session_id: rs.clone(),
+                    watch_root,
+                    max_samples: file_lane_max_samples,
+                    max_depth: file_lane_max_depth,
+                    twice: file_lane_twice,
+                    from_raw_json: file_lane_from_raw_json.clone(),
+                };
+                let loop_cfg = RetainedFileLaneLoopConfig {
+                    feed,
+                    interval: Duration::from_millis(file_lane_retained_interval_ms),
+                    max_retained_events: file_lane_retained_max_events,
+                };
+                let meta = Arc::new(RetainedPollMeta::new(rs));
+                let _join = spawn_retained_file_lane_loop(store.clone(), loop_cfg, meta.clone());
+                file_lane_retained_poll_meta = Some(meta);
+                eprintln!(
+                    "ipc-serve: retained file-lane loop → bounded SnapshotStore (not live ingest; interval {} ms)",
+                    file_lane_retained_interval_ms
+                );
+            }
             if procfs_feed.is_some() {
                 eprintln!(
                     "ipc-serve: procfs-backed bounded snapshots for configured session (per-request poll+normalize; not live ingest)"
@@ -526,6 +605,7 @@ fn main() {
                 procfs_feed,
                 file_lane_feed,
                 retained_poll_meta,
+                file_lane_retained_poll_meta,
             });
             if let Err(e) = run_ipc_dev_tcp_listener(cfg, runtime) {
                 eprintln!("ipc-serve: {e}");

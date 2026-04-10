@@ -7,7 +7,8 @@
 //! - **[`ipc`] / [`ipc_dev_tcp`]** — versioned F-IPC messages; **provisional** dev TCP server (not final transport).
 //! - **[`procfs_ipc_feed`]** — procfs or fixture `RawObservation[]` → normalize → JSON for bounded F-IPC snapshots (`ipc-serve --procfs-session`).
 //! - **[`file_lane_ipc_feed`]** — file-lane poll or fixture → normalize → JSON for bounded F-IPC snapshots (`ipc-serve --file-lane-session`).
-//! - **[`procfs_retained_loop`]** — optional background poll → bounded retained [`SnapshotStore`] (`ipc-serve --procfs-retained-session`); **not** live deltas.
+//! - **[`procfs_retained_loop`]** — optional background procfs poll → bounded retained [`SnapshotStore`] (`ipc-serve --procfs-retained-session`); **not** live deltas.
+//! - **[`file_lane_retained_loop`]** — optional background file-lane poll → bounded retained store (`ipc-serve --file-lane-retained-session`); **not** live deltas.
 //! - **[`self_silence`]** — suppress Glass-owned processes **before** any normalization input.
 //!
 //! See `docs/PRIVILEGE_SEPARATION.md`, `docs/REPO_BOUNDARIES.md`.
@@ -16,6 +17,7 @@ pub mod adapters;
 pub mod capability;
 pub mod config;
 pub mod file_lane_ipc_feed;
+pub mod file_lane_retained_loop;
 pub mod file_session;
 pub mod ipc;
 pub mod ipc_dev_tcp;
@@ -37,6 +39,9 @@ pub use capability::{
 };
 pub use config::CollectorConfig;
 pub use file_lane_ipc_feed::FileLaneSnapshotFeedConfig;
+pub use file_lane_retained_loop::{
+    retained_file_lane_poll_tick, spawn_retained_file_lane_loop, RetainedFileLaneLoopConfig,
+};
 pub use ipc::{
     validate_ipc_auth_version, CollectorIpcError, CollectorIpcMessage, FipcBridgeToCollector,
     FipcCollectorToBridge, IpcAuthHandshake, IpcMessageKind, IpcPayload,

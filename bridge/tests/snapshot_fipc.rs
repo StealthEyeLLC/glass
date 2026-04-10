@@ -12,9 +12,9 @@ use glass_bridge::http_types::SNAPSHOT_CURSOR_EMPTY;
 use glass_bridge::{app_router, BridgeConfig, CollectorIpcClientConfig};
 use glass_collector::ipc::PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION;
 use glass_collector::{
-    handle_ipc_dev_tcp_connection, retained_procfs_poll_tick, AdapterId,
-    FileLaneSnapshotFeedConfig, IpcDevTcpRuntime, ProcfsSnapshotFeedConfig, RawObservation,
-    RawObservationKind, RawSourceQuality, RetainedPollMeta, SnapshotStore,
+    handle_ipc_dev_tcp_connection, retained_file_lane_poll_tick, retained_procfs_poll_tick,
+    AdapterId, FileLaneSnapshotFeedConfig, IpcDevTcpRuntime, ProcfsSnapshotFeedConfig,
+    RawObservation, RawObservationKind, RawSourceQuality, RetainedPollMeta, SnapshotStore,
 };
 use http_body_util::BodyExt;
 use tower::ServiceExt;
@@ -33,6 +33,7 @@ async fn snapshot_populated_via_collector_fipc() {
         procfs_feed: None,
         file_lane_feed: None,
         retained_poll_meta: None,
+        file_lane_retained_poll_meta: None,
     });
     let secret = Arc::<str>::from("fipc-test-secret");
     let rt = runtime.clone();
@@ -120,6 +121,7 @@ async fn empty_session_snapshot_cursor_via_fipc() {
         procfs_feed: None,
         file_lane_feed: None,
         retained_poll_meta: None,
+        file_lane_retained_poll_meta: None,
     });
     let secret = Arc::<str>::from("sec");
     let rt = runtime.clone();
@@ -190,6 +192,7 @@ async fn snapshot_via_procfs_fixture_normalized_envelope() {
         }),
         file_lane_feed: None,
         retained_poll_meta: None,
+        file_lane_retained_poll_meta: None,
     });
     let secret = Arc::<str>::from("bridge-procfs-ipc-secret");
     let rt = runtime.clone();
@@ -270,6 +273,7 @@ async fn snapshot_via_file_lane_fixture_normalized_envelope() {
             from_raw_json: Some(path),
         }),
         retained_poll_meta: None,
+        file_lane_retained_poll_meta: None,
     });
     let secret = Arc::<str>::from("bridge-fl-ipc-secret");
     let rt = runtime.clone();
@@ -314,6 +318,90 @@ async fn snapshot_via_file_lane_fixture_normalized_envelope() {
 }
 
 #[tokio::test]
+async fn snapshot_file_lane_retained_includes_retained_unix_ms() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("br_fl_ret.json");
+    let o = RawObservation::new(
+        1,
+        "bridge_fl_retained_sess",
+        12,
+        RawObservationKind::FileSeenInPollSnapshot,
+        RawSourceQuality::DirectoryPollDerived,
+        AdapterId::FsFileLane,
+        serde_json::json!({
+            "semantics": "bounded_directory_poll_snapshot",
+            "relative_path": "r.txt",
+            "size_bytes": 1,
+            "modified_unix_secs": 1,
+            "poll_monotonic_ns": 12,
+            "scan": { "files_seen_total": 1, "samples_returned": 1, "truncated_by_sample_budget": false, "state_budget_truncated": false, "max_depth": 4 },
+            "watch_root": "/tmp/br-fl-ret",
+            "first_poll_baseline": true,
+        }),
+    );
+    std::fs::write(&path, serde_json::to_string(&vec![o]).unwrap()).unwrap();
+
+    let store = Arc::new(SnapshotStore::new());
+    let feed = FileLaneSnapshotFeedConfig {
+        session_id: "bridge_fl_retained_sess".to_string(),
+        watch_root: PathBuf::from("."),
+        max_samples: 512,
+        max_depth: 8,
+        twice: false,
+        from_raw_json: Some(path),
+    };
+    let meta = Arc::new(RetainedPollMeta::new("bridge_fl_retained_sess"));
+    retained_file_lane_poll_tick(store.as_ref(), &feed, 256, Some(meta.as_ref())).unwrap();
+
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let runtime = Arc::new(IpcDevTcpRuntime {
+        store,
+        procfs_feed: None,
+        file_lane_feed: None,
+        retained_poll_meta: None,
+        file_lane_retained_poll_meta: Some(meta),
+    });
+    let secret = Arc::<str>::from("bridge-fl-ret-secret");
+    let rt = runtime.clone();
+    let sec = secret.clone();
+    thread::spawn(move || {
+        let (stream, _) = listener.accept().expect("accept");
+        handle_ipc_dev_tcp_connection(stream, sec.as_ref(), rt.as_ref()).expect("handle");
+    });
+    thread::sleep(Duration::from_millis(40));
+
+    let cfg = BridgeConfig {
+        bind: "127.0.0.1:0".parse().unwrap(),
+        bearer_token: Arc::from("bridge-http-token"),
+        allow_non_loopback: false,
+        collector_ipc: Some(CollectorIpcClientConfig {
+            addr,
+            shared_secret: secret,
+            timeout: Duration::from_secs(2),
+        }),
+    };
+    let app = app_router(&cfg);
+    let res = app
+        .oneshot(
+            Request::builder()
+                .uri("/sessions/bridge_fl_retained_sess/snapshot")
+                .header("Authorization", "Bearer bridge-http-token")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let b = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&b).unwrap();
+    assert_eq!(v["events"].as_array().unwrap().len(), 1);
+    assert_eq!(v["events"][0]["kind"], "file_poll_snapshot");
+    assert!(v["retained_snapshot_unix_ms"].as_u64().is_some());
+    assert_eq!(v["live_session_ingest"], false);
+}
+
+#[tokio::test]
 async fn snapshot_retained_store_includes_retained_unix_ms() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("br_ret.json");
@@ -350,6 +438,7 @@ async fn snapshot_retained_store_includes_retained_unix_ms() {
         procfs_feed: None,
         file_lane_feed: None,
         retained_poll_meta: Some(meta),
+        file_lane_retained_poll_meta: None,
     });
     let secret = Arc::<str>::from("bridge-retained-secret");
     let rt = runtime.clone();

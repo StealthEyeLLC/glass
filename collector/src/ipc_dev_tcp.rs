@@ -17,8 +17,8 @@ use crate::ipc::{
 /// Matches `session_engine` / viewer F-07-style bound per line (honest cap for one NDJSON line).
 const PROVISIONAL_FIPC_MAX_LINE_BYTES: usize = 4 * 1024 * 1024;
 
-/// Last successful **retained** procfs poll time (`0` = never). Lives here to avoid a module cycle
-/// with [`crate::procfs_retained_loop`].
+/// Last successful **retained** poll time (`0` = never) for procfs or file-lane background loops.
+/// Lives here to avoid module cycles with retained loop crates.
 #[derive(Debug)]
 pub struct RetainedPollMeta {
     pub session_id: String,
@@ -53,8 +53,10 @@ pub struct IpcDevTcpRuntime {
     /// Checked **after** `procfs_feed` — use a **distinct** `session_id` from procfs feeds.
     pub file_lane_feed: Option<crate::file_lane_ipc_feed::FileLaneSnapshotFeedConfig>,
     /// When `Some` and the request `session_id` matches, F-IPC may include
-    /// `retained_snapshot_unix_ms` from the last successful retained poll (see `procfs_retained_loop`).
+    /// `retained_snapshot_unix_ms` from the last successful **procfs** retained poll (see `procfs_retained_loop`).
     pub retained_poll_meta: Option<Arc<RetainedPollMeta>>,
+    /// When `Some` and the request `session_id` matches, same `retained_snapshot_unix_ms` hint for **file-lane** retained loop (`file_lane_retained_loop`).
+    pub file_lane_retained_poll_meta: Option<Arc<RetainedPollMeta>>,
 }
 
 /// In-memory session → normalized events as JSON (collector-owned; bridge never mutates).
@@ -259,12 +261,22 @@ pub fn handle_ipc_dev_tcp_connection(
 }
 
 fn retained_timestamp_for_session(runtime: &IpcDevTcpRuntime, session_id: &str) -> Option<u64> {
-    let meta = runtime.retained_poll_meta.as_ref()?;
-    if meta.session_id != session_id {
-        return None;
+    for meta_opt in [
+        runtime.retained_poll_meta.as_ref(),
+        runtime.file_lane_retained_poll_meta.as_ref(),
+    ] {
+        let Some(meta) = meta_opt else {
+            continue;
+        };
+        if meta.session_id != session_id {
+            continue;
+        }
+        let ms = meta.last_ok_unix_ms.load(Ordering::Relaxed);
+        if ms > 0 {
+            return Some(ms);
+        }
     }
-    let ms = meta.last_ok_unix_ms.load(Ordering::Relaxed);
-    (ms > 0).then_some(ms)
+    None
 }
 
 fn bounded_snapshot_events(
