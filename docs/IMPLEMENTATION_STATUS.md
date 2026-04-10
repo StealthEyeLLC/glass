@@ -18,6 +18,7 @@
 | HVT | `collector/config/hvt_rules.toml` (5 patterns) + CI count test |
 | `tools/glass-pack` | **`glass-pack validate`** / **`info`** on `.glass_pack`; **`--strict-kinds`** (alias `--strict`); **`--expect-share-safe`** / **`--expect-raw-dev`** for manifest lane checks; **`--json`**. Rules implemented in `session_engine::pack` (`validate_share_safe_export_manifest`, `validate_raw_dev_pack_manifest`, `pack_artifact_lane_hint`) |
 | Tests | See `docs/TEST_STRATEGY.md` |
+| Retained snapshot demo | `docs/DEMO_RETAINED_SNAPSHOT.md`; `scripts/retained_snapshot_demo/` (fixture JSON + `demo.ps1` / `demo.sh`); subprocess smoke `integration_tests/tests/retained_snapshot_demo_smoke.rs` |
 | CI | `.github/workflows/ci.yml` |
 
 ## Intentionally scaffolded / deferred

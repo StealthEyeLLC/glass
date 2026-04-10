@@ -19,6 +19,7 @@ This repository is the Glass v0 **monorepo spine**: session/pack/sanitization (P
 | `tools/glass-pack` | CLI: validate / inspect packs; strict kinds + share-safe vs raw-dev expectations |
 | `tools/golden_scenes/` | Golden-scene harness scaffold |
 | `docs/` | Phase 0 tracker, boundaries, test strategy, status |
+| `scripts/retained_snapshot_demo/` | Fixture + scripts for retained collector ↔ bridge snapshot demo (`docs/DEMO_RETAINED_SNAPSHOT.md`) |
 | `tests/fixtures/` | Sanitization and pack fixtures |
 
 ## Verify bootstrap
@@ -67,6 +68,8 @@ cargo run -p glass_bridge -- --token dev-http-bearer --collector-ipc-endpoint 12
 ```
 
 Default bridge listen: `127.0.0.1:9781`. **No** live WS delta stream — see `docs/IMPLEMENTATION_STATUS.md` and `docs/PRIVILEGE_SEPARATION.md`.
+
+**Retained snapshot demo** (collector background poll + fixture + bridge + `GET /sessions/…/snapshot`): see [`docs/DEMO_RETAINED_SNAPSHOT.md`](docs/DEMO_RETAINED_SNAPSHOT.md) and `scripts/retained_snapshot_demo/` (`demo.ps1` / `demo.sh`).
 
 ## Status
 

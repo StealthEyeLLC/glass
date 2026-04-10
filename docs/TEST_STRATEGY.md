@@ -28,6 +28,7 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `integration_tests::repo_layout` | Monorepo shape |
 | `integration_tests::hvt_policy` | HVT count ≤ cap |
 | `integration_tests::golden_scaffold` | Golden harness files exist |
+| `integration_tests::tests::retained_snapshot_demo_smoke` | Subprocess: build `glass-collector` + `glass_bridge`, retained `ipc-serve` + fixture, bridge F-IPC client; HTTP GET snapshot asserts `live_session_ingest: false`, `retained_snapshot_unix_ms`, bounded cursors/events; empty raw `[]` honest zero events; retained max-events tail clamp |
 | `integration_tests::resync_scaffold` | Bridge dependency from integration layer |
 | `glass_collector::tests::raw_and_capability` | Raw JSON round-trip; `ProcessSample` kind serde; default fidelity **Linux:** `FallbackReducedVisibility` + active procfs manifest; **non-Linux:** `NoSensorsActive`; privileged never `HighFidelityPrimary` without eBPF; missing class `atomic_kernel_process_spawn_exit_truth` |
 | `glass_collector::tests::raw_vs_normalized_boundary` | `RawObservation` vs `NormalizedEventEnvelope` type separation (`session_engine` dev-dep) |
@@ -64,6 +65,7 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `glass-collector normalize-procfs` | **Unsanitized** dev pack: `--output out.glass_pack` and/or `--events-json-stdout`; Linux poll or `--from-raw-json` |
 | `glass-collector export-procfs-pack` | **Share-safe** pack: `--output share.glass_pack` (required); same poll / `--from-raw-json` as normalize; Tier B–compatible after sanitize |
 | `glass-collector ipc-serve` | Loopback TCP F-IPC (provisional); optional seed session; **`--procfs-session`** = per-RPC repoll; **`--procfs-retained-session`** + **`--procfs-retained-interval-ms`** / **`--procfs-retained-max-events`** = background bounded retained store (same `--procfs-from-raw-json` / Linux rules); same session id for both modes rejected |
+| `scripts/retained_snapshot_demo/*` | Operator demo: fixture-backed retained collector + bridge + curl/IRM snapshot (`docs/DEMO_RETAINED_SNAPSHOT.md`) |
 | `viewer` `KNOWN_EVENT_KINDS_V0` | Must match Rust strict set (procfs kinds added for Tier B `strict_kinds` loads) |
 
 ## CI jobs

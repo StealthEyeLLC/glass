@@ -1,0 +1,16 @@
+[
+  {
+    "observation_seq": 1,
+    "session_id": "demo_retained_sess",
+    "ts_monotonic_ns": 100,
+    "kind": "process_sample",
+    "quality": "procfs_derived",
+    "source_adapter": "procfs_process",
+    "payload": {
+      "semantics": "procfs_poll_snapshot",
+      "pid": 4242,
+      "comm": "demo_fixture",
+      "ppid": 1
+    }
+  }
+]

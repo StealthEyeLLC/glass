@@ -12,3 +12,7 @@ session_engine = { path = "../session_engine" }
 glass_bridge = { path = "../bridge" }
 toml.workspace = true
 serde.workspace = true
+
+[dev-dependencies]
+serde_json.workspace = true
+ureq = { version = "2.12", default-features = false, features = ["json"] }
