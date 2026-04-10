@@ -220,6 +220,7 @@ async fn retained_file_lane_change_emits_session_snapshot_replaced() {
         None,
         256,
         Duration::from_secs(2),
+        None,
     )
     .await
     .expect("direct F-IPC fetch");
@@ -421,7 +422,39 @@ async fn session_delta_emitted_after_snapshot_replaced_when_wire_enabled() {
 
     assert_eq!(got_replaced["msg"], "session_snapshot_replaced");
 
-    // After a replacement, unchanged polls emit session_delta (may follow leading poll_tick deltas).
+    // Append-only tail while bounded prefix stays truncated at 256: same fingerprint, non-empty delta.
+    let bulk: Vec<serde_json::Value> = (0..257)
+        .map(|i| serde_json::json!({"seq": i, "note": "delta_test_bulk"}))
+        .collect();
+    runtime.store.set_session_events("ws_delta_sess", bulk);
+    tokio::time::sleep(Duration::from_millis(200)).await;
+
+    let got_replaced2 = timeout(Duration::from_secs(6), async {
+        while let Some(m) = ws.next().await {
+            let Ok(m) = m else { break };
+            let tokio_tungstenite::tungstenite::Message::Text(t) = m else {
+                continue;
+            };
+            let Ok(v) = serde_json::from_str::<serde_json::Value>(&t) else {
+                continue;
+            };
+            if v["msg"] == "session_snapshot_replaced" {
+                return Some(v);
+            }
+        }
+        None
+    })
+    .await
+    .expect("timeout bulk replace")
+    .expect("session_snapshot_replaced after bulk");
+
+    assert_eq!(got_replaced2["available_in_view"], 257);
+
+    runtime.store.append_session_events(
+        "ws_delta_sess",
+        vec![serde_json::json!({"seq": 999, "note": "append_one"})],
+    );
+
     let got_delta = timeout(Duration::from_secs(6), async {
         while let Some(m) = ws.next().await {
             let Ok(m) = m else { break };
@@ -446,7 +479,9 @@ async fn session_delta_emitted_after_snapshot_replaced_when_wire_enabled() {
         got_delta["continuity"],
         "poll_tick_unchanged_bounded_fingerprint"
     );
-    assert_eq!(got_delta["events"], serde_json::json!([]));
+    let ev = got_delta["events"].as_array().expect("events array");
+    assert_eq!(ev.len(), 1);
+    assert_eq!(ev[0]["seq"], 999);
     assert!(got_delta["ws_seq"].as_u64().is_some());
 
     let _ = ws.close(None).await;

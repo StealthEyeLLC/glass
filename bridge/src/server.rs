@@ -135,6 +135,7 @@ async fn session_snapshot(
                 query.cursor.as_deref(),
                 max_events_req,
                 cfg.timeout,
+                None,
             )
             .await
             {
@@ -145,6 +146,7 @@ async fn session_snapshot(
                     live_session_ingest,
                     retained_snapshot_unix_ms,
                     snapshot_meta,
+                    ..
                 }) => {
                     let (bounded_snapshot, resync_hint) = match snapshot_meta.as_ref() {
                         Some(m) => {

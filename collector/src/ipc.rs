@@ -91,6 +91,17 @@ pub const PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION: u32 = 1;
 /// Upper bound on events returned per [`FipcBridgeToCollector::BoundedSnapshotRequest`].
 pub const PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS: usize = 256;
 
+/// Upper bound on optional `live_delta_events` tail per bounded reply (`collector_store` append-only path).
+pub const PROVISIONAL_FIPC_MAX_DELTA_EVENTS: usize = 64;
+
+/// [`BoundedSnapshotReply::live_delta_continuity_v0`] — tail matches append-only continuity.
+pub const FIPC_LIVE_DELTA_CONTINUITY_APPEND_TAIL_V0: &str = "append_only_tail_v0";
+/// Client `base_store_revision` is stale (store was replaced since watermark).
+pub const FIPC_LIVE_DELTA_CONTINUITY_WITHHELD_REVISION_V0: &str =
+    "withheld_store_replaced_since_mark_v0";
+/// Tail requests are not implemented for this snapshot origin (per-RPC feeds).
+pub const FIPC_LIVE_DELTA_CONTINUITY_UNSUPPORTED_ORIGIN_V0: &str = "unsupported_snapshot_origin_v0";
+
 /// [`FipcBoundedSnapshotMeta::snapshot_origin`] — unknown session / empty collector view.
 pub const FIPC_SNAPSHOT_ORIGIN_UNKNOWN_OR_EMPTY: &str = "unknown_or_empty";
 /// In-memory [`crate::ipc_dev_tcp::SnapshotStore`] (seeded sessions or retained tail).
@@ -109,10 +120,23 @@ pub struct FipcBoundedSnapshotMeta {
     /// Events available in the collector view before applying `max_events` cap.
     pub available_in_view: u32,
     pub truncated_by_max_events: bool,
+    /// Present for [`FIPC_SNAPSHOT_ORIGIN_COLLECTOR_STORE`]: increments on **replacement** only; stable for append-only tails.
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub store_revision: Option<u64>,
 }
 
 fn default_fipc_max_events() -> u32 {
     64
+}
+
+/// Optional bounded tail for live `session_delta` (v0): **collector_store** append-only events after a prior watermark.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FipcLiveDeltaTailV0 {
+    /// Client last acknowledged `available_in_view` from a prior `BoundedSnapshotReply` for this session.
+    pub after_available_exclusive: u32,
+    /// Must match [`FipcBoundedSnapshotMeta::store_revision`] from that prior reply.
+    pub base_store_revision: u64,
 }
 
 /// One NDJSON line from bridge → collector on the provisional TCP link.
@@ -131,6 +155,9 @@ pub enum FipcBridgeToCollector {
         cursor: Option<String>,
         #[serde(default = "default_fipc_max_events")]
         max_events: u32,
+        #[serde(default)]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        live_delta_tail_v0: Option<FipcLiveDeltaTailV0>,
     },
 }
 
@@ -160,5 +187,13 @@ pub enum FipcCollectorToBridge {
         #[serde(default)]
         #[serde(skip_serializing_if = "Option::is_none")]
         snapshot_meta: Option<FipcBoundedSnapshotMeta>,
+        /// Normalized events appended after `live_delta_tail_v0.after_available_exclusive` when continuity holds.
+        #[serde(default)]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        live_delta_events: Option<Vec<serde_json::Value>>,
+        /// Explains tail presence/absence (`FIPC_LIVE_DELTA_CONTINUITY_*`).
+        #[serde(default)]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        live_delta_continuity_v0: Option<String>,
     },
 }

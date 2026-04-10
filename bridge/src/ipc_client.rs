@@ -6,8 +6,9 @@
 use std::time::Duration;
 
 use glass_collector::ipc::{
-    FipcBridgeToCollector, FipcCollectorToBridge, PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS,
-    PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION, PROVISIONAL_IPC_AUTH_TOKEN_VERSION,
+    FipcBridgeToCollector, FipcCollectorToBridge, FipcLiveDeltaTailV0,
+    PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS, PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION,
+    PROVISIONAL_IPC_AUTH_TOKEN_VERSION,
 };
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::net::TcpStream;
@@ -34,10 +35,18 @@ pub async fn fetch_bounded_snapshot(
     cursor: Option<&str>,
     max_events: u32,
     timeout: Duration,
+    live_delta_tail_v0: Option<FipcLiveDeltaTailV0>,
 ) -> Result<FipcCollectorToBridge, FipcClientError> {
     tokio::time::timeout(
         timeout,
-        fetch_bounded_snapshot_inner(addr, shared_secret, session_id, cursor, max_events),
+        fetch_bounded_snapshot_inner(
+            addr,
+            shared_secret,
+            session_id,
+            cursor,
+            max_events,
+            live_delta_tail_v0,
+        ),
     )
     .await
     .map_err(|_| FipcClientError::Timeout)?
@@ -49,6 +58,7 @@ async fn fetch_bounded_snapshot_inner(
     session_id: &str,
     cursor: Option<&str>,
     max_events: u32,
+    live_delta_tail_v0: Option<FipcLiveDeltaTailV0>,
 ) -> Result<FipcCollectorToBridge, FipcClientError> {
     let stream = TcpStream::connect(addr).await?;
     let (read_half, mut write_half) = stream.into_split();
@@ -83,6 +93,7 @@ async fn fetch_bounded_snapshot_inner(
         session_id: session_id.to_string(),
         cursor: cursor.map(|s| s.to_string()),
         max_events: cap,
+        live_delta_tail_v0,
     };
     let req_line = serde_json::to_string(&req)? + "\n";
     write_half.write_all(req_line.as_bytes()).await?;

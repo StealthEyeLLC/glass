@@ -12,10 +12,11 @@
 //! mandatory `session_resync_required` — no silent continuity. See `docs/F03_LIVE_BACKLOG_FREEZE_PROPOSAL.md`
 //! and `docs/PHASE0_FREEZE_TRACKER.md`.
 //!
-//! **`session_delta` v0 wire:** optional additive frames when `GLASS_BRIDGE_SESSION_DELTA_WIRE_V0=1` **and**
-//! the client sends `session_delta_wire: true` on subscribe — emitted **only** on F-IPC polls where the
-//! bounded **fingerprint is unchanged** (honest “no replacement since last poll” liveness). Fingerprint
-//! changes use **`session_snapshot_replaced` only** — never `session_delta` as a substitute for replacement.
+//! **`session_delta` v0:** optional additive frames when `GLASS_BRIDGE_SESSION_DELTA_WIRE_V0=1` **and**
+//! the client sends `session_delta_wire: true` on subscribe — emitted **only** when a successful F-IPC poll
+//! sees the **same bounded fingerprint** as the prior poll **and** `live_delta_events` from
+//! **`collector_store`** append-only tails is non-empty (or withheld → `session_resync_required`).
+//! Fingerprint changes use **`session_snapshot_replaced` only** — never `session_delta` as a substitute for replacement.
 //! See `docs/contracts/live_session_ws_session_delta_v0.md`.
 
 use std::collections::VecDeque;
@@ -23,8 +24,8 @@ use std::time::Duration;
 
 use axum::extract::ws::{Message, WebSocket};
 use glass_collector::ipc::{
-    FipcCollectorToBridge, FIPC_SNAPSHOT_ORIGIN_UNKNOWN_OR_EMPTY,
-    PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS,
+    FipcCollectorToBridge, FipcLiveDeltaTailV0, FIPC_LIVE_DELTA_CONTINUITY_WITHHELD_REVISION_V0,
+    FIPC_SNAPSHOT_ORIGIN_UNKNOWN_OR_EMPTY, PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS,
 };
 use serde_json::{json, Value};
 
@@ -55,6 +56,10 @@ pub const LIVE_WS_REASON_POLL_FAILED: &str = "live_ws_snapshot_poll_failed_v0";
 /// Live-era / additive — mandatory resync after F-03 coalesce/escalate (queue threshold).
 pub const LIVE_WS_REASON_RESYNC_AFTER_WS_OVERLOAD: &str = "live_ws_resync_after_overload_v0";
 
+/// Live-era / additive — `session_delta` tail withheld (`store_revision` mismatch vs watermark).
+pub const LIVE_WS_REASON_STORE_REPLACED_SINCE_WATERMARK: &str =
+    "live_ws_store_replaced_since_delta_watermark_v0";
+
 /// Live-era / additive — bounded snapshot fingerprint jumped without a explainable single-replace path (honesty hook).
 pub const LIVE_WS_REASON_CONTINUITY_LOST_FINGERPRINT_GAP: &str =
     "live_ws_continuity_lost_fingerprint_gap_v0";
@@ -78,6 +83,9 @@ struct PolledSnapshot {
     returned_events: u32,
     available_in_view: u32,
     truncated_by_max_events: bool,
+    store_revision: Option<u64>,
+    live_delta_events: Option<Vec<Value>>,
+    live_delta_continuity_v0: Option<String>,
 }
 
 /// Result of attempting to queue one outbound JSON line with F-03 coalescing.
@@ -326,8 +334,8 @@ async fn run_subscribed_loop(
 
     // Baseline poll **before** `session_hello` so clients do not race ahead and mutate collector state
     // before the skeleton records its fingerprint.
-    let mut last_fp = match poll_snapshot(&cfg, &session_id).await {
-        Ok(s) => s.fp,
+    let baseline = match poll_snapshot(&cfg, &session_id, None).await {
+        Ok(s) => s,
         Err(e) => {
             let _ = send_json(
                 socket,
@@ -342,6 +350,10 @@ async fn run_subscribed_loop(
             return;
         }
     };
+    let mut last_fp = baseline.fp.clone();
+    let mut delta_state: Option<(u64, u32)> = baseline
+        .store_revision
+        .map(|r| (r, baseline.available_in_view));
 
     let sub_hello = json!({
         "type": "glass.bridge.live_session.v1",
@@ -365,7 +377,15 @@ async fn run_subscribed_loop(
         tokio::select! {
             biased;
             _ = interval.tick() => {
-                let snap = match poll_snapshot(&cfg, &session_id).await {
+                let tail = if emit_session_delta {
+                    delta_state.map(|(rev, after)| FipcLiveDeltaTailV0 {
+                        after_available_exclusive: after,
+                        base_store_revision: rev,
+                    })
+                } else {
+                    None
+                };
+                let snap = match poll_snapshot(&cfg, &session_id, tail).await {
                     Ok(s) => s,
                     Err(e) => {
                         let _ = outbound.push_mandatory_resync(LIVE_WS_REASON_POLL_FAILED, max_e, max_b);
@@ -375,22 +395,48 @@ async fn run_subscribed_loop(
                     }
                 };
 
+                if emit_session_delta
+                    && snap.live_delta_continuity_v0.as_deref()
+                        == Some(FIPC_LIVE_DELTA_CONTINUITY_WITHHELD_REVISION_V0)
+                {
+                    last_fp = snap.fp.clone();
+                    delta_state =
+                        snap.store_revision.map(|r| (r, snap.available_in_view));
+                    let line = snapshot_replaced_envelope(&session_id, &snap);
+                    let _ = outbound.push_snapshot_replaced_or_coalesce(line, max_e, max_b);
+                    let _ = outbound.push_mandatory_resync(
+                        LIVE_WS_REASON_STORE_REPLACED_SINCE_WATERMARK,
+                        max_e,
+                        max_b,
+                    );
+                    if flush_outbound(socket, &mut outbound).await.is_err() {
+                        break;
+                    }
+                    continue;
+                }
+
                 if snap.fp == last_fp {
                     if emit_session_delta {
-                        let dline = session_delta_envelope(&session_id, ws_seq, &snap);
-                        ws_seq = ws_seq.saturating_add(1);
-                        let coalesce = snapshot_replaced_envelope(&session_id, &snap);
-                        let _ = outbound.push_session_delta_or_coalesce(dline, coalesce, max_e, max_b);
-                        if flush_outbound(socket, &mut outbound).await.is_err() {
-                            break;
+                        let ev = snap.live_delta_events.as_deref().unwrap_or(&[]);
+                        if !ev.is_empty() {
+                            let dline = session_delta_envelope(&session_id, ws_seq, &snap, ev);
+                            ws_seq = ws_seq.saturating_add(1);
+                            let coalesce = snapshot_replaced_envelope(&session_id, &snap);
+                            let _ = outbound.push_session_delta_or_coalesce(dline, coalesce, max_e, max_b);
+                            if flush_outbound(socket, &mut outbound).await.is_err() {
+                                break;
+                            }
                         }
                     }
+                    delta_state =
+                        snap.store_revision.map(|r| (r, snap.available_in_view));
                     continue;
                 }
 
                 // Honesty: fingerprint changed — if we cannot explain a single replace step from last_fp, escalate.
                 let gap = fingerprint_looks_like_discontinuity(&last_fp, &snap.fp);
                 last_fp = snap.fp.clone();
+                delta_state = snap.store_revision.map(|r| (r, snap.available_in_view));
 
                 let line = snapshot_replaced_envelope(&session_id, &snap);
                 let outcome = outbound.push_snapshot_replaced_or_coalesce(line, max_e, max_b);
@@ -458,6 +504,7 @@ async fn flush_outbound(socket: &mut WebSocket, queue: &mut F03OutboundQueue) ->
 async fn poll_snapshot(
     cfg: &CollectorIpcClientConfig,
     session_id: &str,
+    live_delta_tail_v0: Option<FipcLiveDeltaTailV0>,
 ) -> Result<PolledSnapshot, FipcClientError> {
     let cap = (PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS as u32).clamp(1, 256);
     let reply = fetch_bounded_snapshot(
@@ -467,36 +514,50 @@ async fn poll_snapshot(
         None,
         cap,
         cfg.timeout,
+        live_delta_tail_v0,
     )
     .await?;
-    let (snapshot_cursor, events, retained_snapshot_unix_ms, snapshot_meta) = match reply {
+    let (
+        snapshot_cursor,
+        events,
+        retained_snapshot_unix_ms,
+        snapshot_meta,
+        live_delta_events,
+        live_delta_continuity_v0,
+    ) = match reply {
         FipcCollectorToBridge::BoundedSnapshotReply {
             snapshot_cursor,
             events,
             retained_snapshot_unix_ms,
             snapshot_meta,
+            live_delta_events,
+            live_delta_continuity_v0,
             ..
         } => (
             snapshot_cursor,
             events,
             retained_snapshot_unix_ms,
             snapshot_meta,
+            live_delta_events,
+            live_delta_continuity_v0,
         ),
         other => return Err(FipcClientError::Unexpected(Box::new(other))),
     };
-    let (returned_events, available_in_view, truncated_by_max_events, origin) =
+    let (returned_events, available_in_view, truncated_by_max_events, origin, store_revision) =
         match snapshot_meta.as_ref() {
             Some(m) => (
                 m.returned_events,
                 m.available_in_view,
                 m.truncated_by_max_events,
                 m.snapshot_origin.clone(),
+                m.store_revision,
             ),
             None => (
                 events.len() as u32,
                 events.len() as u32,
                 false,
                 String::new(),
+                None,
             ),
         };
     let snapshot_origin = if origin.is_empty() {
@@ -520,10 +581,23 @@ async fn poll_snapshot(
         returned_events,
         available_in_view,
         truncated_by_max_events,
+        store_revision,
+        live_delta_events,
+        live_delta_continuity_v0,
     })
 }
 
-fn session_delta_envelope(session_id: &str, ws_seq: u64, s: &PolledSnapshot) -> String {
+fn session_delta_envelope(
+    session_id: &str,
+    ws_seq: u64,
+    s: &PolledSnapshot,
+    events: &[Value],
+) -> String {
+    let honesty = if events.is_empty() {
+        "Empty events: F-IPC poll observed the same bounded snapshot fingerprint as the prior poll. Fingerprint changes are delivered only as session_snapshot_replaced. Not durable ingest; not F-04 HTTP tokens."
+    } else {
+        "Events are append-only tails from collector_store F-IPC live_delta_tail_v0 while the bounded snapshot fingerprint matched the prior poll. Not durable ingest; not F-04 HTTP tokens."
+    };
     let v = json!({
         "type": "glass.bridge.live_session.v1",
         "msg": "session_delta",
@@ -534,8 +608,8 @@ fn session_delta_envelope(session_id: &str, ws_seq: u64, s: &PolledSnapshot) -> 
         "snapshot_cursor": s.snapshot_cursor,
         "continuity": "poll_tick_unchanged_bounded_fingerprint",
         "guarantee": "same_bounded_fingerprint_as_prior_successful_poll_not_append_only_log",
-        "events": [],
-        "honesty": "Empty events: F-IPC poll observed the same bounded snapshot fingerprint as the prior poll. Fingerprint changes are delivered only as session_snapshot_replaced. Not durable ingest; not F-04 HTTP tokens."
+        "events": events,
+        "honesty": honesty,
     });
     v.to_string()
 }
@@ -718,6 +792,7 @@ mod tests {
             LIVE_WS_REASON_QUEUE_OVERFLOW,
             LIVE_WS_REASON_POLL_FAILED,
             LIVE_WS_REASON_RESYNC_AFTER_WS_OVERLOAD,
+            LIVE_WS_REASON_STORE_REPLACED_SINCE_WATERMARK,
             LIVE_WS_REASON_CONTINUITY_LOST_FINGERPRINT_GAP,
         ];
         for b in bounded {
@@ -736,6 +811,7 @@ mod tests {
             LIVE_WS_REASON_QUEUE_OVERFLOW,
             LIVE_WS_REASON_POLL_FAILED,
             LIVE_WS_REASON_RESYNC_AFTER_WS_OVERLOAD,
+            LIVE_WS_REASON_STORE_REPLACED_SINCE_WATERMARK,
             LIVE_WS_REASON_CONTINUITY_LOST_FINGERPRINT_GAP,
         ];
         for i in 0..live.len() {

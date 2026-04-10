@@ -42,6 +42,7 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | `PROVISIONAL_MAX_SEG_RECORD_BYTES` | same as JSONL line (alias) | `session_engine::events_seg` | F-07 |
 | `PROVISIONAL_MAX_PACK_FILE_BYTES` | `256 * 1024 * 1024` | `session_engine::validate` | F-07 — whole `.glass_pack` read cap (non-streaming) |
 | `PROVISIONAL_IPC_AUTH_TOKEN_VERSION` | `0` | `glass_collector::ipc` | Collector ↔ bridge local IPC auth version until transport freeze |
+| `PROVISIONAL_FIPC_MAX_DELTA_EVENTS` | `64` | `glass_collector::ipc` | Max append-only tail events per bounded F-IPC reply (`live_delta_events`) |
 | `PROVISIONAL_MAX_PROC_ENTRIES_SCANNED` | `16_384` | `glass_collector::procfs_snapshot` | Cap on numeric `/proc` entries read per poll — human may raise for large hosts |
 | `PROVISIONAL_MAX_PROCFS_OBSERVATIONS_PER_POLL` | `1024` | `glass_collector::procfs_snapshot` | Hard cap on raw observations (samples + deltas) per `poll_raw` |
 | `PROVISIONAL_MAX_PROCFS_DELTA_PER_DIRECTION` | `64` | `glass_collector::adapters::procfs_process` | Cap on `ProcessSeenInPollGap` / `ProcessAbsentInPollGap` rows per poll |
@@ -102,10 +103,10 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | Field | Content |
 |-------|---------|
 | **Status** | **Landed** — `glass_bridge::live_session_ws`; wire notes `docs/contracts/live_session_ws_skeleton_v1.md`. **F-03 v0** outbound queue + backpressure: see **F-03** row above. |
-| **What it does** | After `live_session_subscribe`, bridge **polls** collector F-IPC on a **provisional** interval and emits `session_snapshot_replaced` when the bounded snapshot **fingerprint** changes. Optional **`session_delta`** v0 when server + client opt in **and** fingerprint unchanged vs prior poll (`docs/contracts/live_session_ws_session_delta_v0.md`). Pending outbound JSON is bounded per connection; overflow **coalesces** to the latest snapshot view + **`session_resync_required`**. |
+| **What it does** | After `live_session_subscribe`, bridge **polls** collector F-IPC on a **provisional** interval and emits `session_snapshot_replaced` when the bounded snapshot **fingerprint** changes. Optional **`session_delta`** v0 when server + client opt in **and** fingerprint unchanged **and** non-empty **`live_delta_events`** from **`collector_store`** append-only tails (`live_delta_tail_v0` + **`store_revision`** watermark; `docs/contracts/live_session_ws_session_delta_v0.md`). Revision mismatch → **`session_resync_required`**. Pending outbound JSON is bounded per connection; overflow **coalesces** to the latest snapshot view + **`session_resync_required`**. |
 | **What it is not** | Push-based live ingest, durable append-only delta log, or frozen **HTTP** live-era `resync_hint` extensions (**F-04 live-era** row). |
 | **Additive reasons** | WebSocket-only `LIVE_WS_REASON_*` — **separate** from frozen HTTP `RESYNC_HINT_REASON_*`. |
-| **Tests** | `bridge/tests/ws_live_session.rs` (multi-accept F-IPC harness; delta wire + capabilities); `live_session_ws` unit tests for `F03OutboundQueue` + delta overflow coalesce. |
+| **Tests** | `bridge/tests/ws_live_session.rs` (multi-accept F-IPC harness; delta wire + non-empty **`session_delta.events`** + capabilities); `live_session_ws` unit tests for `F03OutboundQueue` + delta overflow coalesce; `glass_collector::ipc_dev_tcp` append + tail revision. |
 
 ---
 
@@ -131,7 +132,7 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | **Frozen v0 constants** | `F03_V0_LIVE_WS_QUEUE_MAX_EVENTS` = **64**; `F03_V0_LIVE_WS_QUEUE_MAX_BYTES` = **256 KiB** (`glass_bridge::live_session_ws`). |
 | **Rationale** | Honest live path: clients cannot assume continuity after overload or poll gap without an explicit resync envelope. |
 | **Code / tests** | `glass_bridge::live_session_ws` (`F03OutboundQueue`, `LIVE_WS_REASON_*` v0 strings); `glass_bridge::resync::PROVISIONAL_BACKLOG_EVENT_THRESHOLD` remains **separate** (capabilities / future ingest). WS hello JSON **`f03_v0_live_ws`**. Unit tests: OR thresholds, coalesce + resync, mandatory resync; `bridge/tests/ws_live_session.rs` + frozen HTTP regression. |
-| **Provisional / next** | Live **`session_delta`** payloads, byte-exact producer metrics, non-polling F-IPC — **not** this row. |
+| **Provisional / next** | Durable push ingest, byte-exact producer metrics, non-polling F-IPC — **not** this row (**`session_delta`** payloads + F-03 interaction are **landed** for bounded **`collector_store`** tails). |
 
 ### F-IPC — Collector ↔ bridge local IPC (credentials + path)
 
@@ -194,7 +195,7 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 - [x] F-02 v1 format documented **in this tracker** (ADR-equivalent for bootstrap)
 - [x] Bounded-era F-04: `docs/contracts/bridge_session_snapshot_bounded_v0.schema.json` + **Closed — bounded-era F-04** section above
 - [x] Live-session WS skeleton: `docs/contracts/live_session_ws_skeleton_v1.md` + tracker subsection (**provisional**; not F-03/F-04 live-era closure)
-- [x] **F-03 live WS outbound queue (v0)** — implemented per human freeze + `docs/F03_LIVE_BACKLOG_FREEZE_PROPOSAL.md` (tracker **F-03** row); future **`session_delta`** / ingest still open
+- [x] **F-03 live WS outbound queue (v0)** — implemented per human freeze + `docs/F03_LIVE_BACKLOG_FREEZE_PROPOSAL.md` (tracker **F-03** row); **`session_delta.events`** for **`collector_store`** append-only tails landed; durable push ingest still open
 
 ---
 

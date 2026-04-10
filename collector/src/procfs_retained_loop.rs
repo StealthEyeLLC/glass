@@ -111,7 +111,7 @@ mod tests {
         let meta = RetainedPollMeta::new("tail_sess");
         assert_eq!(meta.last_ok_unix_ms.load(Ordering::Relaxed), 0);
         retained_procfs_poll_tick(&store, &feed, 2, Some(&meta)).unwrap();
-        let (ev, cur, _, _) = store.get_bounded("tail_sess", 10);
+        let (ev, cur, _, _, _) = store.get_bounded("tail_sess", 10);
         assert_eq!(ev.len(), 2);
         assert_eq!(cur, "v0:off:2");
         assert!(meta.last_ok_unix_ms.load(Ordering::Relaxed) > 0);
@@ -131,7 +131,7 @@ mod tests {
         let store = SnapshotStore::new();
         let meta = RetainedPollMeta::new("empty_r");
         retained_procfs_poll_tick(&store, &feed, 64, Some(&meta)).unwrap();
-        let (ev, _, _, _) = store.get_bounded("empty_r", 10);
+        let (ev, _, _, _, _) = store.get_bounded("empty_r", 10);
         assert!(ev.is_empty());
         assert!(meta.last_ok_unix_ms.load(Ordering::Relaxed) > 0);
     }

@@ -84,6 +84,7 @@ fn fipc_handshake_success_and_bounded_snapshot() {
             session_id: "ses_a".to_string(),
             cursor: None,
             max_events: 10,
+            live_delta_tail_v0: None,
         },
     )
     .unwrap();
@@ -333,6 +334,7 @@ fn fipc_procfs_raw_json_returns_normalized_bounded_snapshot() {
             session_id: "fipc_norm_sess".to_string(),
             cursor: None,
             max_events: 50,
+            live_delta_tail_v0: None,
         },
     )
     .unwrap();
@@ -409,6 +411,7 @@ fn fipc_procfs_snapshot_clamped_by_request_max_events() {
             session_id: "fipc_clamp".to_string(),
             cursor: None,
             max_events: 1,
+            live_delta_tail_v0: None,
         },
     )
     .unwrap();
@@ -479,6 +482,7 @@ fn fipc_procfs_mismatched_session_uses_snapshot_store_only() {
             session_id: "store_sess".to_string(),
             cursor: None,
             max_events: 10,
+            live_delta_tail_v0: None,
         },
     )
     .unwrap();
@@ -539,6 +543,7 @@ fn fipc_procfs_empty_raw_array_honest_v0_empty() {
             session_id: "empty_sess".to_string(),
             cursor: None,
             max_events: 10,
+            live_delta_tail_v0: None,
         },
     )
     .unwrap();
@@ -610,6 +615,7 @@ fn fipc_procfs_global_cap_matches_provisional_constant() {
             session_id: "cap_sess".to_string(),
             cursor: None,
             max_events: 10_000,
+            live_delta_tail_v0: None,
         },
     )
     .unwrap();
@@ -678,6 +684,7 @@ fn fipc_retained_store_snapshot_includes_retained_unix_ms() {
             session_id: "ret_ipc".to_string(),
             cursor: None,
             max_events: 10,
+            live_delta_tail_v0: None,
         },
     )
     .unwrap();
@@ -737,6 +744,7 @@ fn fipc_retained_meta_wrong_session_omits_retained_unix_ms() {
             session_id: "other".to_string(),
             cursor: None,
             max_events: 10,
+            live_delta_tail_v0: None,
         },
     )
     .unwrap();
@@ -821,6 +829,7 @@ fn fipc_per_rpc_and_retained_sessions_independent() {
             session_id: "sess_rpc".to_string(),
             cursor: None,
             max_events: 10,
+            live_delta_tail_v0: None,
         },
     )
     .unwrap();
@@ -843,6 +852,7 @@ fn fipc_per_rpc_and_retained_sessions_independent() {
             session_id: "sess_ret".to_string(),
             cursor: None,
             max_events: 10,
+            live_delta_tail_v0: None,
         },
     )
     .unwrap();
@@ -909,6 +919,7 @@ fn fipc_file_lane_fixture_returns_file_poll_snapshot() {
             session_id: "fipc_fl_sess".to_string(),
             cursor: None,
             max_events: 50,
+            live_delta_tail_v0: None,
         },
     )
     .unwrap();
@@ -977,6 +988,7 @@ fn fipc_file_lane_empty_fixture_honest_v0_empty() {
             session_id: "fl_empty".to_string(),
             cursor: None,
             max_events: 10,
+            live_delta_tail_v0: None,
         },
     )
     .unwrap();
@@ -1062,6 +1074,7 @@ fn fipc_procfs_and_file_lane_feeds_independent() {
             session_id: "sess_proc_only".to_string(),
             cursor: None,
             max_events: 10,
+            live_delta_tail_v0: None,
         },
     )
     .unwrap();
@@ -1079,6 +1092,7 @@ fn fipc_procfs_and_file_lane_feeds_independent() {
             session_id: "sess_fl_only".to_string(),
             cursor: None,
             max_events: 10,
+            live_delta_tail_v0: None,
         },
     )
     .unwrap();
@@ -1147,6 +1161,7 @@ fn fipc_file_lane_retained_snapshot_includes_retained_unix_ms() {
             session_id: "fl_ret_ipc".to_string(),
             cursor: None,
             max_events: 10,
+            live_delta_tail_v0: None,
         },
     )
     .unwrap();
@@ -1238,6 +1253,7 @@ fn fipc_procfs_retained_and_file_lane_retained_metas_independent() {
             session_id: "sess_pr".to_string(),
             cursor: None,
             max_events: 10,
+            live_delta_tail_v0: None,
         },
     )
     .unwrap();
@@ -1261,6 +1277,7 @@ fn fipc_procfs_retained_and_file_lane_retained_metas_independent() {
             session_id: "sess_fr".to_string(),
             cursor: None,
             max_events: 10,
+            live_delta_tail_v0: None,
         },
     )
     .unwrap();

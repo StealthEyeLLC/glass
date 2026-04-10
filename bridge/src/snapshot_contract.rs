@@ -93,6 +93,7 @@ mod tests {
             returned_events: returned,
             available_in_view: available,
             truncated_by_max_events: truncated,
+            store_revision: None,
         }
     }
 
