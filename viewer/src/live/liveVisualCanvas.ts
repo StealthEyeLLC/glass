@@ -3,6 +3,13 @@
  */
 
 import {
+  buildLiveVisualMarkersLayout,
+  LIVE_VISUAL_BAND_LAYOUT,
+  LIVE_VISUAL_TICK_GEOMETRY,
+  LIVE_VISUAL_TICK_INACTIVE,
+  liveVisualTickActiveFill,
+} from "./liveVisualMarkers.js";
+import {
   LIVE_VISUAL_MODE_FILL,
   type LiveVisualSpec,
   liveVisualDensity01,
@@ -37,10 +44,31 @@ export function renderLiveVisualIntoContext(
   const bandColor = LIVE_VISUAL_MODE_FILL[spec.mode];
   const density = liveVisualDensity01(spec.eventTailCount);
   const bandW = 16 + density * (w - 32);
-  const bandH = 28;
-  const bandY = 16;
+  const bandH = LIVE_VISUAL_BAND_LAYOUT.height;
+  const bandY = LIVE_VISUAL_BAND_LAYOUT.originY;
   ctx.fillStyle = bandColor;
   ctx.fillRect(16, bandY, bandW, bandH);
+
+  const markers = buildLiveVisualMarkersLayout(spec, w);
+  const tickTop = bandY + LIVE_VISUAL_TICK_GEOMETRY.insetTop;
+  const tickBot = bandY + bandH - LIVE_VISUAL_TICK_GEOMETRY.insetBottom;
+  const tw = LIVE_VISUAL_TICK_GEOMETRY.widthPx;
+  for (const t of markers.ticks) {
+    ctx.fillStyle = t.active ? liveVisualTickActiveFill(t.kind) : LIVE_VISUAL_TICK_INACTIVE;
+    ctx.fillRect(t.centerX - tw / 2, tickTop, tw, tickBot - tickTop);
+  }
+
+  const chip = markers.httpReconcile;
+  if (chip.show) {
+    ctx.fillStyle = "#f8fafc";
+    ctx.fillRect(chip.x, chip.y, chip.width, chip.height);
+    ctx.strokeStyle = "#64748b";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(chip.x, chip.y, chip.width, chip.height);
+    ctx.fillStyle = "#334155";
+    ctx.font = "600 9px system-ui, sans-serif";
+    ctx.fillText("HTTP", chip.x + 5, chip.y + 11);
+  }
 
   ctx.strokeStyle = "#cbd5e1";
   ctx.lineWidth = 1;

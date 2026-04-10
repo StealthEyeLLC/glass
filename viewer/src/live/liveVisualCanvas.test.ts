@@ -16,6 +16,15 @@ function createMock2dContext(): CanvasRenderingContext2D {
   } as unknown as CanvasRenderingContext2D;
 }
 
+function findBandFillRect(ctx: CanvasRenderingContext2D): number[] {
+  const calls = (ctx.fillRect as ReturnType<typeof vi.fn>).mock.calls as number[][];
+  const band = calls.find((c) => c[0] === 16 && c[1] === 16 && c[3] === 28);
+  if (!band) {
+    throw new Error("expected density band fillRect at y=16 h=28");
+  }
+  return band;
+}
+
 describe("renderLiveVisualIntoContext", () => {
   it("lays out append mode band and labels (deterministic geometry)", () => {
     const ctx = createMock2dContext();
@@ -25,7 +34,7 @@ describe("renderLiveVisualIntoContext", () => {
     const fillRect = ctx.fillRect as ReturnType<typeof vi.fn>;
     expect(fillRect).toHaveBeenCalled();
     expect(fillRect.mock.calls[0]).toEqual([0, 0, 200, 100]);
-    const bandCall = fillRect.mock.calls[1];
+    const bandCall = findBandFillRect(ctx);
     expect(bandCall[0]).toBe(16);
     expect(bandCall[1]).toBe(16);
     expect(bandCall[3]).toBe(28);
@@ -34,6 +43,21 @@ describe("renderLiveVisualIntoContext", () => {
     expect(bandW).toBeLessThanOrEqual(200 - 16);
     const fillText = ctx.fillText as ReturnType<typeof vi.fn>;
     expect(fillText.mock.calls.some((c) => String(c[0]).includes("mode=append"))).toBe(true);
+  });
+
+  it("draws marker ticks and HTTP chip without throwing (resync + reconcile)", () => {
+    const ctx = createMock2dContext();
+    const spec = buildLiveVisualSpec(createInitialLiveSessionModelState("sid"), {
+      trigger: "session_resync_required",
+      status: "ok",
+      eventsCount: 2,
+    });
+    const s = { ...spec, mode: "resync" as const };
+    renderLiveVisualIntoContext(ctx, s, 200, 100);
+    const strokeRect = ctx.strokeRect as ReturnType<typeof vi.fn>;
+    expect(strokeRect.mock.calls.length).toBeGreaterThanOrEqual(2);
+    const fillText = ctx.fillText as ReturnType<typeof vi.fn>;
+    expect(fillText.mock.calls.some((c) => c[0] === "HTTP")).toBe(true);
   });
 
   it("draws HTTP reconcile line when present", () => {
