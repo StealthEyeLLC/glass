@@ -43,6 +43,10 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | `PROVISIONAL_MAX_PROC_ENTRIES_SCANNED` | `16_384` | `glass_collector::procfs_snapshot` | Cap on numeric `/proc` entries read per poll — human may raise for large hosts |
 | `PROVISIONAL_MAX_PROCFS_OBSERVATIONS_PER_POLL` | `1024` | `glass_collector::procfs_snapshot` | Hard cap on raw observations (samples + deltas) per `poll_raw` |
 | `PROVISIONAL_MAX_PROCFS_DELTA_PER_DIRECTION` | `64` | `glass_collector::adapters::procfs_process` | Cap on `ProcessSeenInPollGap` / `ProcessAbsentInPollGap` rows per poll |
+| `PROVISIONAL_MAX_FS_FILE_OBSERVATIONS_PER_POLL` | `1024` | `glass_collector::adapters::fs_file_lane` | Cap on raw observations (samples + deltas) per `poll_raw` |
+| `PROVISIONAL_MAX_FS_DELTA_PER_DIRECTION` | `64` | `glass_collector::adapters::fs_file_lane` | Cap on created/missing/changed rows per poll direction |
+| `PROVISIONAL_MAX_FS_SCAN_PATHS_FOR_STATE` | `4096` | `glass_collector::adapters::fs_file_lane` | Max paths stored between polls for gap comparison (sample emission may be lower) |
+| `PROVISIONAL_DEFAULT_FS_MAX_DEPTH` | `8` | `glass_collector::adapters::fs_file_lane` | Default max recursion depth under declared watch root |
 | `PROVISIONAL_MAX_RETAINED_SNAPSHOT_EVENTS` | `2048` | `glass_collector::procfs_retained_loop` | Max normalized events kept in `SnapshotStore` per retained session after each poll (tail) |
 | Sanitization regex / socket heuristic | IPv4 private ranges, `.local`/`.internal`/`.corp`, `.sock` + `/var/run` paths | `session_engine::sanitization` | F-05 |
 
@@ -58,6 +62,21 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | Share export `attrs.exe` | **Provisional** | Entire non-empty `exe` string replaced with `[REDACTED_ABS_PATH]` on `sanitize_events_for_share` — not basename-preserving; human may tune for operator UX (F-05). |
 | `glass-pack --expect-share-safe` | **Provisional** | Checks manifest fields aligned with `export-procfs-pack`; does not prove content safety or non-leakage beyond current sanitization profile. |
 | Human-owned | Open | Namespace-aware identity, cgroup/container correlation, eBPF-correlated stable IDs — deferred. |
+
+---
+
+## Directory poll file lane (v0 landed — human may tighten)
+
+| Topic | Status | Notes |
+|-------|--------|-------|
+| Substrate | **Polling** | Recursive directory scan under a **declared** `watch_root`; symlink **directories** are not descended (bounded root). |
+| Raw kinds | **Landed** | `FileSeenInPollSnapshot`, `FileChangedBetweenPolls`, `FileMissingInPollGap`, `FileCreatedInPollGap` + `RawSourceQuality::DirectoryPollDerived`. |
+| Normalized `kind` names | **Landed v0** | `file_poll_snapshot`, `file_changed_between_polls`, `file_absent_in_poll_gap`, `file_seen_in_poll_gap` — **not** syscall-level `file_read` / `file_write` / `file_create` / `file_delete`. |
+| File `entity_id` | **Provisional** | Prefix `fs_poll_rel:` + sanitized relative path string; **not** stable inode identity. |
+| `resolution_quality` | **Fixed string v0** | `declared_root_relative_path_directory_poll_not_kernel_inode_identity`. |
+| Default adapter stack | **Inactive file lane** | `FsFileLaneAdapter::default()` has **no** `watch_root` → `implementation_active: false` until an operator configures a root (CLI `sample-file-lane` / tests construct `with_watch_root`). |
+| Gap semantics when state budget truncates | **Explicit** | Payload `state_budget_truncated` when scan hits `PROVISIONAL_MAX_FS_SCAN_PATHS_FOR_STATE` — poll-gap deltas may be incomplete. |
+| Human-owned | Open | fanotify/inotify live semantics, rename atomicity, share-safe path redaction for file `attrs` (F-05), F-IPC file-lane snapshots. |
 
 ---
 

@@ -16,6 +16,8 @@ pub enum RawSourceQuality {
     ProcfsDerived,
     /// fanotify/inotify-style (not claimed until implemented).
     FsNotifyDerived,
+    /// Bounded scan of a declared directory tree between polls — **not** syscall-level file access truth.
+    DirectoryPollDerived,
     /// netlink / proc net (not claimed until implemented).
     NetDerived,
     /// Placeholder / unknown.
@@ -35,6 +37,14 @@ pub enum RawObservationKind {
     /// PID missing vs previous poll — **polling-derived**; not exact exit time.
     ProcessAbsentInPollGap,
     FilePathAccess,
+    /// File present in a bounded poll snapshot under a declared root — **not** a kernel `file_open` event.
+    FileSeenInPollSnapshot,
+    /// Metadata or size differs vs previous poll — **not** read/write syscall truth.
+    FileChangedBetweenPolls,
+    /// Path absent vs previous poll — **not** exact delete time or syscall.
+    FileMissingInPollGap,
+    /// Path appeared since previous poll — **not** exact create syscall or timestamp.
+    FileCreatedInPollGap,
     NetworkSocket,
     IpcEndpoint,
     /// Catch-all for forward-compatible probes.

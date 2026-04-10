@@ -14,6 +14,7 @@
 pub mod adapters;
 pub mod capability;
 pub mod config;
+pub mod file_session;
 pub mod ipc;
 pub mod ipc_dev_tcp;
 pub mod pipeline;
@@ -27,7 +28,7 @@ pub mod self_silence;
 
 pub use adapters::{
     build_fidelity_report, default_adapter_stack, AdapterError, CollectorAdapter,
-    ProcfsProcessAdapter,
+    FsFileLaneAdapter, ProcfsProcessAdapter,
 };
 pub use capability::{
     AdapterCapabilityManifest, AdapterId, FidelityMode, FidelityReport, ObservationLane,
@@ -53,6 +54,10 @@ pub use procfs_retained_loop::{
 pub use raw::{RawObservation, RawObservationKind, RawSourceQuality};
 pub use self_silence::{GlassComponent, LineageIdentity, SelfSilenceCounters, SelfSilencePolicy};
 
+pub use file_session::{
+    file_lane_dtos_from_raw, ingest_file_lane_raw_to_session_log,
+    load_file_lane_observations_for_cli, raw_to_file_lane_dto,
+};
 pub use procfs_session::{
     ingest_procfs_raw_to_session_log, procfs_dtos_from_raw, raw_to_procfs_dto,
 };

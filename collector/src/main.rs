@@ -7,7 +7,8 @@ use clap::{Parser, Subcommand};
 use std::sync::Arc;
 
 use glass_collector::{
-    build_fidelity_report, default_adapter_stack, ingest_procfs_raw_to_session_log,
+    build_fidelity_report, default_adapter_stack, ingest_file_lane_raw_to_session_log,
+    ingest_procfs_raw_to_session_log, load_file_lane_observations_for_cli,
     load_procfs_observations_for_cli, run_ipc_dev_tcp_listener, spawn_retained_procfs_loop,
     CollectorAdapter, CollectorConfig, IpcDevTcpListenConfig, IpcDevTcpRuntime, PrivilegeMode,
     ProcfsProcessAdapter, ProcfsSnapshotFeedConfig, RetainedPollMeta, RetainedProcfsLoopConfig,
@@ -51,6 +52,38 @@ enum Command {
         /// Run two polls to demonstrate poll-gap delta observations (Linux).
         #[arg(long, default_value_t = false)]
         twice: bool,
+    },
+    /// Bounded directory poll under `--watch-root` as JSON `RawObservation` array (twice = second poll for gap semantics).
+    SampleFileLane {
+        #[arg(long)]
+        watch_root: PathBuf,
+        #[arg(long, default_value = "glass-collector-fs-sample")]
+        session: String,
+        #[arg(long, default_value_t = 512)]
+        max_samples: usize,
+        #[arg(long, default_value_t = 8)]
+        max_depth: usize,
+        #[arg(long, default_value_t = false)]
+        twice: bool,
+    },
+    /// File-lane raw (live poll or `--from-raw-json`), normalize, write pack or print events JSON.
+    NormalizeFileLane {
+        #[arg(long)]
+        watch_root: PathBuf,
+        #[arg(long, default_value = "glass-collector-fs-norm")]
+        session: String,
+        #[arg(long, default_value_t = 512)]
+        max_samples: usize,
+        #[arg(long, default_value_t = 8)]
+        max_depth: usize,
+        #[arg(long, default_value_t = false)]
+        twice: bool,
+        #[arg(long)]
+        output: Option<PathBuf>,
+        #[arg(long, default_value_t = false)]
+        events_json_stdout: bool,
+        #[arg(long)]
+        from_raw_json: Option<PathBuf>,
     },
     /// Procfs sample (or `--from-raw-json`), self-silence (default empty policy), normalize, write pack or print events JSON.
     NormalizeProcfs {
@@ -132,6 +165,97 @@ fn main() {
                 serde_json::to_string_pretty(&report).expect("serialize fidelity report")
             );
             let _ = CollectorConfig::default();
+        }
+        Some(Command::SampleFileLane {
+            watch_root,
+            session,
+            max_samples,
+            max_depth,
+            twice,
+        }) => {
+            let observations = match load_file_lane_observations_for_cli(
+                session,
+                watch_root,
+                max_samples,
+                max_depth,
+                twice,
+                None,
+            ) {
+                Ok(v) => v,
+                Err(e) => {
+                    eprintln!("sample-file-lane: {e}");
+                    std::process::exit(1);
+                }
+            };
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&observations).expect("serialize observations")
+            );
+        }
+        Some(Command::NormalizeFileLane {
+            watch_root,
+            session,
+            max_samples,
+            max_depth,
+            twice,
+            output,
+            events_json_stdout,
+            from_raw_json,
+        }) => {
+            if !events_json_stdout && output.is_none() {
+                eprintln!(
+                    "normalize-file-lane: specify --output PATH.glass_pack or --events-json-stdout"
+                );
+                std::process::exit(2);
+            }
+            let observations = match load_file_lane_observations_for_cli(
+                session.clone(),
+                watch_root,
+                max_samples,
+                max_depth,
+                twice,
+                from_raw_json,
+            ) {
+                Ok(v) => v,
+                Err(e) => {
+                    eprintln!("normalize-file-lane: {e}");
+                    std::process::exit(1);
+                }
+            };
+            let log = match ingest_file_lane_raw_to_session_log(
+                observations,
+                &SelfSilencePolicy::default(),
+            ) {
+                Ok(l) => l,
+                Err(e) => {
+                    eprintln!("normalize-file-lane: session: {e}");
+                    std::process::exit(1);
+                }
+            };
+            if events_json_stdout {
+                println!(
+                    "{}",
+                    serde_json::to_string_pretty(log.events())
+                        .expect("serialize normalized events")
+                );
+                return;
+            }
+            let out = output.expect("checked");
+            let session_manifest = log
+                .events()
+                .first()
+                .map(|e| e.session_id.as_str())
+                .unwrap_or(session.as_str());
+            let manifest = SessionManifest::procfs_poll_dev_scaffold(session_manifest);
+            if let Err(e) = write_glass_pack(&out, &manifest, log.events()) {
+                eprintln!("normalize-file-lane: write pack: {e}");
+                std::process::exit(1);
+            }
+            eprintln!(
+                "normalize-file-lane: wrote {} unsanitized event(s) to {}",
+                log.len(),
+                out.display()
+            );
         }
         Some(Command::SampleProcfs {
             session,
@@ -388,7 +512,7 @@ fn main() {
         }
         None => {
             eprintln!(
-                "glass-collector {}: no live capture loop. Subcommands: `capabilities`, `sample-procfs`, `normalize-procfs`, `export-procfs-pack`, `ipc-serve`.",
+                "glass-collector {}: no live capture loop. Subcommands: `capabilities`, `sample-procfs`, `sample-file-lane`, `normalize-procfs`, `normalize-file-lane`, `export-procfs-pack`, `ipc-serve`.",
                 env!("CARGO_PKG_VERSION")
             );
             eprintln!("Default invocation exits without emitting a long-running stream.");

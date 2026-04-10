@@ -1,6 +1,7 @@
 use thiserror::Error;
 
 use crate::events_seg::SegError;
+use crate::file_lane_normalize::FileLaneNormalizeError;
 use crate::procfs_normalize::ProcfsNormalizeError;
 
 #[derive(Debug, Error)]
@@ -35,4 +36,6 @@ pub enum SessionEngineError {
     SeqOrder { expected: u64, got: u64 },
     #[error("procfs normalization: {0}")]
     ProcfsNormalize(#[from] ProcfsNormalizeError),
+    #[error("file lane normalization: {0}")]
+    FileLaneNormalize(#[from] FileLaneNormalizeError),
 }

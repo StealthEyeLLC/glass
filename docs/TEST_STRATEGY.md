@@ -16,11 +16,12 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `session_engine::tests::sanitization_fixtures` | Fixture matrix + causality |
 | `session_engine::tests::export_manifest` | Sanitization → manifest fields (`share_safe_recommended` stays false until human review) |
 | `session_engine::tests::procfs_normalize` | DTO → envelope mapping; strict kinds; `SessionLog::append_procfs_dtos` + strict pack roundtrip |
+| `session_engine::tests::file_lane_normalize` | File-lane DTO → `file_poll_snapshot` / poll-gap kinds; rejects bogus raw kinds |
 | `session_engine::tests::procfs_share_safe_export` | `materialize_share_safe_procfs_pack_bytes` → strict validate + exe redacted |
 | `session_engine::tests::sanitization_fixtures` | Includes `procfs_exe_path.json` matrix |
 | `session_engine::sanitization` (unit) | `redacts_procfs_exe_field` |
 | `glass_collector::tests::export_procfs_share_safe` | Ingest → share-safe bytes → strict reload |
-| `session_engine::tests::envelope_validation` | Procfs normalized kinds accepted in strict set |
+| `session_engine::tests::envelope_validation` | Procfs + **file-lane** normalized kinds accepted in strict set |
 | `graph_engine::tests::smoke` | Graph crate consumes session facts |
 | `bridge::tests::resync_contract` | Resync constants + recovery enum |
 | `bridge::tests::http_contract` | Loopback-only config; `/health` unauthenticated; bearer gate on `/capabilities` + snapshot; `collector_fipc` capability flags; bounded `SessionSnapshotResponse` without F-IPC; **503** when F-IPC configured but collector unreachable; non-loopback F-IPC rejected; WS bad-request without upgrade; real WS handshake + hello JSON; `serve_listener` + `tokio-tungstenite` client |
@@ -41,6 +42,7 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `glass_collector::tests::procfs_adapter_fixture_linux` | **Linux only:** temp `proc/` tree → samples + second-poll `ProcessSeenInPollGap` |
 | `glass_collector::procfs_snapshot` (unit) | `comm` / `status` / `stat` parsers; `sample_records_bounded` fixture dir + truncation |
 | `glass_collector::tests::procfs_normalize_e2e` | Ingest → `process_poll_sample` session; strict pack load; self-silence before normalize; non-procfs raw kinds ignored; raw JSON serde roundtrip → ingest |
+| `glass_collector::tests::fs_file_lane_adapter` | Tempdir: inactive without `watch_root`; first poll snapshot-only; second poll size change → `FileChangedBetweenPolls`; ingest → `file_poll_snapshot`; fidelity summary when lane configured |
 
 ## Viewer (`npm test` in `viewer/`)
 
@@ -60,13 +62,15 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `glass-pack` `tests/cli_smoke.rs` | Subprocess: share-safe + raw-dev expectations, strict JSON validate, `info --json` |
 | `glass-pack` unit tests (in `main.rs`) | Share-safe vs raw bytes + incomplete sanitized manifest |
 | `session_engine::tests::pack_manifest_expectations` | `validate_share_safe_export_manifest` / `validate_raw_dev_pack_manifest` / `pack_artifact_lane_hint` |
-| `glass-collector capabilities` | JSON `FidelityReport` (procfs active summary on Linux when enabled) |
+| `glass-collector capabilities` | JSON `FidelityReport` (procfs active summary on Linux when enabled; **fs_file_lane** inactive unless a watch root is configured on the adapter instance — default stack has no root) |
 | `glass-collector sample-procfs` | Linux: bounded JSON array of `RawObservation` (`--twice` optional); non-Linux: `[]` + stderr |
+| `glass-collector sample-file-lane` | Bounded JSON `RawObservation[]` from `--watch-root` (`--twice` optional second poll for gap semantics) |
 | `glass-collector normalize-procfs` | **Unsanitized** dev pack: `--output out.glass_pack` and/or `--events-json-stdout`; Linux poll or `--from-raw-json` |
+| `glass-collector normalize-file-lane` | Same as normalize-procfs for **file-lane** events (`--watch-root` + optional `--from-raw-json`) |
 | `glass-collector export-procfs-pack` | **Share-safe** pack: `--output share.glass_pack` (required); same poll / `--from-raw-json` as normalize; Tier B–compatible after sanitize |
 | `glass-collector ipc-serve` | Loopback TCP F-IPC (provisional); optional seed session; **`--procfs-session`** = per-RPC repoll; **`--procfs-retained-session`** + **`--procfs-retained-interval-ms`** / **`--procfs-retained-max-events`** = background bounded retained store (same `--procfs-from-raw-json` / Linux rules); same session id for both modes rejected |
 | `scripts/retained_snapshot_demo/*` | Operator demo: fixture-backed retained collector + bridge + curl/IRM snapshot (`docs/DEMO_RETAINED_SNAPSHOT.md`) |
-| `viewer` `KNOWN_EVENT_KINDS_V0` | Must match Rust strict set (procfs kinds added for Tier B `strict_kinds` loads) |
+| `viewer` `KNOWN_EVENT_KINDS_V0` | Must match Rust strict set (procfs + **file-lane** poll kinds for Tier B `strict_kinds` loads) |
 
 ## CI jobs
 

@@ -6,8 +6,8 @@
 
 | Component | Owns | Must not own |
 |-----------|------|----------------|
-| `collector/` | **Raw** observations (`RawObservation`), adapter skeletons, fidelity IPC **types**, self-silence **before** normalization, **thin bridge** (`procfs_session`) into session DTOs | Authoritative normalization math for envelopes (owned by `session_engine`), share-safe sanitization, pack bytes as sole owner of export redaction |
-| `session_engine/` | Event envelope, session ordering, pack bytes, **pure** sanitization, **procfs** `RawObservation` DTO → `NormalizedEventEnvelope` mapping (`procfs_normalize`) | UI, network transport, collection |
+| `collector/` | **Raw** observations (`RawObservation`), adapter skeletons, fidelity IPC **types**, self-silence **before** normalization, **thin bridges** (`procfs_session`, **`file_session`**) into session DTOs | Authoritative normalization math for envelopes (owned by `session_engine`), share-safe sanitization, pack bytes as sole owner of export redaction |
+| `session_engine/` | Event envelope, session ordering, pack bytes, **pure** sanitization, **procfs** DTO → envelope (`procfs_normalize`), **file-lane** DTO → envelope (`file_lane_normalize`), `SessionLog::append_*_dtos` | UI, network transport, collection |
 | `graph_engine/` | Derived graph structures from events | Telemetry collection, rendering |
 | `bridge/` | Local loopback HTTP/WebSocket (`glass_bridge`) + optional **F-IPC client** to collector dev TCP; resync **types**; **no** collector-owned state inside bridge (snapshots are whatever the collector returns over F-IPC — seeded store, per-RPC procfs `--procfs-session`, and/or **retained** `--procfs-retained-session` bounded store updates) | Privileged collection, WebGPU, fake live streams |
 | `tools/glass-pack` | Pack ZIP validate/info; calls `session_engine` read/validate APIs | Collector telemetry, sanitization implementation, viewer UI |
@@ -30,7 +30,9 @@
 
 - **`glass_collector::raw::RawObservation`** — pre-normalization host facts; may contain secrets.
 - **`session_engine::NormalizedEventEnvelope`** — canonical normalized shape for session/pack/graph.
-- **Procfs path (v0):** `session_engine::procfs_normalize` maps procfs-shaped DTOs into envelopes (`process_poll_sample`, `process_seen_in_poll_gap`, `process_absent_in_poll_gap`). The collector exposes `procfs_session::ingest_procfs_raw_to_session_log` (self-silence → DTO → `SessionLog::append_procfs_dtos`). **Share-safe export** is explicit: `materialize_share_safe_procfs_pack_bytes` + `glass-collector export-procfs-pack` — never applied on the raw ingest hot path. Other adapters remain unnormalized here. Type separation is still tested in `collector/tests/raw_vs_normalized_boundary.rs`.
+- **Procfs path (v0):** `session_engine::procfs_normalize` maps procfs-shaped DTOs into envelopes (`process_poll_sample`, `process_seen_in_poll_gap`, `process_absent_in_poll_gap`). The collector exposes `procfs_session::ingest_procfs_raw_to_session_log` (self-silence → DTO → `SessionLog::append_procfs_dtos`).
+- **File-lane path (v0):** `session_engine::file_lane_normalize` maps directory-poll DTOs into **`file_poll_snapshot`**, **`file_changed_between_polls`**, **`file_absent_in_poll_gap`**, **`file_seen_in_poll_gap`** (distinct from spec `file_read` / `file_write` / `file_create` syscall-class kinds). Collector: `file_session::ingest_file_lane_raw_to_session_log` → `SessionLog::append_file_lane_dtos`. **No** dedicated share-safe export helper in this pass (paths may still need F-05 review before export).
+- **Share-safe export (procfs-oriented):** `materialize_share_safe_procfs_pack_bytes` + `glass-collector export-procfs-pack` — not applied on raw ingest. Type separation is still tested in `collector/tests/raw_vs_normalized_boundary.rs`.
 
 ## Static vs live
 

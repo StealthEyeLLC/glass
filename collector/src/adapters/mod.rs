@@ -60,6 +60,10 @@ pub fn build_fidelity_report(
         .iter()
         .any(|m| m.adapter_id == AdapterId::ProcfsProcess && m.implementation_active);
 
+    let fs_lane_live = manifests
+        .iter()
+        .any(|m| m.adapter_id == AdapterId::FsFileLane && m.implementation_active);
+
     let mut summary_for_operator = match mode {
         FidelityMode::HighFidelityPrimary => {
             "Full primary sensors active (eBPF-class path reported active).".to_string()
@@ -72,7 +76,11 @@ pub fn build_fidelity_report(
         }
     };
 
-    if mode == FidelityMode::FallbackReducedVisibility && procfs_live {
+    if mode == FidelityMode::FallbackReducedVisibility && procfs_live && fs_lane_live {
+        summary_for_operator = "Fallback mode — reduced visibility. procfs_process emits bounded /proc snapshot + poll-gap deltas (not kernel spawn/exit truth). fs_file_lane emits bounded directory poll snapshots + poll-gap file deltas under a declared root (not syscall-level file I/O truth). eBPF, fanotify-class access, and socket-level correlation remain unavailable.".to_string();
+    } else if mode == FidelityMode::FallbackReducedVisibility && fs_lane_live && !procfs_live {
+        summary_for_operator = "Fallback mode — reduced visibility. fs_file_lane emits bounded directory poll snapshots + poll-gap file deltas under a declared root (not syscall-level file I/O truth). procfs lane inactive; eBPF and fanotify-class access remain unavailable.".to_string();
+    } else if mode == FidelityMode::FallbackReducedVisibility && procfs_live {
         summary_for_operator = "Fallback mode — reduced visibility. procfs_process emits bounded /proc snapshot + poll-gap deltas (not kernel spawn/exit truth). eBPF, fine-grained file access, and socket-level correlation remain unavailable.".to_string();
     }
 
@@ -91,7 +99,7 @@ pub fn default_adapter_stack() -> Vec<Box<dyn CollectorAdapter>> {
     vec![
         Box::new(LinuxEbpfAdapter),
         Box::new(ProcfsProcessAdapter::default()),
-        Box::new(FsFileLaneAdapter),
+        Box::new(FsFileLaneAdapter::default()),
         Box::new(NetworkLaneAdapter),
     ]
 }

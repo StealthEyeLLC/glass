@@ -3,6 +3,7 @@ use std::path::Path;
 use crate::error::{PackError, SessionEngineError};
 use crate::event::NormalizedEventEnvelope;
 use crate::events_seg;
+use crate::file_lane_normalize::{normalize_file_lane_observation, FileLaneRawObservationDto};
 use crate::manifest::SessionManifest;
 use crate::pack::{
     read_glass_pack_bytes_level, write_glass_pack_scaffold_seg_to_vec, write_glass_pack_to_vec,
@@ -140,6 +141,18 @@ impl SessionLog {
     ) -> Result<(), SessionEngineError> {
         for dto in dtos {
             let ev = normalize_procfs_observation(dto, self.next_seq())?;
+            self.push_fresh(ev)?;
+        }
+        Ok(())
+    }
+
+    /// Append fs file-lane raw DTOs as normalized session events (ordered); assigns consecutive `seq`.
+    pub fn append_file_lane_dtos(
+        &mut self,
+        dtos: &[FileLaneRawObservationDto],
+    ) -> Result<(), SessionEngineError> {
+        for dto in dtos {
+            let ev = normalize_file_lane_observation(dto, self.next_seq())?;
             self.push_fresh(ev)?;
         }
         Ok(())

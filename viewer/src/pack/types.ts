@@ -34,6 +34,10 @@ export const KNOWN_EVENT_KINDS_V0 = new Set<string>([
   "process_poll_sample",
   "process_seen_in_poll_gap",
   "process_absent_in_poll_gap",
+  "file_poll_snapshot",
+  "file_changed_between_polls",
+  "file_absent_in_poll_gap",
+  "file_seen_in_poll_gap",
 ]);
 
 export interface EntityRef {

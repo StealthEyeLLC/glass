@@ -8,6 +8,7 @@ pub mod error;
 pub mod event;
 pub mod events_seg;
 pub mod export;
+pub mod file_lane_normalize;
 pub mod manifest;
 pub mod pack;
 pub mod procfs_normalize;
@@ -23,6 +24,10 @@ pub use events_seg::{
     PROVISIONAL_MAX_SEG_RECORD_BYTES,
 };
 pub use export::{apply_sanitization_to_manifest, materialize_share_safe_procfs_pack_bytes};
+pub use file_lane_normalize::{
+    normalize_file_lane_batch, normalize_file_lane_observation, FileLaneNormalizeError,
+    FileLaneRawObservationDto, FS_POLL_FILE_ENTITY_PREFIX, RESOLUTION_FS_POLL_REL_PATH,
+};
 pub use manifest::SessionManifest;
 pub use manifest::{PACK_FORMAT_SCAFFOLD_SEG_V0, PACK_FORMAT_SCAFFOLD_V0};
 pub use pack::{

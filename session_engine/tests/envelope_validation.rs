@@ -34,6 +34,10 @@ fn strict_kind_rejects_unknown() {
     assert!(validate_event_kind_strict("process_poll_sample").is_ok());
     assert!(validate_event_kind_strict("process_seen_in_poll_gap").is_ok());
     assert!(validate_event_kind_strict("process_absent_in_poll_gap").is_ok());
+    assert!(validate_event_kind_strict("file_poll_snapshot").is_ok());
+    assert!(validate_event_kind_strict("file_changed_between_polls").is_ok());
+    assert!(validate_event_kind_strict("file_absent_in_poll_gap").is_ok());
+    assert!(validate_event_kind_strict("file_seen_in_poll_gap").is_ok());
 }
 
 #[test]

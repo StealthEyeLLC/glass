@@ -31,6 +31,11 @@ pub const KNOWN_EVENT_KINDS_V0: &[&str] = &[
     "process_poll_sample",
     "process_seen_in_poll_gap",
     "process_absent_in_poll_gap",
+    // Directory poll file lane — **not** syscall-level file I/O (see `file_lane_normalize`).
+    "file_poll_snapshot",
+    "file_changed_between_polls",
+    "file_absent_in_poll_gap",
+    "file_seen_in_poll_gap",
 ];
 
 /// Maximum JSONL line length accepted when reading packs (DoS bound; **provisional** — see F-07 in `PHASE0_FREEZE_TRACKER.md`).
