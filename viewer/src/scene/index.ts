@@ -24,3 +24,10 @@ export {
   type DrawablePrimitiveStrokeRect,
 } from "./drawablePrimitivesV0.js";
 export { sceneToDrawablePrimitives } from "./sceneToDrawablePrimitives.js";
+export {
+  listSemanticTagsForPrimitives,
+  listSemanticTagsForScene,
+  listSemanticTagsForSceneWebGpuExpansion,
+  listSemanticTagsForWebGpuPrimitiveExpansion,
+  primitiveTagsSummary,
+} from "./semanticTagSummaryV0.js";

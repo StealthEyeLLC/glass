@@ -11,6 +11,7 @@ import { compileReplayToGlassSceneV0 } from "./compileReplayScene.js";
 import { buildBoundedVisualGeometryPrimitives } from "./drawablePrimitivesV0.js";
 import { liveVisualSpecFromScene } from "./sceneToLiveVisualSpec.js";
 import { sceneToDrawablePrimitives } from "./sceneToDrawablePrimitives.js";
+import { listSemanticTagsForScene } from "./semanticTagSummaryV0.js";
 
 function replayManifest(): GlassManifest {
   return {
@@ -102,8 +103,8 @@ describe("sceneToDrawablePrimitives", () => {
     });
     st = reduceReplay(st, { type: "seek_index", index: 0 });
     const replayScene = compileReplayToGlassSceneV0(st);
-    const a = sceneToDrawablePrimitives(liveScene).map((x) => x.semanticTag).slice(0, 6);
-    const b = sceneToDrawablePrimitives(replayScene).map((x) => x.semanticTag).slice(0, 6);
+    const a = listSemanticTagsForScene(liveScene).slice(0, 6);
+    const b = listSemanticTagsForScene(replayScene).slice(0, 6);
     expect(a.slice(0, 5)).toEqual(b.slice(0, 5));
     expect(a[0]).toBe("band_background");
     expect(a[1]).toBe("density_band");
