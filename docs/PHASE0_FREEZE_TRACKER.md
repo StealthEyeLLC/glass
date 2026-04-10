@@ -35,7 +35,9 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | Symbol | Value | Location | Until |
 |--------|-------|----------|-------|
 | `SANITIZE_PROFILE_VERSION` | `sanitize_default.1.provisional` | `session_engine::sanitization` | Human signs off default share-safe rules (F-05); **.1** adds provisional file-lane path redaction on export lane |
-| `PROVISIONAL_BACKLOG_EVENT_THRESHOLD` | `10_000` | `glass_bridge::resync` | F-03 |
+| `PROVISIONAL_BACKLOG_EVENT_THRESHOLD` | `10_000` | `glass_bridge::resync` | Future ingest / capabilities — **not** the WS queue cap (see `F03_V0_LIVE_WS_*` in `live_session_ws`) |
+| `F03_V0_LIVE_WS_QUEUE_MAX_EVENTS` | `64` | `glass_bridge::live_session_ws` | F-03 v0 per-connection queued **lines** |
+| `F03_V0_LIVE_WS_QUEUE_MAX_BYTES` | `262_144` | `glass_bridge::live_session_ws` | F-03 v0 sum of UTF-8 bytes of queued lines |
 | `PROVISIONAL_MAX_JSONL_LINE_BYTES` | `4 * 1024 * 1024` | `session_engine::validate` | F-07 |
 | `PROVISIONAL_MAX_SEG_RECORD_BYTES` | same as JSONL line (alias) | `session_engine::events_seg` | F-07 |
 | `PROVISIONAL_MAX_PACK_FILE_BYTES` | `256 * 1024 * 1024` | `session_engine::validate` | F-07 — whole `.glass_pack` read cap (non-streaming) |
@@ -91,19 +93,19 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | **`resync_hint.reason`** | **Frozen string tokens** only for bounded era: `bounded_truncation`, `per_rpc_poll_snapshot_not_incremental`, `retained_snapshot_tail_replaces_not_append_only`. **Single source of truth in Rust:** `glass_bridge::resync::RESYNC_HINT_REASON_*`. |
 | **`resync_hint.detail`** | **Optional, non-normative** — debugging / operator text; not a stable API for parsers. |
 | **Missing `resync_hint`** | Means **no extra bounded-era warning** for this response — **not** “live-safe,” **not** “continuity-safe,” **not** a guarantee of eventual consistency. |
-| **Explicitly not frozen (deferred)** | Live delta backlog thresholds, byte ceilings, **`ipc_gap`** / WS reconnect style reasons, structured live cursor (`seq` / byte offset), F-03 numeric policy when a real outbound delta queue exists — see **Open** sections for F-03 backlog and **F-04 live-era** below. |
+| **Explicitly not frozen (deferred)** | Live-era HTTP **`resync_hint`** extensions, **`ipc_gap`** / structured live cursor (`seq` / byte offset) — see **F-04 live-era** below; **F-03** WS queue v0 is separate from this HTTP contract. |
 
 | Code / tests | `glass_bridge::http_types::SessionSnapshotResponse`, `glass_bridge::resync`, `glass_bridge::snapshot_contract`, `glass_collector::ipc` origins + `FipcBoundedSnapshotMeta`, `bridge/tests/snapshot_fipc.rs`, `collector/tests/ipc_fipc_tcp.rs` |
 
-### Live-session WebSocket skeleton (provisional — does **not** close F-03 / F-04 live-era)
+### Live-session WebSocket (F-IPC polling + F-03 v0 queue)
 
 | Field | Content |
 |-------|---------|
-| **Status** | **Landed (skeleton)** — `glass_bridge::live_session_ws`; `docs/contracts/live_session_ws_skeleton_v1.md`. |
-| **What it does** | After `live_session_subscribe`, bridge **polls** collector F-IPC on a **provisional** interval and emits `session_snapshot_replaced` when the bounded snapshot **fingerprint** changes. **Honest** replacement semantics — **not** append-only durability. |
-| **What it is not** | Final live ingest, F-03 backlog policy, push-based collector→bridge transport, or frozen live-era `resync_hint` extensions. |
-| **Additive reasons** | WebSocket-only `LIVE_WS_REASON_*` (queue overflow / resync) — **separate** from frozen HTTP `RESYNC_HINT_REASON_*`. |
-| **Tests** | `bridge/tests/ws_live_session.rs` (requires **multi-accept** F-IPC test harness when opening many short TCP connections). |
+| **Status** | **Landed** — `glass_bridge::live_session_ws`; wire notes `docs/contracts/live_session_ws_skeleton_v1.md`. **F-03 v0** outbound queue + backpressure: see **F-03** row above. |
+| **What it does** | After `live_session_subscribe`, bridge **polls** collector F-IPC on a **provisional** interval and emits `session_snapshot_replaced` when the bounded snapshot **fingerprint** changes. Pending outbound JSON is bounded per connection; overflow **coalesces** to the latest snapshot view + **`session_resync_required`**. |
+| **What it is not** | Push-based live ingest, durable append-only delta log, or frozen **HTTP** live-era `resync_hint` extensions (**F-04 live-era** row). |
+| **Additive reasons** | WebSocket-only `LIVE_WS_REASON_*` — **separate** from frozen HTTP `RESYNC_HINT_REASON_*`. |
+| **Tests** | `bridge/tests/ws_live_session.rs` (multi-accept F-IPC harness); `live_session_ws` unit tests for `F03OutboundQueue`. |
 
 ---
 
@@ -121,16 +123,15 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | **Code / tests** | `tools/golden_scenes/` (placeholder only) |
 | **Provisional OK?** | **Yes** — no Phase 1 blocker |
 
-### F-03 — Resync backlog threshold (live delta queue — distinct from bounded snapshot hints)
+### F-03 — Live WebSocket outbound queue / backpressure (v0 **implemented** — distinct from bounded HTTP hints)
 
 | Field | Content |
 |-------|---------|
-| **Status** | Open — **decision package:** `docs/F03_LIVE_BACKLOG_FREEZE_PROPOSAL.md` (queue model, overflow, escalation, thresholds, client inference — **Option A/B + recommended + impact** per §5–§7). |
-| **Decision-ready options** | Event count ceiling, byte ceiling of queued deltas, or both (AND); plus per-connection vs per-session queue ownership; drop vs coalesce vs force-resync on overflow (see memo). |
-| **Proposed default** | Keep `10_000` events **or** add `4 MiB` bytes — **human picks**; **per-connection** queue likely for v0 (memo §5). |
-| **Rationale** | Viewer recovery contract (spec §18A.3) needs numeric tests; **do not** let implementation silently pick backlog semantics. |
-| **Code / tests** | `glass_bridge::resync::PROVISIONAL_BACKLOG_EVENT_THRESHOLD`; `live_session_ws` provisional queue caps + `LIVE_WS_REASON_*`; also exposed in `GET /capabilities` JSON (`bridge_api_version` 1 skeleton) — **byte ceiling** still unset |
-| **Provisional OK?** | **Yes** — threshold numeric is still human-owned (F-03); real multi-producer outbound queue **not** implemented yet |
+| **Status** | **v0 landed** — human freeze: per-connection queue; **events OR bytes** (sum of UTF-8 `str::len()` per queued line) thresholds; overflow → **coalesce** to latest `session_snapshot_replaced` + mandatory `session_resync_required`; poll failure / continuity hooks → **`session_resync_required`** (no silent loss). Normative memo: `docs/F03_LIVE_BACKLOG_FREEZE_PROPOSAL.md`. |
+| **Frozen v0 constants** | `F03_V0_LIVE_WS_QUEUE_MAX_EVENTS` = **64**; `F03_V0_LIVE_WS_QUEUE_MAX_BYTES` = **256 KiB** (`glass_bridge::live_session_ws`). |
+| **Rationale** | Honest live path: clients cannot assume continuity after overload or poll gap without an explicit resync envelope. |
+| **Code / tests** | `glass_bridge::live_session_ws` (`F03OutboundQueue`, `LIVE_WS_REASON_*` v0 strings); `glass_bridge::resync::PROVISIONAL_BACKLOG_EVENT_THRESHOLD` remains **separate** (capabilities / future ingest). WS hello JSON **`f03_v0_live_ws`**. Unit tests: OR thresholds, coalesce + resync, mandatory resync; `bridge/tests/ws_live_session.rs` + frozen HTTP regression. |
+| **Provisional / next** | Live **`session_delta`** payloads, byte-exact producer metrics, non-polling F-IPC — **not** this row. |
 
 ### F-IPC — Collector ↔ bridge local IPC (credentials + path)
 
@@ -193,7 +194,7 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 - [x] F-02 v1 format documented **in this tracker** (ADR-equivalent for bootstrap)
 - [x] Bounded-era F-04: `docs/contracts/bridge_session_snapshot_bounded_v0.schema.json` + **Closed — bounded-era F-04** section above
 - [x] Live-session WS skeleton: `docs/contracts/live_session_ws_skeleton_v1.md` + tracker subsection (**provisional**; not F-03/F-04 live-era closure)
-- [ ] **F-03 live backlog / outbound queue** — human freeze using `docs/F03_LIVE_BACKLOG_FREEZE_PROPOSAL.md` (this checklist item completes when tracker F-03 row moves from Open to Closed with chosen options)
+- [x] **F-03 live WS outbound queue (v0)** — implemented per human freeze + `docs/F03_LIVE_BACKLOG_FREEZE_PROPOSAL.md` (tracker **F-03** row); future **`session_delta`** / ingest still open
 
 ---
 

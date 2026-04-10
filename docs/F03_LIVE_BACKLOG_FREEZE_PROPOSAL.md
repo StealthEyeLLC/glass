@@ -1,5 +1,7 @@
 # F-03 — Live-session backlog, outbound queue, and resync escalation (freeze proposal)
 
+**Implementation (v0):** `glass_bridge::live_session_ws` — per-connection `F03OutboundQueue`, `F03_V0_LIVE_WS_QUEUE_MAX_*`, coalesce-on-overflow + `session_resync_required`, poll-failure resync. This document remains the rationale archive; tracker details live in `docs/PHASE0_FREEZE_TRACKER.md`.
+
 **Authority:** `GLASS_FULL_ENGINEERING_SPEC_v10.md`, `GLASS_V0_BUILD_PLAN.md`.  
 **Related (do not conflate):** Bounded-era **F-04** HTTP snapshot is **frozen** — `docs/F03_F04_FREEZE_PROPOSAL.md`, `docs/contracts/bridge_session_snapshot_bounded_v0.schema.json`. This document is **live-era / WebSocket / outbound path** only.
 

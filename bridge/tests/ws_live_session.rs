@@ -10,7 +10,9 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use futures_util::{SinkExt, StreamExt};
 use glass_bridge::ipc_client::fetch_bounded_snapshot;
-use glass_bridge::live_session_ws::LIVE_SESSION_WS_PROTOCOL_V1;
+use glass_bridge::live_session_ws::{
+    F03_V0_LIVE_WS_QUEUE_MAX_BYTES, F03_V0_LIVE_WS_QUEUE_MAX_EVENTS, LIVE_SESSION_WS_PROTOCOL_V1,
+};
 use glass_bridge::resync::{
     RESYNC_HINT_REASON_BOUNDED_TRUNCATION, RESYNC_HINT_REASON_RETAINED_TAIL_REPLACES,
 };
@@ -158,6 +160,23 @@ async fn retained_file_lane_change_emits_session_snapshot_replaced() {
     assert_eq!(hello["type"], "glass.bridge.ws.hello");
     assert_eq!(hello["live_session_delta_skeleton"], true);
     assert_eq!(hello["collector_fipc_configured"], true);
+    let f03 = &hello["f03_v0_live_ws"];
+    assert_eq!(
+        f03["queue_max_events"].as_u64().unwrap() as usize,
+        F03_V0_LIVE_WS_QUEUE_MAX_EVENTS
+    );
+    assert_eq!(
+        f03["queue_max_bytes"].as_u64().unwrap() as usize,
+        F03_V0_LIVE_WS_QUEUE_MAX_BYTES
+    );
+    assert_eq!(
+        f03["overflow_policy"].as_str().unwrap(),
+        "coalesce_latest_session_snapshot_replaced_then_session_resync_required"
+    );
+    assert_eq!(
+        f03["threshold_semantics"].as_str().unwrap(),
+        "events_or_bytes"
+    );
 
     let sub = serde_json::json!({
         "msg": "live_session_subscribe",
