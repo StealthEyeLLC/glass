@@ -1,6 +1,10 @@
 /**
- * Canvas 2D renderer for bounded live visual (full labels + honesty lines).
- * When WebGPU bootstrap is active, this canvas may be hidden; see `liveVisualRenderer.ts`.
+ * Canvas 2D rendering for the bounded live visual.
+ *
+ * Responsibility split:
+ * - **Geometry** (`renderLiveVisualGeometryIntoContext`): background, density band, ticks, HTTP chip box — matches WebGPU layer.
+ * - **Text overlay** (`renderLiveVisualTextOverlayIntoContext`): mode / wire / reconcile / honesty lines + chip label — stacked transparently when WebGPU draws geometry.
+ * - **Full** (`renderLiveVisualIntoContext` / `renderLiveVisualOnCanvas`): geometry + text (Canvas-only fallback).
  */
 
 import {
@@ -27,10 +31,9 @@ const DEFAULT_LAYOUT: LiveVisualCanvasLayout = {
 };
 
 /**
- * Draw the current spec in CSS pixel space. Caller must have applied any devicePixelRatio scaling
- * to `ctx` (e.g. `setTransform(dpr, 0, 0, dpr, 0, 0)`).
+ * WebGPU-aligned geometry only (no text). Same layout math as `liveVisualWebGpu` vertex builder.
  */
-export function renderLiveVisualIntoContext(
+export function renderLiveVisualGeometryIntoContext(
   ctx: CanvasRenderingContext2D,
   spec: LiveVisualSpec,
   widthCss: number,
@@ -66,14 +69,35 @@ export function renderLiveVisualIntoContext(
     ctx.strokeStyle = "#64748b";
     ctx.lineWidth = 1;
     ctx.strokeRect(chip.x, chip.y, chip.width, chip.height);
-    ctx.fillStyle = "#334155";
-    ctx.font = "600 9px system-ui, sans-serif";
-    ctx.fillText("HTTP", chip.x + 5, chip.y + 11);
   }
 
   ctx.strokeStyle = "#cbd5e1";
   ctx.lineWidth = 1;
   ctx.strokeRect(16, bandY, w - 32, bandH);
+}
+
+/**
+ * Text + chip label only, no clear — use after geometry on the same context, or after clear on overlay.
+ */
+export function drawLiveVisualTextLabelsIntoContext(
+  ctx: CanvasRenderingContext2D,
+  spec: LiveVisualSpec,
+  widthCss: number,
+  heightCss: number,
+): void {
+  const w = widthCss;
+  const h = heightCss;
+
+  const markers = buildLiveVisualMarkersLayout(spec, w);
+  const bandH = LIVE_VISUAL_BAND_LAYOUT.height;
+  const bandY = LIVE_VISUAL_BAND_LAYOUT.originY;
+
+  const chip = markers.httpReconcile;
+  if (chip.show) {
+    ctx.fillStyle = "#334155";
+    ctx.font = "600 9px system-ui, sans-serif";
+    ctx.fillText("HTTP", chip.x + 5, chip.y + 11);
+  }
 
   ctx.fillStyle = "#0f172a";
   ctx.font = "600 12px system-ui, sans-serif";
@@ -101,7 +125,67 @@ export function renderLiveVisualIntoContext(
 }
 
 /**
- * Draw the current spec. Returns false if 2D context is unavailable (caller may show fallback text).
+ * Transparent overlay: clear then text labels — hybrid WebGPU + Canvas (alpha canvas).
+ */
+export function renderLiveVisualTextOverlayIntoContext(
+  ctx: CanvasRenderingContext2D,
+  spec: LiveVisualSpec,
+  widthCss: number,
+  heightCss: number,
+): void {
+  const w = widthCss;
+  const h = heightCss;
+  ctx.clearRect(0, 0, w, h);
+  drawLiveVisualTextLabelsIntoContext(ctx, spec, w, h);
+}
+
+/**
+ * Full frame: geometry + text (Canvas-only path).
+ */
+export function renderLiveVisualIntoContext(
+  ctx: CanvasRenderingContext2D,
+  spec: LiveVisualSpec,
+  widthCss: number,
+  heightCss: number,
+): void {
+  renderLiveVisualGeometryIntoContext(ctx, spec, widthCss, heightCss);
+  drawLiveVisualTextLabelsIntoContext(ctx, spec, widthCss, heightCss);
+}
+
+/**
+ * Text overlay only. Returns false if 2D context is unavailable.
+ */
+export function renderLiveVisualTextOverlayOnCanvas(
+  canvas: HTMLCanvasElement,
+  spec: LiveVisualSpec,
+  layout: LiveVisualCanvasLayout = DEFAULT_LAYOUT,
+): boolean {
+  let ctx: CanvasRenderingContext2D | null = null;
+  try {
+    ctx = canvas.getContext("2d", { alpha: true });
+  } catch {
+    return false;
+  }
+  if (!ctx) {
+    return false;
+  }
+
+  const dpr = typeof window !== "undefined" && window.devicePixelRatio ? window.devicePixelRatio : 1;
+  const w = layout.widthCss;
+  const h = layout.heightCss;
+  canvas.style.width = `${w}px`;
+  canvas.style.height = `${h}px`;
+  canvas.width = Math.floor(w * dpr);
+  canvas.height = Math.floor(h * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  renderLiveVisualTextOverlayIntoContext(ctx, spec, w, h);
+
+  return true;
+}
+
+/**
+ * Draw the current spec (full). Returns false if 2D context is unavailable (caller may show fallback text).
  */
 export function renderLiveVisualOnCanvas(
   canvas: HTMLCanvasElement,

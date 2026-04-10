@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { createInitialLiveSessionModelState } from "./applyLiveSessionMessage.js";
 import { buildLiveVisualSpec } from "./liveVisualModel.js";
-import { renderLiveVisualIntoContext, renderLiveVisualOnCanvas } from "./liveVisualCanvas.js";
+import {
+  renderLiveVisualIntoContext,
+  renderLiveVisualOnCanvas,
+  renderLiveVisualTextOverlayIntoContext,
+} from "./liveVisualCanvas.js";
 
 function createMock2dContext(): CanvasRenderingContext2D {
   return {
@@ -11,6 +15,7 @@ function createMock2dContext(): CanvasRenderingContext2D {
     lineWidth: 1,
     setTransform: vi.fn(),
     fillRect: vi.fn(),
+    clearRect: vi.fn(),
     strokeRect: vi.fn(),
     fillText: vi.fn(),
   } as unknown as CanvasRenderingContext2D;
@@ -70,6 +75,18 @@ describe("renderLiveVisualIntoContext", () => {
     renderLiveVisualIntoContext(ctx, spec, 200, 100);
     const texts = (ctx.fillText as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0] as string);
     expect(texts.some((t) => t.includes("HTTP:"))).toBe(true);
+  });
+});
+
+describe("renderLiveVisualTextOverlayIntoContext", () => {
+  it("clears then draws mode line (hybrid overlay path)", () => {
+    const ctx = createMock2dContext();
+    const spec = buildLiveVisualSpec(createInitialLiveSessionModelState("sid"), null);
+    renderLiveVisualTextOverlayIntoContext(ctx, spec, 200, 100);
+    const clearRect = ctx.clearRect as ReturnType<typeof vi.fn>;
+    expect(clearRect).toHaveBeenCalledWith(0, 0, 200, 100);
+    const fillText = ctx.fillText as ReturnType<typeof vi.fn>;
+    expect(fillText.mock.calls.some((c) => String(c[0]).includes("mode="))).toBe(true);
   });
 });
 

@@ -18,6 +18,7 @@ describe("mountLiveSessionShell", () => {
     expect(root.querySelector('[data-testid="live-visual-fallback"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="live-visual-gpu-status"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="live-visual-canvas-webgpu"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="live-visual-canvas-text-overlay"]')).not.toBeNull();
     const legend = root.querySelector('[data-testid="live-visual-legend"]');
     expect(legend).not.toBeNull();
     const lt = legend?.textContent ?? "";

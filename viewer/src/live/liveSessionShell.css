@@ -203,14 +203,28 @@
 
 .glass-live-visual-canvas-stack {
   position: relative;
+  margin-top: 0.35rem;
+}
+
+.glass-live-visual-canvas-stack .glass-live-visual-canvas {
+  margin-top: 0;
 }
 
 .glass-live-visual-canvas {
   display: block;
-  margin-top: 0.35rem;
   border: 1px solid #cbd5e1;
   border-radius: 2px;
   background: #f8fafc;
+}
+
+.glass-live-visual-canvas--text-overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  background: transparent;
+  border: none;
+  border-radius: 2px;
 }
 
 .glass-live-visual-fallback {

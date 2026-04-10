@@ -62,7 +62,7 @@ export function formatWebGpuLiveStatusLine(status: WebGpuLiveStatus): string {
     case "available_but_not_initialized":
       return "WebGPU: probing / initializing…";
     case "initialized":
-      return "WebGPU: active (bootstrap: band + slot ticks; wire/detail text remains in panels below).";
+      return "WebGPU: active (geometry) + Canvas text overlay (mode / wire / honesty) — not topology.";
     case "failed_with_fallback":
       return "WebGPU: initialization failed — using Canvas 2D.";
   }

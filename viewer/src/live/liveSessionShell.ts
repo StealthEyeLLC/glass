@@ -321,7 +321,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const visualIntro = el(
     "div",
     "glass-live-field",
-    "Bounded live visual (Canvas 2D + optional WebGPU bootstrap — not topology)",
+    "Bounded live visual (Canvas 2D, or WebGPU geometry + Canvas text overlay — not topology)",
   );
   visualIntro.setAttribute("id", "live-visual-surface-title");
   const visualGpuStatus = el("p", "glass-live-visual-gpu-status");
@@ -336,7 +336,12 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   visualCanvasWebGpu.className = "glass-live-visual-canvas glass-live-visual-canvas--webgpu";
   visualCanvasWebGpu.setAttribute("data-testid", "live-visual-canvas-webgpu");
   visualCanvasWebGpu.hidden = true;
-  visualCanvasStack.append(visualCanvas, visualCanvasWebGpu);
+  const visualCanvasTextOverlay = document.createElement("canvas");
+  visualCanvasTextOverlay.className =
+    "glass-live-visual-canvas glass-live-visual-canvas--text-overlay";
+  visualCanvasTextOverlay.setAttribute("data-testid", "live-visual-canvas-text-overlay");
+  visualCanvasTextOverlay.hidden = true;
+  visualCanvasStack.append(visualCanvas, visualCanvasWebGpu, visualCanvasTextOverlay);
   const visualFallback = el("p", "glass-live-visual-fallback");
   visualFallback.setAttribute("data-testid", "live-visual-fallback");
   visualFallback.textContent =
@@ -348,6 +353,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   visualLegend.textContent = formatLiveVisualLegendBlock();
   visualCanvas.setAttribute("aria-describedby", "live-visual-legend");
   visualCanvasWebGpu.setAttribute("aria-describedby", "live-visual-legend");
+  visualCanvasTextOverlay.setAttribute("aria-describedby", "live-visual-legend");
   visualSurface.append(visualIntro, visualGpuStatus, visualCanvasStack, visualFallback, visualLegend);
 
   let webGpuBundle: LiveVisualWebGpuBundle | null = null;
@@ -481,6 +487,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     const result = await paintLiveVisualSurface(
       visualCanvas,
       visualCanvasWebGpu,
+      visualCanvasTextOverlay,
       spec,
       undefined,
       webGpuBundle,
