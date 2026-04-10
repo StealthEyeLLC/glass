@@ -13,6 +13,9 @@ describe("mountLiveSessionShell", () => {
     expect(root.querySelector('[data-testid="live-ws-status"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="live-session-log"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="live-log-intro"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="live-visual-surface"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="live-visual-canvas"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="live-visual-fallback"]')).not.toBeNull();
   });
 });
 

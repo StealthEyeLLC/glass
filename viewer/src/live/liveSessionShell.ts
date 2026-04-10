@@ -44,6 +44,8 @@ import {
   type LiveSessionLogSource,
   type LiveSessionLogState,
 } from "./liveSessionLog.js";
+import { buildLiveVisualSpec } from "./liveVisualModel.js";
+import { renderLiveVisualOnCanvas } from "./liveVisualCanvas.js";
 import "./liveSessionShell.css";
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -304,6 +306,25 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const eventHonesty = el("p", "glass-live-event-honesty");
   eventHonesty.setAttribute("data-testid", "live-event-honesty");
 
+  const visualSurface = el("section", "glass-live-visual-surface");
+  visualSurface.setAttribute("data-testid", "live-visual-surface");
+  visualSurface.append(
+    el(
+      "div",
+      "glass-live-field",
+      "Bounded live visual (Canvas 2D skeleton — not WebGPU; not topology)",
+    ),
+  );
+  const visualCanvas = document.createElement("canvas");
+  visualCanvas.className = "glass-live-visual-canvas";
+  visualCanvas.setAttribute("data-testid", "live-visual-canvas");
+  const visualFallback = el("p", "glass-live-visual-fallback");
+  visualFallback.setAttribute("data-testid", "live-visual-fallback");
+  visualFallback.textContent =
+    "Canvas 2D context unavailable — textual panels above remain authoritative for this session.";
+  visualFallback.hidden = true;
+  visualSurface.append(visualCanvas, visualFallback);
+
   const eventList = el("div", "glass-live-event-list");
   eventList.setAttribute("data-testid", "live-event-list");
   eventList.setAttribute("data-live-events", "bounded-tail");
@@ -323,6 +344,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     presentationPre,
     tailOrigin,
     eventHonesty,
+    visualSurface,
     eventList,
     eventsHeader,
     eventsPre,
@@ -398,6 +420,14 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     }
 
     eventsPre.textContent = JSON.stringify(model.eventTail, null, 2);
+
+    paintLiveVisual();
+  }
+
+  function paintLiveVisual(): void {
+    const spec = buildLiveVisualSpec(model, lastReconcile);
+    const ok = renderLiveVisualOnCanvas(visualCanvas, spec);
+    visualFallback.hidden = ok;
   }
 
   function renderCaps(): void {

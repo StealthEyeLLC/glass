@@ -188,3 +188,23 @@
   max-height: 12rem;
   font-size: 0.72rem;
 }
+
+.glass-live-visual-surface {
+  margin: 0.75rem 0;
+  padding: 0.35rem 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.glass-live-visual-canvas {
+  display: block;
+  margin-top: 0.35rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 2px;
+  background: #f8fafc;
+}
+
+.glass-live-visual-fallback {
+  font-size: 0.75rem;
+  color: #b45309;
+  margin: 0.35rem 0 0;
+}
