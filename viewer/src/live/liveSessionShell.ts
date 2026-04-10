@@ -33,6 +33,17 @@ import {
   type WsLastCloseDisplay,
   type WsUiPhase,
 } from "./liveWsSessionStatus.js";
+import {
+  appendLiveSessionLogLine,
+  createInitialLiveSessionLogState,
+  formatLiveSessionLogHuman,
+  LIVE_SESSION_LOG_DEFAULT_MAX_LINES,
+  serializeLiveSessionLogForExport,
+  summarizeLiveWireForLog,
+  truncateForLog,
+  type LiveSessionLogSource,
+  type LiveSessionLogState,
+} from "./liveSessionLog.js";
 import "./liveSessionShell.css";
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -172,6 +183,10 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   let capsError: string | null = null;
   let lastReconcile: HttpReconcileRecord | null = null;
 
+  let logState: LiveSessionLogState = createInitialLiveSessionLogState(
+    LIVE_SESSION_LOG_DEFAULT_MAX_LINES,
+  );
+
   const connectionStatus = el("div", "glass-live-connection-status");
   connectionStatus.setAttribute("data-testid", "live-connection-status");
 
@@ -180,6 +195,37 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
 
   function setEphemeralStatus(t: string): void {
     ephemeralStatus.textContent = t;
+  }
+
+  const logSectionIntro = el("div", "glass-live-field glass-live-log-intro");
+  logSectionIntro.setAttribute("data-testid", "live-log-intro");
+  logSectionIntro.textContent =
+    "Bounded in-memory live session log (oldest dropped over cap) — not a durable audit trail; no token values logged.";
+
+  const logPre = el("pre", "glass-live-pre glass-live-log-pre");
+  logPre.setAttribute("data-testid", "live-session-log");
+
+  const logHeader = el("div", "glass-live-panel-header");
+  logHeader.append(
+    el("span", "glass-live-field", "Live session log (operator)"),
+    copyButton("session log", () => serializeLiveSessionLogForExport(logState), setEphemeralStatus),
+  );
+
+  function renderLiveLogStrip(): void {
+    logPre.textContent = formatLiveSessionLogHuman(logState);
+  }
+
+  function pushLiveLog(
+    source: LiveSessionLogSource,
+    message: string,
+    meta?: Record<string, unknown>,
+  ): void {
+    logState = appendLiveSessionLogLine(
+      logState,
+      meta ? { source, message, meta } : { source, message },
+      Date.now(),
+    );
+    renderLiveLogStrip();
   }
 
   const wsStatusHeader = el("div", "glass-live-panel-header");
@@ -291,6 +337,9 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     capsPre,
     reconcileHeader,
     reconcilePre,
+    logSectionIntro,
+    logHeader,
+    logPre,
     el("div", "glass-live-field", "WebSocket connection"),
     connectionStatus,
     wsStatusHeader,
@@ -410,6 +459,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     renderStatePresentation();
     renderMeta();
     updateWsSessionPanel();
+    renderLiveLogStrip();
   }
 
   function closeActiveSocket(attribution: "operator" | "reconnect"): void {
@@ -425,6 +475,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     if (!activeWs) {
       return;
     }
+    pushLiveLog("operator", "Disconnect requested (closing WebSocket)", { action: "disconnect" });
     setEphemeralStatus("disconnect — closing WebSocket (operator)");
     closeActiveSocket("operator");
     updateWsSessionPanel();
@@ -451,6 +502,10 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     const tok = tokenInput.value.trim();
     const sid = sessionInput.value.trim();
     if (!base || !tok || !sid) {
+      pushLiveLog("http", "HTTP snapshot skipped: missing URL, token, or session_id", {
+        trigger,
+        outcome: "skipped",
+      });
       setEphemeralStatus("bridge URL, token, and session id required");
       lastReconcile = makeReconcileRecord(trigger, "error", {
         errorMessage: "missing bridge URL, token, or session id",
@@ -458,6 +513,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       renderReconcile();
       return;
     }
+    pushLiveLog("http", `HTTP snapshot start trigger=${trigger}`, { trigger });
     setEphemeralStatus(
       trigger === "operator"
         ? "fetching HTTP snapshot (operator Refresh)…"
@@ -472,6 +528,16 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
         trigger === "operator"
           ? "operator Refresh"
           : "session_resync_required → reconcile";
+      pushLiveLog(
+        "http",
+        `HTTP snapshot ok (${trig}) events_in_body=${lastHttp.events?.length ?? 0}`,
+        {
+          trigger,
+          outcome: "ok",
+          eventsCount: lastHttp.events?.length ?? 0,
+          snapshot_cursor: lastHttp.snapshot_cursor,
+        },
+      );
       setEphemeralStatus(
         `HTTP snapshot ok (${trig}) — ${lastHttp.events?.length ?? 0} events in response body`,
       );
@@ -480,6 +546,11 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       const msg = e instanceof Error ? e.message : String(e);
       lastReconcile = makeReconcileRecord(trigger, "error", {
         errorMessage: msg,
+      });
+      pushLiveLog("http", `HTTP snapshot error trigger=${trigger}`, {
+        trigger,
+        outcome: "error",
+        detail: truncateForLog(msg, 240),
       });
       setEphemeralStatus(`HTTP snapshot error: ${msg}`);
     }
@@ -505,20 +576,34 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       syncConnectGate();
       if (!base || !tok) {
         capsError = "bridge URL and bearer token required";
+        pushLiveLog("preflight", "preflight skipped: need URL and token", { outcome: "skipped" });
         setEphemeralStatus("preflight skipped — need URL + token");
         renderCaps();
         return;
       }
+      pushLiveLog("preflight", "preflight: GET /capabilities started", { path: "/capabilities" });
       setEphemeralStatus("preflight: fetching /capabilities…");
       const r = await fetchBridgeCapabilities(base, tok);
       if (!r.ok) {
         capsError = r.error;
         lastCaps = null;
+        pushLiveLog("preflight", `preflight failed: ${truncateForLog(r.error, 200)}`, {
+          outcome: "error",
+        });
         setEphemeralStatus(`preflight failed: ${r.error}`);
       } else {
         lastCaps = r.value;
         capsError = null;
         saveLiveBridgeUrl(base);
+        pushLiveLog(
+          "preflight",
+          `preflight ok collector_fipc.configured=${lastCaps.collector_fipc.configured}`,
+          {
+            outcome: "ok",
+            collector_fipc_configured: lastCaps.collector_fipc.configured,
+            live_session_ingest: lastCaps.live_session_ingest,
+          },
+        );
         setEphemeralStatus("preflight ok — see capabilities panel");
       }
       renderAll();
@@ -535,11 +620,17 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     const tok = tokenInput.value.trim();
     const sid = sessionInput.value.trim();
     if (!base || !tok || !sid) {
+      pushLiveLog("operator", "Connect skipped: need URL, token, and session_id", {
+        outcome: "skipped",
+      });
       setEphemeralStatus("bridge URL, token, and session id required");
       wsUiPhase = "idle";
       updateWsSessionPanel();
       return;
     }
+    pushLiveLog("operator", `Connect: starting WebSocket for session_id=${truncateForLog(sid, 80)}`, {
+      session_id: sid,
+    });
     model = createInitialLiveSessionModelState(sid);
     lastReconcileProcessed = 0;
     lastHttp = null;
@@ -549,12 +640,17 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     try {
       url = bridgeHttpToLiveWsUrl(base, tok);
     } catch (e) {
-      setEphemeralStatus(e instanceof Error ? e.message : String(e));
+      const m = e instanceof Error ? e.message : String(e);
+      pushLiveLog("operator", `Connect: WebSocket URL error ${truncateForLog(m, 160)}`, {
+        outcome: "error",
+      });
+      setEphemeralStatus(m);
       wsUiPhase = "idle";
       updateWsSessionPanel();
       return;
     }
     wsUiPhase = "connecting";
+    pushLiveLog("ws", "WebSocket: connecting (constructor)", { phase: "connecting" });
     setEphemeralStatus("opening WebSocket…");
     updateWsSessionPanel();
 
@@ -568,6 +664,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       }
       hadErrorEventOnActiveSocket = false;
       wsUiPhase = "open";
+      pushLiveLog("ws", "WebSocket open — sending live_session_subscribe", { phase: "open" });
       updateWsSessionPanel();
       setEphemeralStatus("subscribing (live_session_subscribe sent)…");
       const sub: Record<string, unknown> = {
@@ -586,6 +683,15 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
         return;
       }
       const text = typeof ev.data === "string" ? ev.data : "";
+      const wireSummary = summarizeLiveWireForLog(text);
+      if (wireSummary) {
+        pushLiveLog("ws", wireSummary.message, wireSummary.meta);
+      } else {
+        pushLiveLog("ws", "non-live_session WS text line (ignored by reducer)", {
+          ignored: true,
+          len: text.length,
+        });
+      }
       model = applyLiveSessionLine(model, text);
       setEphemeralStatus("receiving live_session wire (see bounded tail below)");
       onModelUpdated();
@@ -596,6 +702,11 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       }
       errorSeenOnSocket.set(sock, true);
       hadErrorEventOnActiveSocket = true;
+      pushLiveLog(
+        "ws",
+        "WebSocket error event (browser) — await close for code/reason",
+        {},
+      );
       setEphemeralStatus(
         "WebSocket error event — close code/reason will appear when the socket closes",
       );
@@ -632,6 +743,17 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
         reason: e.reason ?? "",
         wasClean: e.wasClean,
       };
+      pushLiveLog(
+        "ws",
+        `WebSocket closed code=${e.code} wasClean=${e.wasClean} initiator=${lastWsCloseDisplay.initiator}`,
+        {
+          code: e.code,
+          reason: truncateForLog(e.reason ?? "", 200),
+          wasClean: e.wasClean,
+          initiator: lastWsCloseDisplay.initiator,
+          operator_close: attr === "operator",
+        },
+      );
       if (attr === "operator") {
         setEphemeralStatus("WebSocket closed (operator disconnect)");
       } else {
@@ -656,6 +778,11 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   setEphemeralStatus("");
   wsUiPhase = "idle";
   lastWsCloseDisplay = null;
+  pushLiveLog(
+    "operator",
+    "Live shell ready — bounded session log strip active (see note above log)",
+    { strip_version: "v0", max_lines: LIVE_SESSION_LOG_DEFAULT_MAX_LINES },
+  );
   renderAll();
 
   return {

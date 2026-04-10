@@ -59,8 +59,9 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `src/app/mode.test.ts` | `getBuildMode` stays **`static_replay`**; `uiSurfaceFromSearch` for `?live=1` |
 | `src/live/applyLiveSessionMessage.test.ts` | Live wire reducer: `session_hello`, `session_snapshot_replaced` replacement sample, non-empty `session_delta` append, empty delta no-op, `session_resync_required` reconcile counter, `session_warning`; **`lastAppliedWire`** surface (replace / append / none, resync summary, truncated sample honesty) |
 | `src/live/liveStatePresentation.test.ts` | `buildLiveStatePresentationDoc` (resync + reconcile trigger, bounded-sample honesty, HTTP snapshot_meta fallback); **`liveConnectDisabledFromPreflight`** (F-IPC not configured vs failed/missing preflight) |
+| `src/live/liveSessionLog.test.ts` | **`appendLiveSessionLogLine`** eviction + timestamps; **`formatLiveSessionLogHuman`**; **`serializeLiveSessionLogForExport`** shape; **`summarizeLiveWireForLog`** (concise, no event payloads); **`truncateForLog`** |
 | `src/live/liveWsSessionStatus.test.ts` | Pure **`resolveCloseInitiator`**, **`formatLastCloseLine`**, **`buildWsStatusJson`**, phase lines |
-| `src/live/liveSessionShell.test.ts` | Mounted shell: **Disconnect** + **live-ws-status** test ids; **mock WebSocket**: operator close records **code** + **operator_disconnect**; **reconnect** clears prior close in JSON |
+| `src/live/liveSessionShell.test.ts` | Mounted shell: **Disconnect** + **live-ws-status** + **live-session-log** test ids; **mock WebSocket**: operator close records **code** + **operator_disconnect**; **reconnect** clears prior close in JSON |
 | `src/live/liveSessionHttp.test.ts` | `bridgeHttpToLiveWsUrl` maps http→ws / https→wss + `access_token` |
 | `src/live/liveCapabilities.test.ts` | `parseBridgeCapabilitiesJson` + `fetchBridgeCapabilities` error/ok paths (fetch mock) |
 | `src/live/liveSessionStorage.test.ts` | sessionStorage round-trip for URL/session/delta-wire; **no** token key; `saveLiveBridgeUrl` partial |

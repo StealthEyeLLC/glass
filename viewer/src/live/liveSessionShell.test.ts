@@ -11,6 +11,8 @@ describe("mountLiveSessionShell", () => {
     expect(root.querySelector('[data-testid="live-connect"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="live-disconnect"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="live-ws-status"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="live-session-log"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="live-log-intro"]')).not.toBeNull();
   });
 });
 

@@ -178,3 +178,13 @@
   color: #6b7280;
   margin: 0.25rem;
 }
+
+.glass-live-log-intro {
+  max-width: 48rem;
+  line-height: 1.35;
+}
+
+.glass-live-log-pre {
+  max-height: 12rem;
+  font-size: 0.72rem;
+}
