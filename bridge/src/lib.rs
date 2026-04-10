@@ -5,8 +5,9 @@
 //! - **Loopback HTTP + WebSocket skeleton** for the operator viewer. **No** privileged collection
 //!   inside this process — optional **F-IPC** talks to a separate `glass-collector ipc-serve`
 //!   process over **provisional TCP loopback** for **bounded snapshots** only (`docs/PRIVILEGE_SEPARATION.md`).
-//! - **Honest scope:** structural routes, auth scaffolding, bounded snapshot JSON shape, and a
-//!   WebSocket **handshake only** (no fabricated live event stream).
+//! - **Honest scope:** structural routes, auth scaffolding, bounded snapshot JSON shape (F-04 frozen on
+//!   HTTP), optional **live-session WebSocket skeleton** (`live_session_ws`) that **polls** F-IPC when
+//!   configured — bounded **replacement** notices only, not a finished live delta pipeline.
 //!
 //! ## Auth
 //!
@@ -18,7 +19,8 @@
 //! - F-IPC uses a **separate** shared secret (`--collector-ipc-secret`), not the HTTP bearer.
 
 pub mod http_types;
-mod ipc_client;
+pub mod ipc_client;
+pub mod live_session_ws;
 pub mod resync;
 mod server;
 mod snapshot_contract;
@@ -29,6 +31,13 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::Duration;
 use thiserror::Error;
+
+/// Shared router state (HTTP bearer; WebSocket auth; optional F-IPC).
+#[derive(Clone)]
+pub struct AppState {
+    pub bearer_token: Arc<str>,
+    pub collector_ipc: Option<CollectorIpcClientConfig>,
+}
 
 /// Configuration for bridge → collector F-IPC client (provisional TCP).
 #[derive(Debug, Clone)]

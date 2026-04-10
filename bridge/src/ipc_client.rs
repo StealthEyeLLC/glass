@@ -1,4 +1,7 @@
 //! Provisional F-IPC **client** (bridge → collector TCP). See `glass_collector::ipc_dev_tcp`.
+//!
+//! Exposed as `pub` so integration tests and tooling can perform snapshot RPCs; the HTTP snapshot route
+//! remains the primary stable API for viewers.
 
 use std::time::Duration;
 

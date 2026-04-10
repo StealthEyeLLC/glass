@@ -83,6 +83,7 @@ async fn capabilities_accepts_valid_bearer() {
     );
     assert_eq!(v["resync"]["recovery_strategy"], "snapshot_and_cursor");
     assert_eq!(v["live_session_ingest"], false);
+    assert_eq!(v["websocket"]["live_session_delta_skeleton"], false);
     assert_eq!(
         v["websocket"]["delta_stream_status"],
         "handshake_only_no_live_deltas"
@@ -246,6 +247,8 @@ async fn ws_handshake_with_query_token_receives_hello_json() {
     let v: serde_json::Value = serde_json::from_str(&t).unwrap();
     assert_eq!(v["type"], "glass.bridge.ws.hello");
     assert_eq!(v["live_delta_stream"], false);
+    assert_eq!(v["live_session_delta_skeleton"], false);
+    assert_eq!(v["collector_fipc_configured"], false);
     assert_eq!(v["recovery_strategy"], "snapshot_and_cursor");
     let _ = ws.close(None).await;
 }

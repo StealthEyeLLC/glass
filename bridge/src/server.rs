@@ -1,8 +1,6 @@
 //! Axum router and [`serve`] entrypoint.
 
-use std::sync::Arc;
-
-use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
+use axum::extract::ws::WebSocketUpgrade;
 use axum::extract::{Path, Query, State};
 use axum::http::{header, HeaderMap, StatusCode};
 use axum::middleware::{self, Next};
@@ -21,17 +19,10 @@ use crate::http_types::{
     SNAPSHOT_CURSOR_EMPTY,
 };
 use crate::ipc_client;
-use crate::resync::PROVISIONAL_BACKLOG_EVENT_THRESHOLD;
+use crate::live_session_ws;
 use crate::snapshot_contract;
-use crate::{BridgeConfig, BridgeConfigError, CollectorIpcClientConfig};
+use crate::{AppState, BridgeConfig, BridgeConfigError};
 use thiserror::Error;
-
-/// Shared router state (bearer token for HTTP; WS may use query on loopback).
-#[derive(Clone)]
-pub struct AppState {
-    pub bearer_token: Arc<str>,
-    pub collector_ipc: Option<CollectorIpcClientConfig>,
-}
 
 #[derive(Debug, Error)]
 pub enum ServeError {
@@ -255,28 +246,8 @@ async fn ws_upgrade(
         )
             .into_response();
     }
-    ws.on_upgrade(ws_hello_only)
-}
-
-async fn ws_hello_only(mut socket: WebSocket) {
-    let hello = json!({
-        "type": "glass.bridge.ws.hello",
-        "bridge_api_version": 1,
-        "live_delta_stream": false,
-        "provisional_backlog_event_threshold": PROVISIONAL_BACKLOG_EVENT_THRESHOLD,
-        "recovery_strategy": "snapshot_and_cursor",
-        "note": "skeleton: no fabricated events; use GET /sessions/:id/snapshot for bounded state"
-    });
-    if socket
-        .send(Message::Text(hello.to_string().into()))
-        .await
-        .is_err()
-    {
-        return;
-    }
-    while let Some(msg) = socket.recv().await {
-        if msg.is_err() {
-            break;
-        }
-    }
+    ws.on_upgrade(move |socket| {
+        let st = state.clone();
+        async move { live_session_ws::run_ws_session(socket, st).await }
+    })
 }

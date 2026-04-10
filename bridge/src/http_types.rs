@@ -43,8 +43,10 @@ pub struct ResyncCapabilities {
 #[derive(Debug, Clone, Serialize)]
 pub struct WebSocketCapability {
     pub path: &'static str,
-    /// Reserved for bounded delta stream; **not** emitting live events in this skeleton.
+    /// `handshake_only_no_live_deltas` when F-IPC unset; `live_session_delta_skeleton_polling` when configured.
     pub delta_stream_status: &'static str,
+    /// True when `GET /ws` can run bounded live-session subscribe + F-IPC polling (**not** final live ingest).
+    pub live_session_delta_skeleton: bool,
 }
 
 /// Status of collector F-IPC for this snapshot (omitted when HTTP route did not use F-IPC).
@@ -116,6 +118,7 @@ impl CapabilitiesResponse {
         collector_fipc_configured: bool,
         fipc_wire_protocol_version: u32,
     ) -> Self {
+        let ws_skeleton = collector_fipc_configured;
         Self {
             bridge_api_version: 1,
             resync: ResyncCapabilities {
@@ -124,7 +127,12 @@ impl CapabilitiesResponse {
             },
             websocket: WebSocketCapability {
                 path: "/ws",
-                delta_stream_status: "handshake_only_no_live_deltas",
+                delta_stream_status: if ws_skeleton {
+                    "live_session_delta_skeleton_polling"
+                } else {
+                    "handshake_only_no_live_deltas"
+                },
+                live_session_delta_skeleton: ws_skeleton,
             },
             live_session_ingest: false,
             collector_fipc: CollectorFipcCapability {

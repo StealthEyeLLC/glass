@@ -95,6 +95,16 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 
 | Code / tests | `glass_bridge::http_types::SessionSnapshotResponse`, `glass_bridge::resync`, `glass_bridge::snapshot_contract`, `glass_collector::ipc` origins + `FipcBoundedSnapshotMeta`, `bridge/tests/snapshot_fipc.rs`, `collector/tests/ipc_fipc_tcp.rs` |
 
+### Live-session WebSocket skeleton (provisional — does **not** close F-03 / F-04 live-era)
+
+| Field | Content |
+|-------|---------|
+| **Status** | **Landed (skeleton)** — `glass_bridge::live_session_ws`; `docs/contracts/live_session_ws_skeleton_v1.md`. |
+| **What it does** | After `live_session_subscribe`, bridge **polls** collector F-IPC on a **provisional** interval and emits `session_snapshot_replaced` when the bounded snapshot **fingerprint** changes. **Honest** replacement semantics — **not** append-only durability. |
+| **What it is not** | Final live ingest, F-03 backlog policy, push-based collector→bridge transport, or frozen live-era `resync_hint` extensions. |
+| **Additive reasons** | WebSocket-only `LIVE_WS_REASON_*` (queue overflow / resync) — **separate** from frozen HTTP `RESYNC_HINT_REASON_*`. |
+| **Tests** | `bridge/tests/ws_live_session.rs` (requires **multi-accept** F-IPC test harness when opening many short TCP connections). |
+
 ---
 
 ## Open — human-owned vs decision-ready
@@ -182,6 +192,7 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 - [x] `docs/VISUAL_REGRESSION_POLICY.md` — pending F-01 choice
 - [x] F-02 v1 format documented **in this tracker** (ADR-equivalent for bootstrap)
 - [x] Bounded-era F-04: `docs/contracts/bridge_session_snapshot_bounded_v0.schema.json` + **Closed — bounded-era F-04** section above
+- [x] Live-session WS skeleton: `docs/contracts/live_session_ws_skeleton_v1.md` + tracker subsection (**provisional**; not F-03/F-04 live-era closure)
 
 ---
 
