@@ -17,35 +17,76 @@ import {
 export interface LiveSceneCompileInput {
   model: LiveSessionModelState;
   lastReconcile: HttpReconcileRecord | null;
+  /** Optional — last bounded HTTP `snapshot_origin` when WS replace has not yet been observed */
+  httpSnapshotOrigin?: string | null;
 }
 
 function liveZones(): SceneZone[] {
   return [
     {
-      id: "z_primary",
+      id: "z_wire",
       kind: "primary_band",
-      label: "Wire mode (replace / append / resync)",
+      label: "Wire update mode (last-applied WS)",
     },
-    { id: "z_density", kind: "density_lane", label: "Bounded WS tail density" },
+    {
+      id: "z_sample",
+      kind: "density_lane",
+      label: "Bounded WS tail density",
+    },
     { id: "z_markers", kind: "marker_lane", label: "R · A · Rz wire slots" },
-    { id: "z_http", kind: "annotation", label: "HTTP reconcile chip (F-04)" },
+    {
+      id: "z_snapshot",
+      kind: "annotation",
+      label: "Snapshot origin (F-04 / WS replace)",
+    },
+    {
+      id: "z_reconcile",
+      kind: "annotation",
+      label: "HTTP reconcile / resync reason",
+    },
+    {
+      id: "z_state_rail",
+      kind: "state_rail",
+      label: "Bounded state rail (Drawable Primitives v1)",
+    },
   ];
 }
 
 function liveNodes(spec: ReturnType<typeof buildLiveVisualSpec>): SceneNode[] {
   const d = liveVisualDensity01(spec.eventTailCount);
+  const origin = spec.snapshotOriginLabel ?? "—";
+  const resync = spec.resyncReason ?? "—";
+  const warn = spec.warningCode ?? "—";
   const nodes: SceneNode[] = [
     {
       id: "n_mode",
-      zoneId: "z_primary",
+      zoneId: "z_wire",
       kind: "mode_band",
       payload: { mode: spec.mode },
     },
     {
       id: "n_density",
-      zoneId: "z_density",
+      zoneId: "z_sample",
       kind: "density_value",
       payload: { density01: d, tail: spec.eventTailCount },
+    },
+    {
+      id: "n_fact_snapshot",
+      zoneId: "z_snapshot",
+      kind: "fact_card",
+      payload: { key: "snapshot_origin", value: origin },
+    },
+    {
+      id: "n_fact_resync",
+      zoneId: "z_reconcile",
+      kind: "fact_card",
+      payload: { key: "resync_reason", value: resync },
+    },
+    {
+      id: "n_fact_warning",
+      zoneId: "z_reconcile",
+      kind: "fact_card",
+      payload: { key: "warning_code", value: warn },
     },
   ];
   return nodes;
@@ -55,7 +96,9 @@ function liveNodes(spec: ReturnType<typeof buildLiveVisualSpec>): SceneNode[] {
  * Deterministic live → scene. Delegates wire/reconcile semantics to `buildLiveVisualSpec`.
  */
 export function compileLiveToGlassSceneV0(input: LiveSceneCompileInput): GlassSceneV0 {
-  const spec = buildLiveVisualSpec(input.model, input.lastReconcile);
+  const spec = buildLiveVisualSpec(input.model, input.lastReconcile, {
+    httpSnapshotOrigin: input.httpSnapshotOrigin,
+  });
   const zones = liveZones();
   const nodes = liveNodes(spec);
   const edges: SceneEdge[] = [];
@@ -74,6 +117,8 @@ export function compileLiveToGlassSceneV0(input: LiveSceneCompileInput): GlassSc
     warningCode: spec.warningCode,
     resyncReason: spec.resyncReason,
     reconcileSummary: spec.reconcileSummary,
+    snapshotOriginLabel: spec.snapshotOriginLabel,
+    replayPrefixFraction: spec.replayPrefixFraction,
     zones,
     nodes,
     edges,

@@ -26,7 +26,9 @@ export type SceneZoneKind =
   | "density_lane"
   | "marker_lane"
   | "annotation"
-  | "provenance_hook";
+  | "provenance_hook"
+  /** Vertical Slice v1 — bounded state rail (Drawable Primitives), not topology */
+  | "state_rail";
 
 export interface SceneZone {
   id: string;
@@ -40,7 +42,9 @@ export type SceneNodeKind =
   | "density_value"
   | "playback_badge"
   | "cursor_position"
-  | "text_annotation";
+  | "text_annotation"
+  /** Key/value fact from current wire or HTTP — no graph semantics */
+  | "fact_card";
 
 export interface SceneNode {
   id: string;
@@ -88,13 +92,18 @@ export interface GlassSceneV0 {
   warningCode: string | null;
   resyncReason: string | null;
   reconcileSummary: string | null;
+  /** Live: `session_snapshot_replaced.snapshot_origin` or optional HTTP body; replay: null */
+  snapshotOriginLabel: string | null;
+  /** Replay only: prefix cursor coverage vs pack cardinality (honest split strip); live: null */
+  replayPrefixFraction: number | null;
   zones: readonly SceneZone[];
   nodes: readonly SceneNode[];
   edges: readonly SceneEdge[];
   honesty: SceneHonesty;
 }
 
+/** Vertical Slice v1 — room for bounded state rail below primary band + text. */
 export const DEFAULT_SCENE_BOUNDS: SceneBounds = {
   widthCss: 360,
-  heightCss: 132,
+  heightCss: 168,
 };

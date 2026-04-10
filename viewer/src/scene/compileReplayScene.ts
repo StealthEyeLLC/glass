@@ -25,7 +25,21 @@ function replayZones(): SceneZone[] {
       label: "Prefix depth + wire-mode band (replay sample)",
     },
     { id: "z_density", kind: "density_lane", label: "Prefix density vs pack cardinality" },
-    { id: "z_playback", kind: "annotation", label: "Playback / cursor (not wall-clock)" },
+    {
+      id: "z_snapshot",
+      kind: "annotation",
+      label: "Snapshot origin (replay — not live WS replace)",
+    },
+    {
+      id: "z_playback",
+      kind: "annotation",
+      label: "Playback / cursor (not wall-clock)",
+    },
+    {
+      id: "z_state_rail",
+      kind: "state_rail",
+      label: "Bounded state rail (prefix vs remainder)",
+    },
   ];
 }
 
@@ -42,30 +56,53 @@ function replayWireMode(state: ReplayState): LiveVisualMode {
   return "append";
 }
 
+function baseReplayFields(
+  zones: readonly SceneZone[],
+  edges: readonly SceneEdge[],
+  honestyScope: GlassSceneV0["honesty"]["sampleScope"],
+  overrides: Partial<GlassSceneV0>,
+): GlassSceneV0 {
+  return {
+    kind: GLASS_SCENE_V0,
+    source: "replay",
+    bounds: DEFAULT_SCENE_BOUNDS,
+    wireMode: "idle",
+    sessionLabel: "—",
+    boundedSampleCount: 0,
+    totalEventCardinality: null,
+    density01: 0,
+    lastWireMsg: null,
+    lastWireSummary: null,
+    warningCode: null,
+    resyncReason: null,
+    reconcileSummary: null,
+    snapshotOriginLabel: null,
+    replayPrefixFraction: null,
+    zones,
+    nodes: [],
+    edges,
+    honesty: {
+      sampleScope: honestyScope,
+      line: REPLAY_HONESTY_LINE,
+    },
+    ...overrides,
+  };
+}
+
 /**
  * Deterministic replay → scene. Does not invent graph edges — optional sequential edge only.
  */
 export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
   const zones = replayZones();
-  const nodes: SceneNode[] = [];
   const edges: SceneEdge[] = [];
 
   if (state.loadStatus === "error") {
-    return {
-      kind: GLASS_SCENE_V0,
-      source: "replay",
-      bounds: DEFAULT_SCENE_BOUNDS,
+    return baseReplayFields(zones, edges, "load_error", {
       wireMode: "warning",
       sessionLabel: state.packFileName ?? "—",
-      boundedSampleCount: 0,
-      totalEventCardinality: null,
-      density01: 0,
       lastWireMsg: "replay_load_error",
       lastWireSummary: state.loadError ?? "error",
       warningCode: "replay_load",
-      resyncReason: null,
-      reconcileSummary: null,
-      zones,
       nodes: [
         {
           id: "n_err",
@@ -73,31 +110,22 @@ export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
           kind: "text_annotation",
           payload: { message: state.loadError ?? "" },
         },
+        {
+          id: "n_fact_warn",
+          zoneId: "z_snapshot",
+          kind: "fact_card",
+          payload: { key: "warning_code", value: "replay_load" },
+        },
       ],
-      edges,
-      honesty: {
-        sampleScope: "load_error",
-        line: REPLAY_HONESTY_LINE,
-      },
-    };
+    });
   }
 
   if (state.loadStatus === "reading") {
-    return {
-      kind: GLASS_SCENE_V0,
-      source: "replay",
-      bounds: DEFAULT_SCENE_BOUNDS,
+    return baseReplayFields(zones, edges, "empty", {
       wireMode: "hello",
       sessionLabel: state.packFileName ?? "—",
-      boundedSampleCount: 0,
-      totalEventCardinality: null,
-      density01: 0,
       lastWireMsg: "replay_reading",
       lastWireSummary: state.packFileName ?? "",
-      warningCode: null,
-      resyncReason: null,
-      reconcileSummary: null,
-      zones,
       nodes: [
         {
           id: "n_reading",
@@ -106,37 +134,13 @@ export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
           payload: { phase: "reading" },
         },
       ],
-      edges,
-      honesty: {
-        sampleScope: "empty",
-        line: REPLAY_HONESTY_LINE,
-      },
-    };
+    });
   }
 
   if (state.loadStatus === "idle") {
-    return {
-      kind: GLASS_SCENE_V0,
-      source: "replay",
-      bounds: DEFAULT_SCENE_BOUNDS,
-      wireMode: "idle",
-      sessionLabel: "—",
-      boundedSampleCount: 0,
-      totalEventCardinality: null,
-      density01: 0,
-      lastWireMsg: null,
-      lastWireSummary: null,
-      warningCode: null,
-      resyncReason: null,
-      reconcileSummary: null,
-      zones,
+    return baseReplayFields(zones, edges, "empty", {
       nodes: [],
-      edges,
-      honesty: {
-        sampleScope: "empty",
-        line: REPLAY_HONESTY_LINE,
-      },
-    };
+    });
   }
 
   const total = state.events.length;
@@ -144,8 +148,9 @@ export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
   const mode = replayWireMode(state);
   const sessionLabel = state.manifest?.session_id ?? state.packFileName ?? "—";
   const density = liveVisualDensity01(prefixLen, Math.max(total, 1));
+  const replayFrac = total > 0 ? prefixLen / total : null;
 
-  nodes.push(
+  const nodes: SceneNode[] = [
     {
       id: "n_mode",
       zoneId: "z_primary",
@@ -159,6 +164,15 @@ export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
       payload: { density01: density, prefixLen, total },
     },
     {
+      id: "n_fact_snapshot",
+      zoneId: "z_snapshot",
+      kind: "fact_card",
+      payload: {
+        key: "snapshot_origin",
+        value: "n/a (replay prefix — not live session_snapshot_replaced)",
+      },
+    },
+    {
       id: "n_playback",
       zoneId: "z_playback",
       kind: "playback_badge",
@@ -170,7 +184,7 @@ export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
       kind: "cursor_position",
       payload: { cursorIndex: state.cursorIndex, total },
     },
-  );
+  ];
 
   return {
     kind: GLASS_SCENE_V0,
@@ -189,6 +203,8 @@ export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
     warningCode: null,
     resyncReason: null,
     reconcileSummary: null,
+    snapshotOriginLabel: null,
+    replayPrefixFraction: replayFrac,
     zones,
     nodes,
     edges,

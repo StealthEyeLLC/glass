@@ -31,14 +31,21 @@ describe("buildBoundedVisualGeometryPrimitives", () => {
     expect(p[4]?.semanticTag).toBe("tick_slot_resync");
   });
 
-  it("includes band frame stroke last in sequence", () => {
+  it("places band frame then Vertical Slice state rail (last stroke is state_rail_frame)", () => {
     const spec = buildLiveVisualSpec(createInitialLiveSessionModelState("s"), null);
     const p = buildBoundedVisualGeometryPrimitives(spec, 200, 100);
+    const band = p.find((x) => x.semanticTag === "band_frame");
     const last = p[p.length - 1];
-    expect(last).toMatchObject({
+    expect(band).toMatchObject({
       kind: "stroke_rect",
       semanticTag: "band_frame",
       strokeColorHex: "#cbd5e1",
+      lineWidthCss: 1,
+    });
+    expect(last).toMatchObject({
+      kind: "stroke_rect",
+      semanticTag: "state_rail_frame",
+      strokeColorHex: "#64748b",
       lineWidthCss: 1,
     });
   });
@@ -77,6 +84,25 @@ describe("expandStrokeRectToFillRects", () => {
       "band_frame_right",
     ]);
     expect(fills.every((f) => f.kind === "fill_rect")).toBe(true);
+  });
+
+  it("uses state_rail_frame_* tags for state_rail_frame strokes", () => {
+    const fills = expandStrokeRectToFillRects({
+      kind: "stroke_rect",
+      semanticTag: "state_rail_frame",
+      x: 0,
+      y: 52,
+      width: 100,
+      height: 20,
+      strokeColorHex: "#64748b",
+      lineWidthCss: 1,
+    });
+    expect(fills.map((f) => f.semanticTag)).toEqual([
+      "state_rail_frame_top",
+      "state_rail_frame_bottom",
+      "state_rail_frame_left",
+      "state_rail_frame_right",
+    ]);
   });
 
   it("uses http_chip_frame_* tags for http_chip_frame strokes", () => {

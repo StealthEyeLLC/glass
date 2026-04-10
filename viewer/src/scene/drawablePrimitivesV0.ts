@@ -23,6 +23,13 @@ import {
 
 export const DRAWABLE_PRIMITIVES_V0 = "glass.drawable_primitives.v0" as const;
 
+/** Y offset and height for the bounded state rail (below primary band + ticks; matches canvas text layout). */
+export const LIVE_VISUAL_STATE_RAIL_LAYOUT = {
+  originY: 52,
+  height: 20,
+  insetX: 16,
+} as const;
+
 /**
  * Stable, renderer-agnostic labels for bounded-strip geometry. Tags reflect existing layout roles
  * (background, density band, wire-slot ticks, HTTP chip, outer band frame) — not topology or history.
@@ -45,7 +52,19 @@ export type DrawablePrimitiveSemanticTag =
   | "http_chip_frame_top"
   | "http_chip_frame_bottom"
   | "http_chip_frame_left"
-  | "http_chip_frame_right";
+  | "http_chip_frame_right"
+  /** Vertical Slice v1 — bounded state rail under the primary band (not topology). */
+  | "state_rail_bg"
+  | "state_rail_snapshot_lane"
+  | "state_rail_resync_lane"
+  | "state_rail_warning_lane"
+  | "replay_prefix_lane"
+  | "replay_remainder_lane"
+  | "state_rail_frame"
+  | "state_rail_frame_top"
+  | "state_rail_frame_bottom"
+  | "state_rail_frame_left"
+  | "state_rail_frame_right";
 
 export type DrawablePrimitiveKind = "fill_rect" | "stroke_rect";
 
@@ -106,6 +125,14 @@ export function edgeFrameTagsForStroke(
       "http_chip_frame_right",
     ];
   }
+  if (tag === "state_rail_frame") {
+    return [
+      "state_rail_frame_top",
+      "state_rail_frame_bottom",
+      "state_rail_frame_left",
+      "state_rail_frame_right",
+    ];
+  }
   return ["band_frame_top", "band_frame_bottom", "band_frame_left", "band_frame_right"];
 }
 
@@ -114,8 +141,124 @@ export function edgeFrameTagsForStroke(
  * Order is stable for deterministic tests and matched across backends:
  *
  * 1. `band_background` → 2. `density_band` → 3–5. tick slots (replace, append, resync order) →
- * optional `http_chip_fill` + `http_chip_frame` → 6. `band_frame`.
+ * optional `http_chip_fill` + `http_chip_frame` → 6. `band_frame` → 7+. Vertical Slice v1 state rail
+ * (`state_rail_*`, `replay_*` lanes, `state_rail_frame`).
  */
+function appendVerticalSliceStateRail(spec: LiveVisualSpec, widthCss: number, out: DrawablePrimitive[]): void {
+  const inset = LIVE_VISUAL_STATE_RAIL_LAYOUT.insetX;
+  const innerW = widthCss - 2 * inset;
+  const y = LIVE_VISUAL_STATE_RAIL_LAYOUT.originY;
+  const h = LIVE_VISUAL_STATE_RAIL_LAYOUT.height;
+  const gap = 2;
+
+  out.push({
+    kind: "fill_rect",
+    semanticTag: "state_rail_bg",
+    x: inset,
+    y,
+    width: innerW,
+    height: h,
+    fillColorHex: "#e2e8f0",
+  });
+
+  const innerX = inset + gap;
+  const innerY = y + gap;
+  const innerW2 = innerW - 2 * gap;
+  const innerH = h - 2 * gap;
+
+  if (spec.stripSource === "replay") {
+    if (spec.replayPrefixFraction !== null) {
+      const frac = Math.min(1, Math.max(0, spec.replayPrefixFraction));
+      const prefixW = innerW2 * frac;
+      const remW = Math.max(0, innerW2 - prefixW);
+      if (prefixW > 0) {
+        out.push({
+          kind: "fill_rect",
+          semanticTag: "replay_prefix_lane",
+          x: innerX,
+          y: innerY,
+          width: prefixW,
+          height: innerH,
+          fillColorHex: LIVE_VISUAL_MODE_FILL.replace,
+        });
+      }
+      if (remW > 0) {
+        out.push({
+          kind: "fill_rect",
+          semanticTag: "replay_remainder_lane",
+          x: innerX + prefixW,
+          y: innerY,
+          width: remW,
+          height: innerH,
+          fillColorHex: "#cbd5e1",
+        });
+      }
+    } else {
+      out.push({
+        kind: "fill_rect",
+        semanticTag: "replay_remainder_lane",
+        x: innerX,
+        y: innerY,
+        width: innerW2,
+        height: innerH,
+        fillColorHex: "#94a3b8",
+      });
+    }
+  } else {
+    const third = (innerW2 - 2 * gap) / 3;
+    const w1 = third;
+    const w2 = third;
+    const w3 = innerW2 - w1 - w2 - 2 * gap;
+
+    const hasOrigin =
+      spec.snapshotOriginLabel !== null &&
+      spec.snapshotOriginLabel !== undefined &&
+      String(spec.snapshotOriginLabel).length > 0;
+
+    out.push({
+      kind: "fill_rect",
+      semanticTag: "state_rail_snapshot_lane",
+      x: innerX,
+      y: innerY,
+      width: w1,
+      height: innerH,
+      fillColorHex: hasOrigin ? "#93c5fd" : "#f1f5f9",
+    });
+    const resyncActive = spec.mode === "resync" || (spec.resyncReason !== null && spec.resyncReason.length > 0);
+    out.push({
+      kind: "fill_rect",
+      semanticTag: "state_rail_resync_lane",
+      x: innerX + w1 + gap,
+      y: innerY,
+      width: w2,
+      height: innerH,
+      fillColorHex: resyncActive ? "#fdba74" : "#f1f5f9",
+    });
+    const warnActive =
+      spec.mode === "warning" || (spec.warningCode !== null && spec.warningCode.length > 0);
+    out.push({
+      kind: "fill_rect",
+      semanticTag: "state_rail_warning_lane",
+      x: innerX + w1 + gap + w2 + gap,
+      y: innerY,
+      width: w3,
+      height: innerH,
+      fillColorHex: warnActive ? "#fca5a5" : "#f1f5f9",
+    });
+  }
+
+  out.push({
+    kind: "stroke_rect",
+    semanticTag: "state_rail_frame",
+    x: inset,
+    y,
+    width: innerW,
+    height: h,
+    strokeColorHex: "#64748b",
+    lineWidthCss: 1,
+  });
+}
+
 export function buildBoundedVisualGeometryPrimitives(
   spec: LiveVisualSpec,
   widthCss: number,
@@ -201,12 +344,14 @@ export function buildBoundedVisualGeometryPrimitives(
     lineWidthCss: 1,
   });
 
+  appendVerticalSliceStateRail(spec, w, out);
+
   return out;
 }
 
 /**
  * Expand a stroke rectangle into axis-aligned fill rectangles (for WebGPU solid-color pipeline).
- * Edge tags are derived from `stroke.semanticTag` via `edgeFrameTagsForStroke` (`band_frame` or `http_chip_frame`).
+ * Edge tags are derived from `stroke.semanticTag` via `edgeFrameTagsForStroke` (`band_frame`, `http_chip_frame`, or `state_rail_frame`).
  */
 export function expandStrokeRectToFillRects(s: DrawablePrimitiveStrokeRect): DrawablePrimitiveFillRect[] {
   const { x, y, width, height, strokeColorHex, lineWidthCss, semanticTag } = s;

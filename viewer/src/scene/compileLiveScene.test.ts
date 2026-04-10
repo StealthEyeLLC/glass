@@ -14,6 +14,16 @@ describe("compileLiveToGlassSceneV0", () => {
     expect(spec.mode).toBe("idle");
     expect(spec.sessionId).toBe("sid");
     expect(spec.honestyLine).toContain("not topology");
-    expect(scene.zones[0]?.label).toContain("replace");
+    expect(scene.zones[0]?.label.toLowerCase()).toContain("wire");
+  });
+
+  it("passes httpSnapshotOrigin into snapshotOriginLabel when model has no replace yet", () => {
+    const model = createInitialLiveSessionModelState("sid");
+    const scene = compileLiveToGlassSceneV0({
+      model,
+      lastReconcile: null,
+      httpSnapshotOrigin: "from_http_only",
+    });
+    expect(scene.snapshotOriginLabel).toBe("from_http_only");
   });
 });

@@ -17,5 +17,8 @@ export function liveVisualSpecFromScene(scene: GlassSceneV0): LiveVisualSpec {
     resyncReason: scene.resyncReason,
     reconcileSummary: scene.reconcileSummary,
     honestyLine: scene.honesty.line,
+    snapshotOriginLabel: scene.snapshotOriginLabel,
+    replayPrefixFraction: scene.replayPrefixFraction,
+    stripSource: scene.source,
   };
 }

@@ -1,10 +1,21 @@
-# Glass Vertical Slice v0
+# Glass Vertical Slice v0 / v1
 
-**Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier).
+**Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier). **Vertical Slice v1** is the same demo path with a **richer bounded scene** (see below); it does **not** change wire contracts.
+
+## Vertical Slice v1 (scene richness)
+
+**What it adds (viewer-only):**
+
+- **Scene System v0:** clearer **zone** grouping (wire mode, bounded tail density, R/A/Rz slots, snapshot origin, reconcile/resync, **state rail**). **Fact cards** surface only **current** strings (`snapshot_origin`, `resync_reason`, `warning_code`, replay-specific snapshot disclaimer) — **no** graph edges, **no** process tree, **no** invented history.
+- **`GlassSceneV0`:** `snapshotOriginLabel` (live: WS `session_snapshot_replaced` or optional last **HTTP** `bounded_snapshot.snapshot_origin` when passed into `compileLiveToGlassSceneV0`); `replayPrefixFraction` (replay only: prefix length / pack size, or `null` when no split yet). **`stripSource`** on `LiveVisualSpec` drives Drawable state-rail geometry (**live** = three lanes: snapshot / resync / warning emphasis; **replay** = honest **prefix vs remainder** lanes or a single remainder fill when unloaded).
+- **Drawable Primitives v0:** **`state_rail_*`** and **`replay_*`** semantic tags plus **`LIVE_VISUAL_STATE_RAIL_LAYOUT`**; Canvas 2D and WebGPU still share **`sceneToDrawablePrimitives`**. **WebGPU** does not render text; labels remain on the Canvas overlay (mode, snapshot origin or replay prefix %, wire, HTTP reconcile, honesty).
+- **Default canvas height** for the strip is **168px** CSS (room for the rail + text).
+
+**What it does *not* imply:** full Glass topology, durable history, or continuity beyond existing bounded contracts. **F-IPC transport** remains **provisional**. This is still **not** the Phase-6 full runtime scene.
 
 ## What it is
 
-A single **bounded** demo path through the real Glass v0 substrate: **Tier B static replay** (default) and **`?live=1`** live session use the **same** Scene System v0 strip and Drawable Primitives semantics. The slice is optimized for one coherent story: **honest operator visibility** (replace / append / resync wire roles, HTTP reconcile chip, bounded tail density) — **not** a process graph, **not** full history, **not** invented topology.
+A single **bounded** demo path through the real Glass v0 substrate: **Tier B static replay** (default) and **`?live=1`** live session use the **same** Scene System v0 strip and Drawable Primitives semantics. The slice is optimized for one coherent story: **honest operator visibility** (replace / append / resync wire roles, HTTP reconcile chip, bounded tail density, **snapshot origin and system-state rail**) — **not** a process graph, **not** full history, **not** invented topology.
 
 ## Scenario label
 

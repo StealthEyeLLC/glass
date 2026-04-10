@@ -28,6 +28,12 @@ export interface LiveVisualSpec {
   reconcileSummary: string | null;
   /** Always shown as footer honesty */
   honestyLine: string;
+  /** `bounded_snapshot.snapshot_origin` or WS replace — null when not yet observed */
+  snapshotOriginLabel: string | null;
+  /** Replay strip only: prefix length / pack size — null when not in a replay prefix split */
+  replayPrefixFraction: number | null;
+  /** Drives state rail geometry: live triage lanes vs replay prefix/remainder */
+  stripSource: "live" | "replay";
 }
 
 /** Fill colors for primary band (deterministic, sRGB hex). */
@@ -44,9 +50,22 @@ export const LIVE_VISUAL_MODE_FILL: Record<LiveVisualMode, string> = {
 const HONESTY =
   "Bounded WS tail / samples — not full history, not topology, not continuity guarantees.";
 
+export interface BuildLiveVisualSpecOptions {
+  /** When no `session_snapshot_replaced` yet — last HTTP `bounded_snapshot.snapshot_origin` if any */
+  httpSnapshotOrigin?: string | null;
+}
+
+function snapshotOriginLabelFromModel(
+  model: LiveSessionModelState,
+  options?: BuildLiveVisualSpecOptions,
+): string | null {
+  return model.lastReplaced?.snapshot_origin ?? options?.httpSnapshotOrigin ?? null;
+}
+
 export function buildLiveVisualSpec(
   model: LiveSessionModelState,
   lastReconcile: HttpReconcileRecord | null,
+  options?: BuildLiveVisualSpecOptions,
 ): LiveVisualSpec {
   const reconcileSummary = lastReconcile
     ? `${lastReconcile.trigger} → ${lastReconcile.status}${
@@ -61,6 +80,9 @@ export function buildLiveVisualSpec(
     sessionId: model.sessionId,
     honestyLine: HONESTY,
     reconcileSummary,
+    snapshotOriginLabel: snapshotOriginLabelFromModel(model, options),
+    replayPrefixFraction: null as number | null,
+    stripSource: "live" as const,
   };
 
   if (model.lastWarning) {

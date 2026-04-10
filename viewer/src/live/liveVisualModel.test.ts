@@ -31,6 +31,8 @@ describe("buildLiveVisualSpec", () => {
     const spec = buildLiveVisualSpec(m, null);
     expect(spec.mode).toBe("idle");
     expect(spec.eventTailCount).toBe(0);
+    expect(spec.stripSource).toBe("live");
+    expect(spec.replayPrefixFraction).toBeNull();
     expect(spec.honestyLine.length).toBeGreaterThan(10);
   });
 
@@ -50,6 +52,7 @@ describe("buildLiveVisualSpec", () => {
     const spec = buildLiveVisualSpec(m, null);
     expect(spec.mode).toBe("replace");
     expect(spec.eventTailCount).toBe(1);
+    expect(spec.snapshotOriginLabel).toBe("collector_store");
   });
 
   it("append after session_delta with events", () => {
@@ -126,6 +129,12 @@ describe("buildLiveVisualSpec", () => {
     expect(spec.reconcileSummary).toContain("session_resync_required");
     expect(spec.reconcileSummary).toContain("ok");
     expect(spec.reconcileSummary).toContain("3");
+  });
+
+  it("uses httpSnapshotOrigin when WS replace not yet applied", () => {
+    const m = createInitialLiveSessionModelState("s1");
+    const spec = buildLiveVisualSpec(m, null, { httpSnapshotOrigin: "http_body_origin" });
+    expect(spec.snapshotOriginLabel).toBe("http_body_origin");
   });
 
   it("none_delta for empty session_delta", () => {

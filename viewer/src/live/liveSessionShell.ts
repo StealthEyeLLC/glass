@@ -413,7 +413,13 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   let lastPaintResult: PaintLiveVisualSurfaceResult | null = null;
 
   function buildCurrentLiveVisualSpec(): LiveVisualSpec {
-    return liveVisualSpecFromScene(compileLiveToGlassSceneV0({ model, lastReconcile }));
+    return liveVisualSpecFromScene(
+      compileLiveToGlassSceneV0({
+        model,
+        lastReconcile,
+        httpSnapshotOrigin: lastHttp?.bounded_snapshot?.snapshot_origin ?? null,
+      }),
+    );
   }
 
   function buildCurrentProvenanceStrip() {
@@ -560,7 +566,11 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   }
 
   async function paintLiveVisual(): Promise<void> {
-    const scene = compileLiveToGlassSceneV0({ model, lastReconcile });
+    const scene = compileLiveToGlassSceneV0({
+      model,
+      lastReconcile,
+      httpSnapshotOrigin: lastHttp?.bounded_snapshot?.snapshot_origin ?? null,
+    });
     const result = await paintLiveVisualSurface(
       visualCanvas,
       visualCanvasWebGpu,

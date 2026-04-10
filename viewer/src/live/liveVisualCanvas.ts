@@ -9,13 +9,13 @@
  */
 
 import type { GlassSceneV0 } from "../scene/glassSceneV0.js";
-import { buildBoundedVisualGeometryPrimitives } from "../scene/drawablePrimitivesV0.js";
+import {
+  buildBoundedVisualGeometryPrimitives,
+  LIVE_VISUAL_STATE_RAIL_LAYOUT,
+} from "../scene/drawablePrimitivesV0.js";
 import { sceneToDrawablePrimitives } from "../scene/sceneToDrawablePrimitives.js";
 import { liveVisualSpecFromScene } from "../scene/sceneToLiveVisualSpec.js";
-import {
-  buildLiveVisualMarkersLayout,
-  LIVE_VISUAL_BAND_LAYOUT,
-} from "./liveVisualMarkers.js";
+import { buildLiveVisualMarkersLayout } from "./liveVisualMarkers.js";
 import type { LiveVisualSpec } from "./liveVisualModel.js";
 
 export interface LiveVisualCanvasLayout {
@@ -25,7 +25,7 @@ export interface LiveVisualCanvasLayout {
 
 const DEFAULT_LAYOUT: LiveVisualCanvasLayout = {
   widthCss: 360,
-  heightCss: 132,
+  heightCss: 168,
 };
 
 /** Rasterize drawable primitives to a 2D context (CSS pixel space; caller sets DPR transform). */
@@ -71,8 +71,6 @@ export function drawLiveVisualTextLabelsIntoContext(
   const h = heightCss;
 
   const markers = buildLiveVisualMarkersLayout(spec, w);
-  const bandH = LIVE_VISUAL_BAND_LAYOUT.height;
-  const bandY = LIVE_VISUAL_BAND_LAYOUT.originY;
 
   const chip = markers.httpReconcile;
   if (chip.show) {
@@ -81,24 +79,49 @@ export function drawLiveVisualTextLabelsIntoContext(
     ctx.fillText("HTTP", chip.x + 5, chip.y + 11);
   }
 
+  const railBottom = LIVE_VISUAL_STATE_RAIL_LAYOUT.originY + LIVE_VISUAL_STATE_RAIL_LAYOUT.height;
+  let lineY = railBottom + 8;
+
   ctx.fillStyle = "#0f172a";
   ctx.font = "600 12px system-ui, sans-serif";
   ctx.fillText(
     `mode=${spec.mode}  tail=${spec.eventTailCount}  session=${truncate(spec.sessionId, 28)}`,
     16,
-    bandY + bandH + 16,
+    lineY,
   );
+  lineY += 16;
+
+  if (spec.stripSource === "live") {
+    const origin = spec.snapshotOriginLabel ? truncate(spec.snapshotOriginLabel, 44) : "—";
+    ctx.font = "600 11px system-ui, sans-serif";
+    ctx.fillStyle = "#1e3a8a";
+    ctx.fillText(`snapshot_origin: ${origin}`, 16, lineY);
+    lineY += 16;
+  } else if (spec.replayPrefixFraction !== null) {
+    const pct = Math.round(spec.replayPrefixFraction * 100);
+    ctx.font = "600 11px system-ui, sans-serif";
+    ctx.fillStyle = "#1e3a8a";
+    ctx.fillText(`replay prefix: ${pct}% of pack (index order)`, 16, lineY);
+    lineY += 16;
+  } else {
+    ctx.font = "600 11px system-ui, sans-serif";
+    ctx.fillStyle = "#475569";
+    ctx.fillText("replay: no prefix split (load / empty)", 16, lineY);
+    lineY += 16;
+  }
 
   ctx.font = "400 11px system-ui, sans-serif";
   ctx.fillStyle = "#334155";
   const wire = spec.lastWireMsg
     ? `last wire: ${spec.lastWireMsg}`
     : "last wire: (none)";
-  ctx.fillText(truncate(wire, 52), 16, bandY + bandH + 32);
+  ctx.fillText(truncate(wire, 52), 16, lineY);
+  lineY += 16;
 
   if (spec.reconcileSummary) {
     ctx.fillStyle = "#475569";
-    ctx.fillText(truncate(`HTTP: ${spec.reconcileSummary}`, 58), 16, bandY + bandH + 48);
+    ctx.fillText(truncate(`HTTP: ${spec.reconcileSummary}`, 58), 16, lineY);
+    lineY += 16;
   }
 
   ctx.fillStyle = "#64748b";
