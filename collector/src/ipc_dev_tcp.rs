@@ -489,7 +489,14 @@ pub fn handle_ipc_dev_tcp_connection(
         let req: FipcBridgeToCollector = match serde_json::from_str(&line) {
             Ok(r) => r,
             Err(_) => {
-                // Fail closed: do not fabricate snapshot data after a garbled line.
+                // Fail closed: reject so the bridge client fails fast instead of hanging until RPC timeout.
+                let _ = write_ndjson_line(
+                    &mut writer,
+                    &FipcCollectorToBridge::HelloReject {
+                        code: "invalid_request_line".to_string(),
+                        message: "could not parse request JSON after handshake".to_string(),
+                    },
+                );
                 break;
             }
         };

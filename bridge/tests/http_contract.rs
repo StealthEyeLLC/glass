@@ -1,6 +1,6 @@
 //! HTTP/WebSocket route contract tests (no live ingest; no collector).
 
-use std::net::SocketAddr;
+use std::net::{SocketAddr, TcpListener as StdTcpListener};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -142,14 +142,20 @@ async fn snapshot_requires_bearer_and_returns_bounded_shape() {
 
 #[tokio::test]
 async fn snapshot_returns_503_when_fipc_configured_but_collector_unreachable() {
+    // Bind and drop so the port is closed — connect() should fail with ECONNREFUSED quickly (unlike
+    // some fixed low ports on Windows that can hang until the RPC deadline).
+    let s = StdTcpListener::bind("127.0.0.1:0").unwrap();
+    let dead_addr = s.local_addr().unwrap();
+    drop(s);
+
     let cfg = BridgeConfig {
         bind: "127.0.0.1:0".parse().unwrap(),
         bearer_token: Arc::from("test-secret-token"),
         allow_non_loopback: false,
         collector_ipc: Some(CollectorIpcClientConfig {
-            addr: "127.0.0.1:1".parse().unwrap(),
+            addr: dead_addr,
             shared_secret: Arc::from("unused"),
-            timeout: Duration::from_millis(200),
+            timeout: Duration::from_secs(2),
         }),
         session_delta_wire_v0: false,
     };
@@ -167,7 +173,12 @@ async fn snapshot_returns_503_when_fipc_configured_but_collector_unreachable() {
     assert_eq!(res.status(), StatusCode::SERVICE_UNAVAILABLE);
     let b = res.into_body().collect().await.unwrap().to_bytes();
     let v: serde_json::Value = serde_json::from_slice(&b).unwrap();
-    assert_eq!(v["error"], "collector_ipc_unavailable");
+    let code = v["error"].as_str().expect("error");
+    assert!(
+        code == "collector_ipc_connection_refused"
+            || (code == "collector_ipc_timeout" && v["fipc_phase"] == "tcp_connect"),
+        "expected refused or connect-timeout classification, got {v:?}"
+    );
 }
 
 #[tokio::test]

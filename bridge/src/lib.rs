@@ -20,6 +20,7 @@
 
 pub mod http_types;
 pub mod ipc_client;
+pub use ipc_client::PROVISIONAL_FIPC_CONNECT_ATTEMPT_MAX;
 pub mod live_session_ws;
 pub mod resync;
 mod server;

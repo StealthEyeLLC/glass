@@ -222,6 +222,49 @@ fn fipc_rejects_shared_secret_mismatch() {
 }
 
 #[test]
+fn fipc_rejects_invalid_request_line_after_handshake() {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let runtime = Arc::new(IpcDevTcpRuntime {
+        store: Arc::new(SnapshotStore::new()),
+        procfs_feed: None,
+        file_lane_feed: None,
+        retained_poll_meta: None,
+        file_lane_retained_poll_meta: None,
+    });
+    let secret = Arc::<str>::from("s");
+    let rt = runtime.clone();
+    let sec = secret.clone();
+    thread::spawn(move || {
+        let (s, _) = listener.accept().unwrap();
+        let _ = handle_ipc_dev_tcp_connection(s, sec.as_ref(), rt.as_ref());
+    });
+    thread::sleep(Duration::from_millis(30));
+    let mut c = TcpStream::connect(addr).unwrap();
+    let mut r = BufReader::new(c.try_clone().unwrap());
+    write_line(
+        &mut c,
+        &FipcBridgeToCollector::Hello {
+            wire_protocol_version: PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION,
+            auth_token_version: PROVISIONAL_IPC_AUTH_TOKEN_VERSION,
+            shared_secret: "s".to_string(),
+        },
+    )
+    .unwrap();
+    let _ack = read_line(&mut r);
+    writeln!(c, "not valid json").unwrap();
+    c.flush().unwrap();
+    let line = read_line(&mut r);
+    let msg: FipcCollectorToBridge = serde_json::from_str(&line).unwrap();
+    match msg {
+        FipcCollectorToBridge::HelloReject { code, .. } => {
+            assert_eq!(code, "invalid_request_line");
+        }
+        _ => panic!("expected HelloReject, got {msg:?}"),
+    }
+}
+
+#[test]
 fn fipc_listener_accepts_connection() {
     let sock = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
     let addr = sock.local_addr().unwrap();

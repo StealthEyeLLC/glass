@@ -42,6 +42,9 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | `PROVISIONAL_MAX_SEG_RECORD_BYTES` | same as JSONL line (alias) | `session_engine::events_seg` | F-07 |
 | `PROVISIONAL_MAX_PACK_FILE_BYTES` | `256 * 1024 * 1024` | `session_engine::validate` | F-07 — whole `.glass_pack` read cap (non-streaming) |
 | `PROVISIONAL_IPC_AUTH_TOKEN_VERSION` | `0` | `glass_collector::ipc` | Collector ↔ bridge local IPC auth version until transport freeze |
+| `PROVISIONAL_FIPC_CONNECT_ATTEMPT_MAX` | `2s` | `glass_bridge::ipc_client` | Caps **TCP connect** wait within the overall per-RPC F-IPC deadline (`--collector-ipc-timeout-secs`); remaining budget applies to handshake + snapshot I/O |
+| Bridge `--collector-ipc-timeout-secs` | default `2` (CLI) | `glass_bridge` binary | **Provisional** per-RPC wall clock for F-IPC; **not** frozen with F-04 |
+| HTTP 503 F-IPC `error` keys | e.g. `collector_ipc_timeout`, `collector_ipc_connection_refused`, `collector_ipc_auth_mismatch` | `glass_bridge::ipc_client::FipcClientError::bridge_error_code`, `server::collector_ipc_failure_json` | **Additive operator surface** — **not** part of bounded F-04 success JSON |
 | `PROVISIONAL_FIPC_MAX_DELTA_EVENTS` | `64` | `glass_collector::ipc` | Max append-only tail events per bounded F-IPC reply (`live_delta_events`) |
 | `PROVISIONAL_MAX_PROC_ENTRIES_SCANNED` | `16_384` | `glass_collector::procfs_snapshot` | Cap on numeric `/proc` entries read per poll — human may raise for large hosts |
 | `PROVISIONAL_MAX_PROCFS_OBSERVATIONS_PER_POLL` | `1024` | `glass_collector::procfs_snapshot` | Hard cap on raw observations (samples + deltas) per `poll_raw` |

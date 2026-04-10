@@ -117,6 +117,20 @@ cargo test -p integration_tests --test retained_snapshot_demo_smoke
 
 This spawns real `glass-collector` and `glass_bridge` binaries (after `cargo build` for those packages), uses the same checked-in fixture, and asserts bounded / honest fields.
 
+## When `GET /sessions/:id/snapshot` returns HTTP 503
+
+F-IPC failures are **not** part of frozen bounded F-04 — the bridge returns **503** with JSON `error` (machine key), `detail` (human text), and optional `fipc_phase` / `handshake_code`. Typical cases:
+
+| `error` | Meaning |
+|---------|---------|
+| `collector_ipc_connection_refused` | Nothing listening on `--collector-ipc-endpoint` (collector not started or wrong port). Some hosts may instead surface **`collector_ipc_timeout`** with **`fipc_phase: tcp_connect`** if the TCP stack does not fail fast. |
+| `collector_ipc_timeout` | RPC exceeded `--collector-ipc-timeout-secs` (or connect capped by `PROVISIONAL_FIPC_CONNECT_ATTEMPT_MAX` in the bridge client). Check `fipc_phase` (e.g. `fipc_read_handshake_line` = peer accepted TCP but never spoke F-IPC). |
+| `collector_ipc_auth_mismatch` | `--collector-ipc-secret` does not match `ipc-serve --shared-secret`. |
+| `collector_ipc_protocol_mismatch` | Wire or auth token version mismatch (bridge and collector built from different expectations). |
+| `collector_ipc_malformed_response` | Unparseable NDJSON line from collector. |
+
+**Bounded HTTP snapshot JSON on success is unchanged** — only the error path gained clearer keys.
+
 ## Per-RPC vs retained (same binary)
 
 - **`--procfs-session`** → fresh poll + normalize on **each** F-IPC snapshot RPC (no `retained_snapshot_unix_ms` on that path).
@@ -124,4 +138,4 @@ This spawns real `glass-collector` and `glass_bridge` binaries (after `cargo bui
 
 ## Next implementation step
 
-Wire **optional** operator docs or a tiny viewer dev panel that calls `GET /sessions/:id/snapshot` only — still **no** WS deltas until ingest + F-IPC transport are human-frozen per the build plan.
+Continue Glass v0 per `GLASS_V0_BUILD_PLAN.md` — e.g. optional viewer dev panel calling `GET /sessions/:id/snapshot` only; durable push ingest and F-IPC transport freeze remain separate human decisions (`docs/PHASE0_FREEZE_TRACKER.md`).

@@ -342,9 +342,10 @@ async fn run_subscribed_loop(
                 &resync_required_envelope(LIVE_WS_REASON_POLL_FAILED),
             )
             .await;
+            let detail = format!("{} — {}", e.bridge_error_code(), e);
             let _ = send_json(
                 socket,
-                &warning_envelope(LIVE_WS_REASON_POLL_FAILED, &e.to_string()),
+                &warning_envelope(LIVE_WS_REASON_POLL_FAILED, &detail),
             )
             .await;
             return;
@@ -390,7 +391,8 @@ async fn run_subscribed_loop(
                     Err(e) => {
                         let _ = outbound.push_mandatory_resync(LIVE_WS_REASON_POLL_FAILED, max_e, max_b);
                         let _ = flush_outbound(socket, &mut outbound).await;
-                        let _ = send_json(socket, &warning_envelope(LIVE_WS_REASON_POLL_FAILED, &e.to_string())).await;
+                        let detail = format!("{} — {}", e.bridge_error_code(), e);
+                        let _ = send_json(socket, &warning_envelope(LIVE_WS_REASON_POLL_FAILED, &detail)).await;
                         continue;
                     }
                 };

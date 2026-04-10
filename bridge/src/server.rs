@@ -18,7 +18,7 @@ use crate::http_types::{
     CapabilitiesResponse, CollectorIpcSnapshotMeta, HealthResponse, SessionSnapshotResponse,
     SNAPSHOT_CURSOR_EMPTY,
 };
-use crate::ipc_client;
+use crate::ipc_client::{self, FipcClientError};
 use crate::live_session_ws;
 use crate::snapshot_contract;
 use crate::{AppState, BridgeConfig, BridgeConfigError};
@@ -78,6 +78,24 @@ pub async fn serve_listener(
 
 async fn shutdown_signal() {
     let _ = tokio::signal::ctrl_c().await;
+}
+
+/// HTTP 503 body when F-IPC fails. **`error`** is a stable machine key; **`detail`** is human-readable.
+/// Additive fields: `fipc_phase`, `handshake_code` — **not** part of frozen F-04.
+fn collector_ipc_failure_json(err: &FipcClientError) -> serde_json::Value {
+    let mut v = json!({
+        "error": err.bridge_error_code(),
+        "detail": err.to_string(),
+    });
+    if let Some(o) = v.as_object_mut() {
+        if let Some(p) = err.phase() {
+            o.insert("fipc_phase".into(), json!(p));
+        }
+        if let Some(c) = err.handshake_code() {
+            o.insert("handshake_code".into(), json!(c));
+        }
+    }
+    v
 }
 
 async fn health() -> Json<HealthResponse> {
@@ -180,17 +198,14 @@ async fn session_snapshot(
                 Ok(other) => (
                     StatusCode::SERVICE_UNAVAILABLE,
                     Json(json!({
-                        "error": "collector_ipc_unavailable",
+                        "error": "collector_ipc_unexpected_reply",
                         "detail": format!("unexpected F-IPC reply: {other:?}"),
                     })),
                 )
                     .into_response(),
                 Err(e) => (
                     StatusCode::SERVICE_UNAVAILABLE,
-                    Json(json!({
-                        "error": "collector_ipc_unavailable",
-                        "detail": e.to_string(),
-                    })),
+                    Json(collector_ipc_failure_json(&e)),
                 )
                     .into_response(),
             }
