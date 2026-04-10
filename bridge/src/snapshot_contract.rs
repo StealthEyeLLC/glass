@@ -1,6 +1,7 @@
-//! Bounded snapshot cursor + [`crate::resync::ResyncHint`] mapping (F-03 / F-04 — still provisional).
+//! Bounded snapshot cursor + [`crate::resync::ResyncHint`] mapping.
 //!
-//! Decision options: `docs/F03_F04_FREEZE_PROPOSAL.md`.
+//! **Bounded-era F-04 is frozen** — see `docs/PHASE0_FREEZE_TRACKER.md` (Closed F-04). Rationale history:
+//! `docs/F03_F04_FREEZE_PROPOSAL.md`.
 
 use glass_collector::ipc::FipcBoundedSnapshotMeta;
 
@@ -100,6 +101,15 @@ mod tests {
         let m = meta(FIPC_SNAPSHOT_ORIGIN_UNKNOWN_OR_EMPTY, 0, 0, false);
         let (_view, hint) = bounded_http_from_fipc_meta(&m, "v0:empty", None);
         assert!(hint.is_none());
+    }
+
+    #[test]
+    fn empty_per_rpc_poll_emits_non_incremental_hint_even_when_cursor_is_v0_empty() {
+        let m = meta(FIPC_SNAPSHOT_ORIGIN_PER_RPC_PROCFS, 0, 0, false);
+        let (_view, hint) = bounded_http_from_fipc_meta(&m, "v0:empty", None);
+        let h = hint.expect("per-RPC empty batch must still emit bounded-era warning");
+        assert_eq!(h.reason, RESYNC_HINT_REASON_PER_RPC_POLL_NOT_INCREMENTAL);
+        assert_eq!(h.snapshot_cursor, "v0:empty");
     }
 
     #[test]

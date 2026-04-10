@@ -1,4 +1,8 @@
-//! HTTP JSON shapes for the Phase 5 bridge skeleton. **Wire format is provisional** until F-04 closes.
+//! HTTP JSON shapes for the Phase 5 bridge skeleton.
+//!
+//! **Bounded-era F-04 is frozen** — see `docs/PHASE0_FREEZE_TRACKER.md` (Closed F-04) and
+//! `docs/contracts/bridge_session_snapshot_bounded_v0.schema.json`. Live delta / backlog extensions are not
+//! frozen here.
 
 use serde::Serialize;
 
@@ -53,9 +57,12 @@ pub struct CollectorIpcSnapshotMeta {
 }
 
 /// Concrete bounded-snapshot contract (v0) when F-IPC returned metadata — **not** a live delta cursor.
+///
+/// **`snapshot_origin` disambiguates** `snapshot_cursor` when both unknown-empty and empty per-RPC polls use
+/// `v0:empty` (F-04 closed).
 #[derive(Debug, Clone, Serialize)]
 pub struct BoundedSnapshotContractV0 {
-    /// Mirrors collector `FipcBoundedSnapshotMeta.snapshot_origin`.
+    /// Mirrors collector `FipcBoundedSnapshotMeta.snapshot_origin` (`unknown_or_empty`, `collector_store`, …).
     pub snapshot_origin: String,
     pub returned_events: u32,
     pub available_in_view: u32,
@@ -68,17 +75,25 @@ pub struct BoundedSnapshotContractV0 {
 pub const CURSOR_SEMANTICS_BOUNDED_PREFIX_V0: &str = "bounded_prefix_v0";
 
 /// Bounded snapshot (spec §18A.3: stale viewer fetches snapshot + new cursor; no session restart).
+///
+/// **`snapshot_cursor` is opaque** (F-04 closed). When it equals [`SNAPSHOT_CURSOR_EMPTY`], use
+/// `bounded_snapshot.snapshot_origin` to distinguish unknown session vs empty per-RPC poll.
+///
+/// If `resync_hint` is absent/`null`, that means **no extra bounded-era warning** — not “live-safe” or
+/// “continuity-safe” (F-04 closed).
 #[derive(Debug, Clone, Serialize)]
 pub struct SessionSnapshotResponse {
     pub session_id: String,
     /// Cursor the client supplied, if any (`?cursor=`).
     pub cursor_requested: Option<String>,
-    /// Bounded snapshot cursor (`v0:empty` | `v0:off:N`) — prefix length / empty view for **this** response, not a live-stream offset.
+    /// **Opaque** bounded-era cursor string (`v0:empty` \| `v0:off:0` \| `v0:off:N`) — label for **this**
+    /// response only, not a resumable live log offset.
     pub snapshot_cursor: String,
     /// Normalized event envelopes as JSON values (from collector F-IPC when configured).
     pub events: Vec<serde_json::Value>,
     pub live_session_ingest: bool,
-    /// When boundedness or feed semantics imply the client must not assume delta continuity.
+    /// When set, extra bounded-era semantics warning — truncation, non-incremental per-RPC poll, or retained
+    /// tail replacement. Absent means no such warning, **not** a live/delta safety guarantee.
     pub resync_hint: Option<ResyncHint>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub collector_ipc: Option<CollectorIpcSnapshotMeta>,

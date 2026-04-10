@@ -80,17 +80,24 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 
 ---
 
+## Closed — bounded-era **F-04** (`GET /sessions/:id/snapshot` resync + cursor)
+
+**Closed as of this tracker revision.** Normative rationale and options history: `docs/F03_F04_FREEZE_PROPOSAL.md`. Machine-readable summary: `docs/contracts/bridge_session_snapshot_bounded_v0.schema.json`.
+
+| Frozen choice | Exact decision |
+|---------------|----------------|
+| **`snapshot_cursor`** | **Opaque string** for bounded era — clients treat it as an opaque label; grammar (`v0:empty`, `v0:off:0`, `v0:off:N`) is documented but not a live stream offset. |
+| **Disambiguation** | When `snapshot_cursor == v0:empty`, use **`bounded_snapshot.snapshot_origin`** to distinguish **unknown session** (`unknown_or_empty`) from **empty per-RPC poll** (`per_rpc_procfs` / `per_rpc_file_lane`) — same cursor literal, different origin. |
+| **`resync_hint.reason`** | **Frozen string tokens** only for bounded era: `bounded_truncation`, `per_rpc_poll_snapshot_not_incremental`, `retained_snapshot_tail_replaces_not_append_only`. **Single source of truth in Rust:** `glass_bridge::resync::RESYNC_HINT_REASON_*`. |
+| **`resync_hint.detail`** | **Optional, non-normative** — debugging / operator text; not a stable API for parsers. |
+| **Missing `resync_hint`** | Means **no extra bounded-era warning** for this response — **not** “live-safe,” **not** “continuity-safe,” **not** a guarantee of eventual consistency. |
+| **Explicitly not frozen (deferred)** | Live delta backlog thresholds, byte ceilings, **`ipc_gap`** / WS reconnect style reasons, structured live cursor (`seq` / byte offset), F-03 numeric policy when a real outbound delta queue exists — see **Open** sections for F-03 backlog and **F-04 live-era** below. |
+
+| Code / tests | `glass_bridge::http_types::SessionSnapshotResponse`, `glass_bridge::resync`, `glass_bridge::snapshot_contract`, `glass_collector::ipc` origins + `FipcBoundedSnapshotMeta`, `bridge/tests/snapshot_fipc.rs`, `collector/tests/ipc_fipc_tcp.rs` |
+
+---
+
 ## Open — human-owned vs decision-ready
-
-### F-03 / F-04 — bounded snapshot cursor + `resync_hint` (decision package)
-
-| Field | Content |
-|-------|---------|
-| **Status** | **Decision-ready** — implementation-grounded options in `docs/F03_F04_FREEZE_PROPOSAL.md` (not closed in this tracker until a human records the chosen options here). |
-| **Covers** | `snapshot_cursor` grammar (`v0:empty`, `v0:off:0`, `v0:off:N`), opaque vs structured cursor, `resync_hint` reason tokens + optional `detail`, bounded continuity (truncation / per-RPC / retained tail), client inference rules, what stays deferred until live ingest. |
-| **Code / tests** | `glass_bridge::resync` (`RESYNC_HINT_REASON_*`), `glass_bridge::snapshot_contract`, `glass_collector::ipc_dev_tcp::SnapshotStore::get_bounded` tests, `bridge/tests/snapshot_fipc.rs`. |
-| **Still human-owned (unchanged)** | `PROVISIONAL_BACKLOG_EVENT_THRESHOLD` numeric / byte ceiling for **live** queued deltas (F-03 backlog) — separate from bounded snapshot hints. |
-| **After freeze** | Record closed choices in this file; then extend OpenAPI/JSON Schema for bounded snapshot responses; live delta reasons (`ipc_gap`, etc.) **add** new tokens without breaking bounded-era strings. |
 
 ### F-01 — Visual regression method
 
@@ -126,17 +133,14 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | **Code / tests** | `glass_collector::ipc` (`FipcBridgeToCollector`, `FipcCollectorToBridge`, `PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION`), `glass_collector::ipc_dev_tcp`, `glass_collector::procfs_ipc_feed`, `glass_collector::file_lane_ipc_feed`, `glass_collector::procfs_retained_loop`, `glass_collector::file_lane_retained_loop`, `collector/tests/ipc_fipc_tcp.rs`, `glass_bridge` `ipc_client` + `bridge/tests/snapshot_fipc.rs`, `docs/PRIVILEGE_SEPARATION.md` |
 | **Provisional OK?** | **Yes** — TCP loopback is **explicitly dev/skeleton**; Unix socket + credential story still human-owned |
 
-### F-04 — `resync_hint` JSON wire shape
+### F-04 — **live-era** extensions (not closed — depends on live ingest)
 
 | Field | Content |
 |-------|---------|
-| **Status** | Open — **bounded / non-live hints landed** on `GET /sessions/:id/snapshot` |
-| **Decision-ready options** | Freeze `reason` enum vs free strings; optional structured `{ seq, byte_offset }` when live ingest exists |
-| **Proposed default** | Opaque `snapshot_cursor` + string `reason` (current bounded reasons: `bounded_truncation`, `per_rpc_poll_snapshot_not_incremental`, `retained_snapshot_tail_replaces_not_append_only`) + optional `detail` |
-| **Rationale** | Bridge + viewer must agree before live WS deltas; bounded phase uses **honest** hints only |
-| **Code / tests** | `glass_bridge::resync::ResyncHint` (`reason`, `snapshot_cursor`, optional `detail`); `glass_bridge::snapshot_contract`, `SessionSnapshotResponse.bounded_snapshot`; collector `FipcBoundedSnapshotMeta` on `BoundedSnapshotReply` |
-| **Bounded snapshot cursor (related, not live resync)** | F-IPC + HTTP: **`v0:empty`** = no session / no rows in view; **`v0:off:0`** = known session row with zero events; **`v0:off:N`** = prefix of **N** events returned under cap (**not** a resumable live-stream cursor). Per-RPC feeds replace view each poll; retained loops **replace** bounded tail. **`retained_snapshot_unix_ms`**: telemetry hint. **Human still owns** live-ingest backlog / `ipc_gap` style reasons when deltas exist. |
-| **Provisional OK?** | **Yes** — WS delta stream still not wired; hints describe boundedness only |
+| **Status** | **Open** — **bounded-era F-04 is closed** (see **Closed — bounded-era F-04** above). This row tracks **future** wire shape when live WS deltas + outbound queues exist. |
+| **Still human-owned** | Additional `resync_hint.reason` tokens (`ipc_gap`, `ws_reconnect`, backlog overflow, …); optional structured fields (`seq`, byte offset) on hints or cursors; interaction with F-03 backlog policy. |
+| **Must not break** | Additive JSON fields / new reason strings only — **do not** change frozen bounded-era tokens or opaque-cursor + `snapshot_origin` disambiguation without a version bump. |
+| **Code / tests** | Future: `glass_bridge` live delta path, viewer client — **not** implemented in v0 bounded phase. |
 
 ### F-05 — Sanitization socket / path policy
 
@@ -177,6 +181,7 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 - [x] `docs/SANITIZATION_TRUST_CRITERIA.md` — sign-off process
 - [x] `docs/VISUAL_REGRESSION_POLICY.md` — pending F-01 choice
 - [x] F-02 v1 format documented **in this tracker** (ADR-equivalent for bootstrap)
+- [x] Bounded-era F-04: `docs/contracts/bridge_session_snapshot_bounded_v0.schema.json` + **Closed — bounded-era F-04** section above
 
 ---
 

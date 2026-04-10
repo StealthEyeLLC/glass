@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://glass.local/schema/bridge_session_snapshot_bounded_v0.schema.json",
+  "title": "Glass bridge GET /sessions/:id/snapshot — bounded-era (F-04 closed)",
+  "description": "Subset of the HTTP JSON response shape for static/bounded snapshots. Live WS deltas and live backlog semantics are out of scope. See docs/PHASE0_FREEZE_TRACKER.md (Closed F-04) and docs/F03_F04_FREEZE_PROPOSAL.md.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "session_id": { "type": "string" },
+    "snapshot_cursor": {
+      "type": "string",
+      "description": "Opaque bounded-era cursor (v0:empty | v0:off:0 | v0:off:N). Clients must not treat as a live delta offset. When value is v0:empty, disambiguate using bounded_snapshot.snapshot_origin."
+    },
+    "events": {
+      "type": "array",
+      "description": "Normalized event envelopes (JSON values)."
+    },
+    "live_session_ingest": {
+      "type": "boolean",
+      "const": false,
+      "description": "Remains false until live ingest is implemented."
+    },
+    "resync_hint": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/resync_hint" }
+      ],
+      "description": "Null/absent means no extra bounded-era warning — not live-safe or continuity-safe."
+    },
+    "bounded_snapshot": {
+      "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/bounded_snapshot" }]
+    },
+    "max_events_requested": { "type": "integer", "minimum": 1 }
+  },
+  "$defs": {
+    "bounded_snapshot": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "snapshot_origin": {
+          "type": "string",
+          "enum": [
+            "unknown_or_empty",
+            "collector_store",
+            "per_rpc_procfs",
+            "per_rpc_file_lane"
+          ],
+          "description": "Collector feed path. Required to disambiguate v0:empty cursor (unknown vs empty per-RPC poll)."
+        },
+        "returned_events": { "type": "integer", "minimum": 0 },
+        "available_in_view": { "type": "integer", "minimum": 0 },
+        "truncated_by_max_events": { "type": "boolean" },
+        "cursor_semantics": { "type": "string", "const": "bounded_prefix_v0" }
+      },
+      "required": ["snapshot_origin", "returned_events", "available_in_view", "truncated_by_max_events", "cursor_semantics"]
+    },
+    "resync_hint": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "reason": {
+          "type": "string",
+          "enum": [
+            "bounded_truncation",
+            "per_rpc_poll_snapshot_not_incremental",
+            "retained_snapshot_tail_replaces_not_append_only"
+          ],
+          "description": "Frozen bounded-era tokens; single source in Rust: glass_bridge::resync::RESYNC_HINT_REASON_*"
+        },
+        "snapshot_cursor": { "type": "string" },
+        "detail": {
+          "type": "string",
+          "description": "Optional, non-normative (debug/operator)."
+        }
+      },
+      "required": ["reason", "snapshot_cursor"]
+    }
+  }
+}

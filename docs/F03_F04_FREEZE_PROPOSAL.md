@@ -1,6 +1,6 @@
 # F-03 / F-04 freeze proposal (bounded snapshot era)
 
-**Status:** decision-ready for human sign-off — **not** normative until recorded in `PHASE0_FREEZE_TRACKER.md` as closed.  
+**Status:** bounded-era **F-04** choices are **closed** in `docs/PHASE0_FREEZE_TRACKER.md` (**Closed — bounded-era F-04**). This document remains the historical rationale and options analysis. Machine-readable subset: `docs/contracts/bridge_session_snapshot_bounded_v0.schema.json`.  
 **Scope:** bridge HTTP snapshot + collector F-IPC bounded replies **only**. Live WebSocket deltas, `live_session_ingest: true`, and F-IPC transport freeze are **out of scope** for this document.
 
 ---

@@ -225,6 +225,69 @@ async fn known_empty_session_snapshot_cursor_v0_off_zero_no_resync_hint() {
     assert!(v["resync_hint"].is_null());
 }
 
+/// `v0:empty` is shared by unknown sessions and empty per-RPC polls — F-04: disambiguate with `snapshot_origin`.
+#[tokio::test]
+async fn v0_empty_cursor_disambiguated_by_snapshot_origin_unknown_vs_empty_per_rpc_procfs() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("empty_proc.json");
+    std::fs::write(&path, "[]").unwrap();
+
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let runtime = Arc::new(IpcDevTcpRuntime {
+        store: Arc::new(SnapshotStore::new()),
+        procfs_feed: Some(ProcfsSnapshotFeedConfig {
+            session_id: "bridge_procfs_empty_sess".to_string(),
+            max_samples: 512,
+            twice: false,
+            from_raw_json: Some(path),
+        }),
+        file_lane_feed: None,
+        retained_poll_meta: None,
+        file_lane_retained_poll_meta: None,
+    });
+    let secret = Arc::<str>::from("bridge-procfs-empty-secret");
+    let rt = runtime.clone();
+    let sec = secret.clone();
+    thread::spawn(move || {
+        let (stream, _) = listener.accept().expect("accept");
+        handle_ipc_dev_tcp_connection(stream, sec.as_ref(), rt.as_ref()).expect("handle");
+    });
+    thread::sleep(Duration::from_millis(40));
+
+    let cfg = BridgeConfig {
+        bind: "127.0.0.1:0".parse().unwrap(),
+        bearer_token: Arc::from("bridge-http-token"),
+        allow_non_loopback: false,
+        collector_ipc: Some(CollectorIpcClientConfig {
+            addr,
+            shared_secret: secret,
+            timeout: Duration::from_secs(2),
+        }),
+    };
+    let app = app_router(&cfg);
+    let res = app
+        .oneshot(
+            Request::builder()
+                .uri("/sessions/bridge_procfs_empty_sess/snapshot")
+                .header("Authorization", "Bearer bridge-http-token")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let b = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&b).unwrap();
+    assert_eq!(v["snapshot_cursor"], SNAPSHOT_CURSOR_EMPTY);
+    assert_eq!(v["bounded_snapshot"]["snapshot_origin"], "per_rpc_procfs");
+    assert_eq!(
+        v["resync_hint"]["reason"],
+        RESYNC_HINT_REASON_PER_RPC_POLL_NOT_INCREMENTAL
+    );
+    assert!(v["resync_hint"]["detail"].is_string());
+}
+
 #[tokio::test]
 async fn snapshot_via_procfs_fixture_normalized_envelope() {
     let dir = tempfile::tempdir().unwrap();

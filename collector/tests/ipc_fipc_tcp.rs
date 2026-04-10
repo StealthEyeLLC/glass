@@ -7,7 +7,8 @@ use std::thread;
 use std::time::Duration;
 
 use glass_collector::ipc::{
-    FipcBridgeToCollector, FipcCollectorToBridge, PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS,
+    FipcBridgeToCollector, FipcCollectorToBridge, FIPC_SNAPSHOT_ORIGIN_PER_RPC_FILE_LANE,
+    FIPC_SNAPSHOT_ORIGIN_PER_RPC_PROCFS, PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS,
     PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION, PROVISIONAL_IPC_AUTH_TOKEN_VERSION,
 };
 use std::path::PathBuf;
@@ -547,10 +548,13 @@ fn fipc_procfs_empty_raw_array_honest_v0_empty() {
         FipcCollectorToBridge::BoundedSnapshotReply {
             events,
             snapshot_cursor,
+            snapshot_meta,
             ..
         } => {
             assert!(events.is_empty());
             assert_eq!(snapshot_cursor, "v0:empty");
+            let meta = snapshot_meta.expect("F-04 bounded meta must be present");
+            assert_eq!(meta.snapshot_origin, FIPC_SNAPSHOT_ORIGIN_PER_RPC_PROCFS);
         }
         _ => panic!("expected BoundedSnapshotReply, got {snap:?}"),
     }
@@ -982,10 +986,13 @@ fn fipc_file_lane_empty_fixture_honest_v0_empty() {
         FipcCollectorToBridge::BoundedSnapshotReply {
             events,
             snapshot_cursor,
+            snapshot_meta,
             ..
         } => {
             assert!(events.is_empty());
             assert_eq!(snapshot_cursor, "v0:empty");
+            let meta = snapshot_meta.expect("F-04 bounded meta must be present");
+            assert_eq!(meta.snapshot_origin, FIPC_SNAPSHOT_ORIGIN_PER_RPC_FILE_LANE);
         }
         _ => panic!("expected BoundedSnapshotReply, got {snap:?}"),
     }
