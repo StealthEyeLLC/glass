@@ -7,40 +7,11 @@ use std::sync::Arc;
 
 use glass_collector::{
     build_fidelity_report, default_adapter_stack, ingest_procfs_raw_to_session_log,
-    run_ipc_dev_tcp_listener, CollectorAdapter, CollectorConfig, IpcDevTcpListenConfig,
-    PrivilegeMode, ProcfsProcessAdapter, RawObservation, SelfSilencePolicy, SnapshotStore,
+    load_procfs_observations_for_cli, run_ipc_dev_tcp_listener, CollectorAdapter, CollectorConfig,
+    IpcDevTcpListenConfig, IpcDevTcpRuntime, PrivilegeMode, ProcfsProcessAdapter,
+    ProcfsSnapshotFeedConfig, SelfSilencePolicy, SnapshotStore,
 };
 use session_engine::{materialize_share_safe_procfs_pack_bytes, write_glass_pack, SessionManifest};
-
-fn load_procfs_observations_for_cli(
-    session: String,
-    max_samples: usize,
-    twice: bool,
-    from_raw_json: Option<PathBuf>,
-) -> Result<Vec<RawObservation>, String> {
-    match from_raw_json {
-        Some(path) => {
-            let s = std::fs::read_to_string(&path)
-                .map_err(|e| format!("read {}: {e}", path.display()))?;
-            serde_json::from_str(&s).map_err(|e| format!("parse raw JSON: {e}"))
-        }
-        None => {
-            if !cfg!(target_os = "linux") {
-                return Err("on non-Linux use --from-raw-json or run on Linux.".to_string());
-            }
-            let mut a = ProcfsProcessAdapter::new(session);
-            a.max_samples_per_poll = max_samples;
-            let mut batch = a.poll_raw().map_err(|e| format!("poll: {e}"))?;
-            if twice {
-                match a.poll_raw() {
-                    Ok(b2) => batch.extend(b2),
-                    Err(e) => eprintln!("second poll: {e}"),
-                }
-            }
-            Ok(batch)
-        }
-    }
-}
 
 fn exit_on_procfs_load_err(cmd: &str, err: String) -> ! {
     eprintln!("{cmd}: {err}");
@@ -122,6 +93,17 @@ enum Command {
         seed_session: Option<String>,
         #[arg(long)]
         seed_events_json: Option<PathBuf>,
+        /// When set, `BoundedSnapshotRequest` for this `session_id` is served from a **fresh** procfs poll
+        /// (Linux) or `--procfs-from-raw-json` per RPC — real normalize path, bounded, **not** a live stream.
+        #[arg(long)]
+        procfs_session: Option<String>,
+        #[arg(long, default_value_t = 512)]
+        procfs_max_samples: usize,
+        #[arg(long, default_value_t = false)]
+        procfs_twice: bool,
+        /// Read `RawObservation[]` instead of `/proc` (fixtures / non-Linux).
+        #[arg(long)]
+        procfs_from_raw_json: Option<PathBuf>,
     },
 }
 
@@ -240,6 +222,10 @@ fn main() {
             shared_secret,
             seed_session,
             seed_events_json,
+            procfs_session,
+            procfs_max_samples,
+            procfs_twice,
+            procfs_from_raw_json,
         }) => {
             let bind: std::net::SocketAddr = listen.parse().unwrap_or_else(|e| {
                 eprintln!("ipc-serve: invalid --listen: {e}");
@@ -247,6 +233,15 @@ fn main() {
             });
             if !bind.ip().is_loopback() {
                 eprintln!("ipc-serve: --listen must be loopback (provisional dev transport)");
+                std::process::exit(2);
+            }
+            if procfs_session.is_some()
+                && procfs_from_raw_json.is_none()
+                && !cfg!(target_os = "linux")
+            {
+                eprintln!(
+                    "ipc-serve: --procfs-session on non-Linux requires --procfs-from-raw-json"
+                );
                 std::process::exit(2);
             }
             let store = Arc::new(SnapshotStore::new());
@@ -262,6 +257,17 @@ fn main() {
                     });
                 store.set_session_events(sid, events);
             }
+            let procfs_feed = procfs_session.map(|session_id| ProcfsSnapshotFeedConfig {
+                session_id,
+                max_samples: procfs_max_samples,
+                twice: procfs_twice,
+                from_raw_json: procfs_from_raw_json,
+            });
+            if procfs_feed.is_some() {
+                eprintln!(
+                    "ipc-serve: procfs-backed bounded snapshots for configured session (per-request poll+normalize; not live ingest)"
+                );
+            }
             eprintln!(
                 "ipc-serve: provisional TCP F-IPC on {bind} (Ctrl+C stops the process if foreground)"
             );
@@ -269,7 +275,8 @@ fn main() {
                 bind,
                 shared_secret: Arc::from(shared_secret.into_boxed_str()),
             };
-            if let Err(e) = run_ipc_dev_tcp_listener(cfg, store) {
+            let runtime = Arc::new(IpcDevTcpRuntime { store, procfs_feed });
+            if let Err(e) = run_ipc_dev_tcp_listener(cfg, runtime) {
                 eprintln!("ipc-serve: {e}");
                 std::process::exit(1);
             }

@@ -93,7 +93,7 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | **Decision-ready options** | Unix socket path under XDG_RUNTIME_DIR vs fixed `/run/glass/…`; SO_PEERCRED vs shared secret file; challenge nonce length; replace NDJSON/TCP when frozen |
 | **Proposed default** | Abstract or path Unix socket + versioned envelope (`PROVISIONAL_IPC_AUTH_TOKEN_VERSION`) + peer cred check where available |
 | **Rationale** | Privilege separation (§10.3B / §18.4) requires a frozen contract before production bridge |
-| **Code / tests** | `glass_collector::ipc` (`FipcBridgeToCollector`, `FipcCollectorToBridge`, `PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION`), `glass_collector::ipc_dev_tcp`, `collector/tests/ipc_fipc_tcp.rs`, `glass_bridge` `ipc_client` + `bridge/tests/snapshot_fipc.rs`, `docs/PRIVILEGE_SEPARATION.md` |
+| **Code / tests** | `glass_collector::ipc` (`FipcBridgeToCollector`, `FipcCollectorToBridge`, `PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION`), `glass_collector::ipc_dev_tcp`, `glass_collector::procfs_ipc_feed` (procfs/fixture → normalize → bounded snapshot JSON per RPC when configured), `collector/tests/ipc_fipc_tcp.rs`, `glass_bridge` `ipc_client` + `bridge/tests/snapshot_fipc.rs`, `docs/PRIVILEGE_SEPARATION.md` |
 | **Provisional OK?** | **Yes** — TCP loopback is **explicitly dev/skeleton**; Unix socket + credential story still human-owned |
 
 ### F-04 — `resync_hint` JSON wire shape
@@ -105,6 +105,7 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | **Proposed default** | Opaque cursor string + `reason: "backlog" \| "ipc_gap"` |
 | **Rationale** | Bridge + viewer must agree before Phase 5 |
 | **Code / tests** | `glass_bridge::resync::ResyncHint` (stub); `SessionSnapshotResponse.resync_hint` field present (always `null` until ingest + hint semantics freeze) |
+| **Bounded snapshot cursor (related, not resync_hint)** | F-IPC `BoundedSnapshotReply.snapshot_cursor` remains **`v0:off:{n}`** (events returned after caps) or **`v0:empty`**. With `ipc-serve --procfs-session`, the collector **re-polls / re-reads fixture** each RPC — the cursor does **not** name a stable offset into a retained in-collector timeline (human still owns incremental cursor / resync story for live ingest). |
 | **Provisional OK?** | **Yes** — WS delta + hint payloads not wired |
 
 ### F-05 — Sanitization socket / path policy

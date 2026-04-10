@@ -10,7 +10,10 @@ use axum::http::{Request, StatusCode};
 use glass_bridge::http_types::SNAPSHOT_CURSOR_EMPTY;
 use glass_bridge::{app_router, BridgeConfig, CollectorIpcClientConfig};
 use glass_collector::ipc::PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION;
-use glass_collector::{handle_ipc_dev_tcp_connection, SnapshotStore};
+use glass_collector::{
+    handle_ipc_dev_tcp_connection, AdapterId, IpcDevTcpRuntime, ProcfsSnapshotFeedConfig,
+    RawObservation, RawObservationKind, RawSourceQuality, SnapshotStore,
+};
 use http_body_util::BodyExt;
 use tower::ServiceExt;
 
@@ -23,12 +26,16 @@ async fn snapshot_populated_via_collector_fipc() {
         "ses_fipc",
         vec![serde_json::json!({"kind":"process_start","seq":1})],
     );
+    let runtime = Arc::new(IpcDevTcpRuntime {
+        store,
+        procfs_feed: None,
+    });
     let secret = Arc::<str>::from("fipc-test-secret");
-    let st = store.clone();
+    let rt = runtime.clone();
     let sec = secret.clone();
     thread::spawn(move || {
         let (stream, _) = listener.accept().expect("accept");
-        handle_ipc_dev_tcp_connection(stream, sec.as_ref(), st.as_ref()).expect("handle");
+        handle_ipc_dev_tcp_connection(stream, sec.as_ref(), rt.as_ref()).expect("handle");
     });
     thread::sleep(Duration::from_millis(40));
 
@@ -104,13 +111,16 @@ async fn capabilities_shows_fipc_configured() {
 async fn empty_session_snapshot_cursor_via_fipc() {
     let listener = TcpListener::bind("127.0.0.1:0").unwrap();
     let addr = listener.local_addr().unwrap();
-    let store = Arc::new(SnapshotStore::new());
+    let runtime = Arc::new(IpcDevTcpRuntime {
+        store: Arc::new(SnapshotStore::new()),
+        procfs_feed: None,
+    });
     let secret = Arc::<str>::from("sec");
-    let st = store.clone();
+    let rt = runtime.clone();
     let sec = secret.clone();
     thread::spawn(move || {
         let (stream, _) = listener.accept().expect("accept");
-        let _ = handle_ipc_dev_tcp_connection(stream, sec.as_ref(), st.as_ref());
+        let _ = handle_ipc_dev_tcp_connection(stream, sec.as_ref(), rt.as_ref());
     });
     thread::sleep(Duration::from_millis(40));
 
@@ -140,4 +150,76 @@ async fn empty_session_snapshot_cursor_via_fipc() {
     let v: serde_json::Value = serde_json::from_slice(&b).unwrap();
     assert_eq!(v["snapshot_cursor"], SNAPSHOT_CURSOR_EMPTY);
     assert_eq!(v["events"].as_array().unwrap().len(), 0);
+}
+
+#[tokio::test]
+async fn snapshot_via_procfs_fixture_normalized_envelope() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("raw.json");
+    let o = RawObservation::new(
+        1,
+        "bridge_procfs_sess",
+        10,
+        RawObservationKind::ProcessSample,
+        RawSourceQuality::ProcfsDerived,
+        AdapterId::ProcfsProcess,
+        serde_json::json!({
+            "semantics": "procfs_poll_snapshot",
+            "pid": 4242,
+            "comm": "bridge-fixture",
+            "ppid": 1,
+        }),
+    );
+    std::fs::write(&path, serde_json::to_string(&vec![o]).unwrap()).unwrap();
+
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let runtime = Arc::new(IpcDevTcpRuntime {
+        store: Arc::new(SnapshotStore::new()),
+        procfs_feed: Some(ProcfsSnapshotFeedConfig {
+            session_id: "bridge_procfs_sess".to_string(),
+            max_samples: 512,
+            twice: false,
+            from_raw_json: Some(path),
+        }),
+    });
+    let secret = Arc::<str>::from("bridge-procfs-ipc-secret");
+    let rt = runtime.clone();
+    let sec = secret.clone();
+    thread::spawn(move || {
+        let (stream, _) = listener.accept().expect("accept");
+        handle_ipc_dev_tcp_connection(stream, sec.as_ref(), rt.as_ref()).expect("handle");
+    });
+    thread::sleep(Duration::from_millis(40));
+
+    let cfg = BridgeConfig {
+        bind: "127.0.0.1:0".parse().unwrap(),
+        bearer_token: Arc::from("bridge-http-token"),
+        allow_non_loopback: false,
+        collector_ipc: Some(CollectorIpcClientConfig {
+            addr,
+            shared_secret: secret,
+            timeout: Duration::from_secs(2),
+        }),
+    };
+    let app = app_router(&cfg);
+    let res = app
+        .oneshot(
+            Request::builder()
+                .uri("/sessions/bridge_procfs_sess/snapshot")
+                .header("Authorization", "Bearer bridge-http-token")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let b = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&b).unwrap();
+    assert_eq!(v["session_id"], "bridge_procfs_sess");
+    let events = v["events"].as_array().unwrap();
+    assert_eq!(events.len(), 1);
+    assert_eq!(events[0]["kind"], "process_poll_sample");
+    assert_eq!(v["snapshot_cursor"], "v0:off:1");
+    assert_eq!(v["collector_ipc"]["status"], "ok");
 }

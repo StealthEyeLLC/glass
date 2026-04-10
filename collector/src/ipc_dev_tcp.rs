@@ -15,6 +15,15 @@ use crate::ipc::{
 /// Matches `session_engine` / viewer F-07-style bound per line (honest cap for one NDJSON line).
 const PROVISIONAL_FIPC_MAX_LINE_BYTES: usize = 4 * 1024 * 1024;
 
+/// Runtime for one F-IPC TCP connection: optional procfs-backed snapshot feed + in-memory store.
+#[derive(Debug, Clone)]
+pub struct IpcDevTcpRuntime {
+    pub store: Arc<SnapshotStore>,
+    /// When `Some` and the snapshot request `session_id` matches, serve from
+    /// [`crate::procfs_ipc_feed::ProcfsSnapshotFeedConfig::poll_normalized_json`] (per RPC).
+    pub procfs_feed: Option<crate::procfs_ipc_feed::ProcfsSnapshotFeedConfig>,
+}
+
 /// In-memory session → normalized events as JSON (collector-owned; bridge never mutates).
 #[derive(Debug, Default)]
 pub struct SnapshotStore {
@@ -86,7 +95,7 @@ fn write_ndjson_line(mut w: impl Write, v: &impl serde::Serialize) -> io::Result
 pub fn handle_ipc_dev_tcp_connection(
     stream: TcpStream,
     shared_secret: &str,
-    store: &SnapshotStore,
+    runtime: &IpcDevTcpRuntime,
 ) -> io::Result<()> {
     let mut reader = BufReader::new(stream.try_clone()?);
     let mut writer = stream;
@@ -193,7 +202,7 @@ pub fn handle_ipc_dev_tcp_connection(
                 max_events,
             } => {
                 let cap = (max_events as usize).min(PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS);
-                let (events, snapshot_cursor) = store.get_bounded(&session_id, cap);
+                let (events, snapshot_cursor) = bounded_snapshot_events(runtime, &session_id, cap);
                 write_ndjson_line(
                     &mut writer,
                     &FipcCollectorToBridge::BoundedSnapshotReply {
@@ -210,18 +219,45 @@ pub fn handle_ipc_dev_tcp_connection(
     Ok(())
 }
 
+fn bounded_snapshot_events(
+    runtime: &IpcDevTcpRuntime,
+    session_id: &str,
+    cap: usize,
+) -> (Vec<serde_json::Value>, String) {
+    if let Some(ref feed) = runtime.procfs_feed {
+        if session_id == feed.session_id {
+            return match feed.poll_normalized_json() {
+                Ok(full) => {
+                    if full.is_empty() {
+                        (Vec::new(), "v0:empty".to_string())
+                    } else {
+                        let n = cap.min(full.len());
+                        let slice: Vec<serde_json::Value> = full.iter().take(n).cloned().collect();
+                        (slice, format!("v0:off:{n}"))
+                    }
+                }
+                Err(e) => {
+                    eprintln!("ipc-serve: procfs snapshot poll/ingest failed: {e}");
+                    (Vec::new(), "v0:empty".to_string())
+                }
+            };
+        }
+    }
+    runtime.store.get_bounded(session_id, cap)
+}
+
 /// Bind `config.bind` and accept connections until error. Each connection is handled on a new thread.
 pub fn run_ipc_dev_tcp_listener(
     config: IpcDevTcpListenConfig,
-    store: Arc<SnapshotStore>,
+    runtime: Arc<IpcDevTcpRuntime>,
 ) -> io::Result<()> {
     let listener = TcpListener::bind(config.bind)?;
     loop {
         let (stream, _) = listener.accept()?;
         let secret = config.shared_secret.clone();
-        let st = store.clone();
+        let rt = runtime.clone();
         std::thread::spawn(move || {
-            let _ = handle_ipc_dev_tcp_connection(stream, secret.as_ref(), st.as_ref());
+            let _ = handle_ipc_dev_tcp_connection(stream, secret.as_ref(), rt.as_ref());
         });
     }
 }
