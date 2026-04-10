@@ -15,7 +15,7 @@ This repository is the Glass v0 **monorepo spine**: session/pack/sanitization (P
 | `graph_engine/` | Graph derivation (stub crate; no presentation) |
 | `collector/` | Linux collector binary (lifecycle stub only) |
 | `bridge/` | Local loopback bridge binary (`glass_bridge`) + resync types — skeleton HTTP/WS (no live ingest) |
-| `viewer/` | TypeScript **Tier B static replay** (`loadGlassPack`, `replayModel`) + optional **`?live=1`** **live-session skeleton** (`src/live/`) consuming bridge **`/ws`** + bounded **`GET /sessions/:id/snapshot`** (F-04 read-only); not WebGPU, not a finished live product |
+| `viewer/` | TypeScript **Tier B static replay** (`loadGlassPack`, `replayModel`) + optional **`?live=1`** **live-session shell** (`src/live/`): **`GET /capabilities`** preflight, **`/ws`**, bounded **`GET /sessions/:id/snapshot`** (F-04 read-only), sessionStorage convenience (no token persistence); not WebGPU, not a finished live product |
 | `tools/glass-pack` | CLI: validate / inspect packs; strict kinds + share-safe vs raw-dev expectations |
 | `tools/golden_scenes/` | Golden-scene harness scaffold |
 | `docs/` | Phase 0 tracker, boundaries, test strategy, status |

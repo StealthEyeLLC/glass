@@ -59,6 +59,9 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `src/app/mode.test.ts` | `getBuildMode` stays **`static_replay`**; `uiSurfaceFromSearch` for `?live=1` |
 | `src/live/applyLiveSessionMessage.test.ts` | Live wire reducer: `session_hello`, `session_snapshot_replaced` replacement sample, non-empty `session_delta` append, empty delta no-op, `session_resync_required` reconcile counter, `session_warning` |
 | `src/live/liveSessionHttp.test.ts` | `bridgeHttpToLiveWsUrl` maps http→ws / https→wss + `access_token` |
+| `src/live/liveCapabilities.test.ts` | `parseBridgeCapabilitiesJson` + `fetchBridgeCapabilities` error/ok paths (fetch mock) |
+| `src/live/liveSessionStorage.test.ts` | sessionStorage round-trip for URL/session/delta-wire; **no** token key; `saveLiveBridgeUrl` partial |
+| `src/live/liveHttpReconcile.test.ts` | `makeReconcileRecord` operator vs `session_resync_required` |
 | `replayModel.test.ts` | Pure replay reducer: load lifecycle, play/pause/tick, seek/step, empty pack, entity selection |
 | `staticReplay.test.ts` | Mounted shell: metadata + sanitized summary, timeline/inspector binding, play timer (fake), scrub, errors, empty pack |
 | `tierBReplay.integration.test.ts` | ZIP → `loadGlassPack` → `reduceReplay` (Node env / `fflate`); JSONL + **`scaffold_seg` / `events.seg`** (sanitized summary, **`process_poll_sample`** strict_kinds); empty JSONL |

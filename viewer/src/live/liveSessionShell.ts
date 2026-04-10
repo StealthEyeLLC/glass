@@ -8,11 +8,18 @@ import {
   createInitialLiveSessionModelState,
   type LiveSessionModelState,
 } from "./applyLiveSessionMessage.js";
+import { fetchBridgeCapabilities, type BridgeCapabilitiesLive } from "./liveCapabilities.js";
 import {
   bridgeHttpToLiveWsUrl,
   fetchBoundedSnapshot,
   type BoundedSnapshotF04,
 } from "./liveSessionHttp.js";
+import {
+  loadLiveFormPrefs,
+  saveLiveBridgeUrl,
+  saveLiveFormPrefs,
+} from "./liveSessionStorage.js";
+import { makeReconcileRecord, type HttpReconcileRecord } from "./liveHttpReconcile.js";
 import "./liveSessionShell.css";
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -34,6 +41,8 @@ export interface LiveSessionShellHandle {
   disconnect: () => void;
   getModel: () => LiveSessionModelState;
   getLastHttpSnapshot: () => BoundedSnapshotF04 | null;
+  getLastCapabilities: () => BridgeCapabilitiesLive | null;
+  getLastReconcile: () => HttpReconcileRecord | null;
 }
 
 export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle {
@@ -42,7 +51,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
 
   const banner = el("div", "glass-banner");
   banner.textContent =
-    "Glass — live session skeleton (bridge WS + HTTP snapshot). F-IPC provisional; not a finished live product.";
+    "Glass — live session skeleton (bridge WS + HTTP snapshot). F-IPC provisional. Bearer token is not persisted (sessionStorage keeps URL / session id / delta-wire preference only).";
 
   const nav = el("div", "glass-live-nav");
   const back = document.createElement("a");
@@ -58,7 +67,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   bridgeInput.setAttribute("data-testid", "live-bridge-url");
   const tokenInput = document.createElement("input");
   tokenInput.type = "password";
-  tokenInput.placeholder = "Bridge bearer token";
+  tokenInput.placeholder = "Bridge bearer token (not persisted)";
   tokenInput.className = "glass-live-input";
   tokenInput.setAttribute("data-testid", "live-token");
   const sessionInput = document.createElement("input");
@@ -72,7 +81,10 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   deltaWire.setAttribute("data-testid", "live-delta-wire");
   const deltaLabel = el("label");
   deltaLabel.htmlFor = "live-delta-wire";
-  deltaLabel.textContent = "session_delta_wire (needs bridge + collector)";
+  deltaLabel.textContent = "session_delta_wire (needs bridge + collector + capability)";
+  const btnPreflight = el("button", undefined, "Preflight capabilities");
+  btnPreflight.type = "button";
+  btnPreflight.setAttribute("data-testid", "live-preflight");
   const btnConnect = el("button", undefined, "Connect");
   btnConnect.type = "button";
   btnConnect.setAttribute("data-testid", "live-connect");
@@ -88,12 +100,30 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     sessionInput,
     deltaWire,
     deltaLabel,
+    btnPreflight,
     btnConnect,
     btnSnapshot,
   );
 
+  const prefs = loadLiveFormPrefs();
+  if (prefs.bridgeUrl) {
+    bridgeInput.value = prefs.bridgeUrl;
+  }
+  if (prefs.sessionId) {
+    sessionInput.value = prefs.sessionId;
+  }
+  if (prefs.sessionDeltaWire !== undefined) {
+    deltaWire.checked = prefs.sessionDeltaWire;
+  }
+
   const status = el("div", "glass-live-status");
   status.setAttribute("data-testid", "live-status");
+
+  const capsPre = el("pre", "glass-live-pre");
+  capsPre.setAttribute("data-testid", "live-capabilities");
+
+  const reconcilePre = el("pre", "glass-live-pre");
+  reconcilePre.setAttribute("data-testid", "live-reconcile");
 
   const metaPre = el("pre", "glass-live-pre");
   metaPre.setAttribute("data-testid", "live-meta");
@@ -101,12 +131,56 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const eventsPre = el("pre", "glass-live-pre");
   eventsPre.setAttribute("data-testid", "live-events");
 
-  root.append(banner, nav, form, status, metaPre, eventsPre);
+  root.append(
+    banner,
+    nav,
+    form,
+    el("div", "glass-live-field", "Preflight (GET /capabilities)"),
+    capsPre,
+    el("div", "glass-live-field", "Last HTTP snapshot reconcile"),
+    reconcilePre,
+    status,
+    el("div", "glass-live-field", "Wire + model JSON"),
+    metaPre,
+    el("div", "glass-live-field", "events_sample / session_delta tail (debug)"),
+    eventsPre,
+  );
 
   let ws: WebSocket | null = null;
   let model = createInitialLiveSessionModelState("");
   let lastHttp: BoundedSnapshotF04 | null = null;
   let lastReconcileProcessed = 0;
+  let lastCaps: BridgeCapabilitiesLive | null = null;
+  let capsError: string | null = null;
+  let lastReconcile: HttpReconcileRecord | null = null;
+
+  function renderCaps(): void {
+    capsPre.textContent = capsError
+      ? `error: ${capsError}`
+      : lastCaps
+        ? JSON.stringify(
+            {
+              collector_fipc_configured: lastCaps.collector_fipc.configured,
+              collector_fipc_transport: lastCaps.collector_fipc.transport,
+              websocket_path: lastCaps.websocket.path,
+              live_session_delta_skeleton: lastCaps.websocket.live_session_delta_skeleton,
+              websocket_delta_stream_status: lastCaps.websocket.delta_stream_status,
+              session_delta_wire_v0: lastCaps.websocket.session_delta_wire_v0,
+              live_session_ingest: lastCaps.live_session_ingest,
+              bounded_snapshot_via_http:
+                "GET /sessions/:id/snapshot (F-04) when F-IPC configured on bridge",
+            },
+            null,
+            2,
+          )
+        : "(not fetched — use Preflight with URL + token)";
+  }
+
+  function renderReconcile(): void {
+    reconcilePre.textContent = lastReconcile
+      ? JSON.stringify(lastReconcile, null, 2)
+      : "(no HTTP snapshot refresh yet)";
+  }
 
   function setStatus(t: string): void {
     status.textContent = t;
@@ -139,6 +213,13 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     eventsPre.textContent = JSON.stringify(model.eventTail, null, 2);
   }
 
+  function renderAll(): void {
+    renderCaps();
+    renderReconcile();
+    renderMeta();
+    renderEvents();
+  }
+
   function disconnect(): void {
     if (ws) {
       ws.close();
@@ -147,33 +228,93 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     setStatus("disconnected");
   }
 
-  async function runHttpSnapshot(): Promise<void> {
+  function persistFormSafe(): void {
+    const base = bridgeInput.value.trim();
+    const sid = sessionInput.value.trim();
+    if (base && sid) {
+      saveLiveFormPrefs({
+        bridgeUrl: base,
+        sessionId: sid,
+        sessionDeltaWire: deltaWire.checked,
+      });
+    } else if (base) {
+      saveLiveBridgeUrl(base);
+    }
+  }
+
+  async function runHttpSnapshot(
+    trigger: "operator" | "session_resync_required",
+  ): Promise<void> {
     const base = bridgeInput.value.trim();
     const tok = tokenInput.value.trim();
     const sid = sessionInput.value.trim();
     if (!base || !tok || !sid) {
       setStatus("bridge URL, token, and session id required");
+      lastReconcile = makeReconcileRecord(trigger, "error", {
+        errorMessage: "missing bridge URL, token, or session id",
+      });
+      renderReconcile();
       return;
     }
-    setStatus("fetching HTTP snapshot…");
+    setStatus(
+      trigger === "operator"
+        ? "fetching HTTP snapshot (operator)…"
+        : "fetching HTTP snapshot (after session_resync_required)…",
+    );
     try {
       lastHttp = await fetchBoundedSnapshot(base, tok, sid);
+      lastReconcile = makeReconcileRecord(trigger, "ok", {
+        eventsCount: lastHttp.events?.length ?? 0,
+      });
       setStatus(`HTTP snapshot ok — ${lastHttp.events?.length ?? 0} events`);
     } catch (e) {
       lastHttp = null;
-      setStatus(`HTTP snapshot error: ${e instanceof Error ? e.message : String(e)}`);
+      const msg = e instanceof Error ? e.message : String(e);
+      lastReconcile = makeReconcileRecord(trigger, "error", {
+        errorMessage: msg,
+      });
+      setStatus(`HTTP snapshot error: ${msg}`);
     }
-    renderMeta();
+    persistFormSafe();
+    renderAll();
   }
 
   function onModelUpdated(): void {
-    renderMeta();
-    renderEvents();
+    renderAll();
     if (model.httpReconcileRequested > lastReconcileProcessed) {
       lastReconcileProcessed = model.httpReconcileRequested;
-      void runHttpSnapshot();
+      void runHttpSnapshot("session_resync_required");
     }
   }
+
+  btnPreflight.addEventListener("click", () => {
+    void (async () => {
+      const base = bridgeInput.value.trim();
+      const tok = tokenInput.value.trim();
+      capsError = null;
+      lastCaps = null;
+      renderCaps();
+      if (!base || !tok) {
+        capsError = "bridge URL and bearer token required";
+        setStatus("preflight skipped — need URL + token");
+        renderCaps();
+        return;
+      }
+      setStatus("preflight: fetching /capabilities…");
+      const r = await fetchBridgeCapabilities(base, tok);
+      if (!r.ok) {
+        capsError = r.error;
+        lastCaps = null;
+        setStatus(`preflight failed: ${r.error}`);
+      } else {
+        lastCaps = r.value;
+        capsError = null;
+        saveLiveBridgeUrl(base);
+        setStatus("preflight ok — see capabilities panel");
+      }
+      renderAll();
+    })();
+  });
 
   btnConnect.addEventListener("click", () => {
     disconnect();
@@ -187,6 +328,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     model = createInitialLiveSessionModelState(sid);
     lastReconcileProcessed = 0;
     lastHttp = null;
+    persistFormSafe();
     let url: string;
     try {
       url = bridgeHttpToLiveWsUrl(base, tok);
@@ -230,16 +372,17 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   });
 
   btnSnapshot.addEventListener("click", () => {
-    void runHttpSnapshot();
+    void runHttpSnapshot("operator");
   });
 
   setStatus("disconnected");
-  renderMeta();
-  renderEvents();
+  renderAll();
 
   return {
     disconnect,
     getModel: () => model,
     getLastHttpSnapshot: () => lastHttp,
+    getLastCapabilities: () => lastCaps,
+    getLastReconcile: () => lastReconcile,
   };
 }
