@@ -48,9 +48,10 @@ describe("static replay shell", () => {
     expect(getBuildMode()).toBe("static_replay");
   });
 
-  it("mounts banner, drop zone, and file open control", () => {
+  it("mounts vertical slice hero, drop zone, and file open control", () => {
     const root = document.createElement("div");
     mountReplayShell(root);
+    expect(root.querySelector('[data-testid="replay-vs-hero"]')).toBeTruthy();
     expect(root.textContent).toContain("static replay");
     expect(root.querySelector(".glass-drop-zone")).toBeTruthy();
     expect(root.querySelector('[data-testid="replay-open-file"]')).toBeTruthy();

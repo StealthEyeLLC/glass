@@ -1,6 +1,5 @@
 /**
- * Minimal live-session UI: connect to bridge WebSocket, subscribe, show wire-derived state.
- * No WebGPU; bounded debug surface only.
+ * Live-session UI: bridge WebSocket + bounded HTTP snapshot; Scene v0 visual surface (Canvas 2D + optional WebGPU geometry).
  */
 
 import {
@@ -65,6 +64,12 @@ import {
 import { paintLiveVisualSurface, type PaintLiveVisualSurfaceResult } from "./liveVisualRenderer.js";
 import type { LiveVisualWebGpuBundle } from "./liveVisualWebGpu.js";
 import { tryInitWebGpuCanvas } from "./liveVisualWebGpu.js";
+import {
+  VERTICAL_SLICE_SCENARIO_BODY,
+  VERTICAL_SLICE_SCENARIO_LABEL,
+  VERTICAL_SLICE_SCENARIO_TITLE,
+  liveHeroSubtitle,
+} from "../app/verticalSliceV0.js";
 import "./liveSessionShell.css";
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -114,9 +119,21 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   root.innerHTML = "";
   root.classList.add("glass-live-root");
 
-  const banner = el("div", "glass-banner");
-  banner.textContent =
-    "Glass — live session (bridge WS + bounded HTTP snapshot). F-IPC transport is provisional. Bearer token is not persisted (sessionStorage keeps URL / session id / delta-wire preference only). WebGPU live scene is not implemented.";
+  const hero = el("section", "glass-vs-hero glass-live-vs-hero");
+  hero.setAttribute("data-testid", "live-vs-hero");
+  hero.append(
+    el("h1", "glass-vs-title", "Glass — Vertical Slice v0"),
+    el("p", "glass-vs-badge", "Live path · ?live=1"),
+    el("p", "glass-vs-scenario-kicker", `${VERTICAL_SLICE_SCENARIO_TITLE} · live`),
+    el("p", "glass-vs-nickname", VERTICAL_SLICE_SCENARIO_LABEL),
+    el("p", "glass-vs-subtitle", liveHeroSubtitle()),
+    el("p", "glass-vs-scenario", VERTICAL_SLICE_SCENARIO_BODY),
+    el(
+      "p",
+      "glass-live-tech-note",
+      "Bridge WebSocket + bounded HTTP snapshot (F-04). F-IPC transport provisional. Bearer token not persisted (sessionStorage: URL, session id, delta-wire preference).",
+    ),
+  );
 
   const nav = el("div", "glass-live-nav");
   const back = document.createElement("a");
@@ -332,7 +349,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const visualIntro = el(
     "div",
     "glass-live-field",
-    "Bounded live visual — Scene System v0 (Canvas 2D and/or WebGPU geometry + Canvas text overlay — not topology)",
+    "Vertical Slice v0 — same Drawable Primitives + Scene v0 strip as replay: Canvas 2D and/or WebGPU quads + Canvas text overlay (not topology)",
   );
   visualIntro.setAttribute("id", "live-visual-surface-title");
   const visualGpuStatus = el("p", "glass-live-visual-gpu-status");
@@ -469,7 +486,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   );
 
   root.append(
-    banner,
+    hero,
     nav,
     form,
     statePanel,

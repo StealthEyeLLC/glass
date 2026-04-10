@@ -57,6 +57,7 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | Suite | Obligation |
 |-------|------------|
 | `src/app/mode.test.ts` | `getBuildMode` stays **`static_replay`**; `uiSurfaceFromSearch` for `?live=1` |
+| `src/app/verticalSliceV0.test.ts` | **Vertical Slice v0** copy exports (`VERTICAL_SLICE_V0_ID`, hero subtitle strings mention static replay / live) |
 | `src/live/applyLiveSessionMessage.test.ts` | Live wire reducer: `session_hello`, `session_snapshot_replaced` replacement sample, non-empty `session_delta` append, empty delta no-op, `session_resync_required` reconcile counter, `session_warning`; **`lastAppliedWire`** surface (replace / append / none, resync summary, truncated sample honesty) |
 | `src/live/liveStatePresentation.test.ts` | `buildLiveStatePresentationDoc` (resync + reconcile trigger, bounded-sample honesty, HTTP snapshot_meta fallback); **`liveConnectDisabledFromPreflight`** (F-IPC not configured vs failed/missing preflight) |
 | `src/live/liveVisualModel.test.ts` | **`buildLiveVisualSpec`**: idle / hello / replace / append / **none_delta** / **resync** / **warning** priority; **`liveVisualDensity01`** cap; **`LIVE_VISUAL_MODE_FILL`** distinctness; reconcile summary line |
@@ -67,8 +68,8 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `src/live/liveVisualRenderer.test.ts` | **`paintLiveVisualSurface`**: **`GlassSceneV0`** input; `webGpuBundle === null` → full **Canvas 2D**, WebGPU + text overlay hidden; mocked **`renderLiveVisualWebGpuFrame`**: hybrid when GPU + overlay succeed; GPU frame fails → Canvas-only; GPU OK + overlay **`getContext("2d") === null`** → full Canvas (degraded) |
 | `src/live/liveVisualProvenance.test.ts` | **`deriveRendererMode`**, **`buildLiveVisualProvenanceStrip`**, **`formatLiveVisualProvenanceStripText`**, **`serializeLiveVisualProvenanceStrip`** / **`toLiveVisualProvenanceExportV0`**: deterministic JSON; hybrid vs canvas_only; credential-field absence; honesty constant |
 | `src/scene/glassSceneV0.test.ts` | **`GLASS_SCENE_V0`** kind string |
-| `src/scene/compileLiveScene.test.ts` | **`compileLiveToGlassSceneV0`** + **`liveVisualSpecFromScene`** idle path |
-| `src/scene/compileReplayScene.test.ts` | **`compileReplayToGlassSceneV0`**: idle / append / load error |
+| `src/scene/compileLiveScene.test.ts` | **`compileLiveToGlassSceneV0`** + **`liveVisualSpecFromScene`** idle path; **Vertical Slice v0** zone labels (wire mode) |
+| `src/scene/compileReplayScene.test.ts` | **`compileReplayToGlassSceneV0`**: idle / append / load error; replay zone label honesty |
 | `src/scene/sceneToLiveVisualSpec.test.ts` | Renderer boundary: replay scene → **`LiveVisualSpec`** |
 | `src/scene/drawablePrimitivesV0.test.ts` | **`semanticTag`** on each primitive (**`band_background`**, **`density_band`**, **`tick_slot_*`**, **`http_chip_*`**, **`band_frame`**); tick slot order; **`expandStrokeRectToFillRects`** edge tags (**`band_frame_*`** vs **`http_chip_frame_*`**) |
 | `src/scene/sceneToDrawablePrimitives.test.ts` | **`sceneToDrawablePrimitives`** equals **`buildBoundedVisualGeometryPrimitives(liveVisualSpecFromScene(scene), …)`**; explicit **layout** override; replay + **live/replay** shared tag prefix via **`listSemanticTagsForScene`** |
@@ -76,13 +77,13 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `src/scene/semanticTagSummaryGoldens.test.ts` | **`exportTagSummaryToJsonLines`** format; **`@vitest-environment node`**: fixture **`__fixtures__/semantic_tag_summary_live_idle_v0.jsonl`** vs live idle **`listSemanticTagsForScene`** export |
 | `src/live/liveSessionLog.test.ts` | **`appendLiveSessionLogLine`** eviction + timestamps; **`formatLiveSessionLogHuman`**; **`serializeLiveSessionLogForExport`** shape; **`summarizeLiveWireForLog`** (concise, no event payloads); **`truncateForLog`** |
 | `src/live/liveWsSessionStatus.test.ts` | Pure **`resolveCloseInitiator`**, **`formatLastCloseLine`**, **`buildWsStatusJson`**, phase lines |
-| `src/live/liveSessionShell.test.ts` | Mounted shell: **Disconnect** + **live-ws-status** + **live-session-log** + **live-visual-surface** / **canvas** / **live-visual-canvas-webgpu** / **live-visual-canvas-text-overlay** / **live-visual-gpu-status** / **fallback** / **live-visual-legend** / **live-visual-provenance-copy-json** / **live-visual-provenance-copy-text** test ids; **mock WebSocket**: operator close records **code** + **operator_disconnect**; **reconnect** clears prior close in JSON; **mock `navigator.clipboard`**: provenance **Copy JSON** success/failure → **session log** |
+| `src/live/liveSessionShell.test.ts` | **`live-vs-hero`**; mounted shell: **Disconnect** + **live-ws-status** + **live-session-log** + **live-visual-surface** / **canvas** / **live-visual-canvas-webgpu** / **live-visual-canvas-text-overlay** / **live-visual-gpu-status** / **fallback** / **live-visual-legend** / **live-visual-provenance-copy-json** / **live-visual-provenance-copy-text** test ids; **mock WebSocket**: operator close records **code** + **operator_disconnect**; **reconnect** clears prior close in JSON; **mock `navigator.clipboard`**: provenance **Copy JSON** success/failure → **session log** |
 | `src/live/liveSessionHttp.test.ts` | `bridgeHttpToLiveWsUrl` maps http→ws / https→wss + `access_token` |
 | `src/live/liveCapabilities.test.ts` | `parseBridgeCapabilitiesJson` + `fetchBridgeCapabilities` error/ok paths (fetch mock) |
 | `src/live/liveSessionStorage.test.ts` | sessionStorage round-trip for URL/session/delta-wire; **no** token key; `saveLiveBridgeUrl` partial |
 | `src/live/liveHttpReconcile.test.ts` | `makeReconcileRecord` operator vs `session_resync_required` |
 | `replayModel.test.ts` | Pure replay reducer: load lifecycle, play/pause/tick, seek/step, empty pack, entity selection |
-| `staticReplay.test.ts` | Mounted shell: metadata + sanitized summary, **Scene v0** canvas (`data-scene`), timeline/inspector binding, play timer (fake), scrub, errors, empty pack |
+| `staticReplay.test.ts` | Mounted shell: **`replay-vs-hero`**, metadata + sanitized summary, **Scene v0** canvas (`data-scene`), timeline/inspector binding, play timer (fake), scrub, errors, empty pack |
 | `tierBReplay.integration.test.ts` | ZIP → `loadGlassPack` → `reduceReplay` (Node env / `fflate`); JSONL + **`scaffold_seg` / `events.seg`** (sanitized summary, **`process_poll_sample`** strict_kinds); empty JSONL |
 | `loadPack.test.ts` | `.glass_pack` validation mirrors Rust (`pack` exclusivity + manifest rules); JSONL + **seg** loads; mixed ZIP rejection; malformed seg; empty seg header-only; **`@vitest-environment node`** — jsdom VM can break `fflate` `zipSync`; real browser unaffected |
 | `eventsSeg.test.ts` | Raw `events.seg` v1 decode: magic/version, truncated header/prefix/payload, zero-length record, bad JSON/UTF-8; roundtrip with `encodeEventsSegV1` (test helper) |

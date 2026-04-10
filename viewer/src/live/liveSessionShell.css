@@ -5,9 +5,69 @@
   padding: 1rem;
 }
 
-.glass-live-root .glass-banner {
-  padding: 0.5rem 0;
+/* Shared with replay shell — Vertical Slice v0 hero typography */
+.glass-vs-hero {
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  background: linear-gradient(165deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+.glass-vs-title {
+  font-size: 1.35rem;
+  margin: 0 0 6px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.glass-vs-badge {
+  margin: 0 0 8px;
+  font-size: 0.72rem;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #475569;
+}
+
+.glass-vs-scenario-kicker {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.glass-vs-nickname {
+  margin: 0 0 8px;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: #64748b;
+}
+
+.glass-vs-subtitle {
+  margin: 0 0 8px;
+  font-size: 0.88rem;
+  color: #334155;
+  line-height: 1.45;
+}
+
+.glass-vs-scenario {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
+.glass-live-vs-hero {
+  border-left: 4px solid #059669;
+}
+
+.glass-live-tech-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.4;
 }
 
 .glass-live-nav {

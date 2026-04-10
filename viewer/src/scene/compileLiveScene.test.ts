@@ -14,5 +14,6 @@ describe("compileLiveToGlassSceneV0", () => {
     expect(spec.mode).toBe("idle");
     expect(spec.sessionId).toBe("sid");
     expect(spec.honestyLine).toContain("not topology");
+    expect(scene.zones[0]?.label).toContain("replace");
   });
 });

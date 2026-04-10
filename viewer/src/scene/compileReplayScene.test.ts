@@ -44,6 +44,7 @@ describe("compileReplayToGlassSceneV0", () => {
     expect(s.source).toBe("replay");
     expect(s.wireMode).toBe("idle");
     expect(s.honesty.sampleScope).toBe("empty");
+    expect(s.zones[0]?.label.toLowerCase()).toContain("wire");
   });
 
   it("uses append mode when cursor past first event", () => {

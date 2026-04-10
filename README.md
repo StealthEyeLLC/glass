@@ -15,7 +15,7 @@ This repository is the Glass v0 **monorepo spine**: session/pack/sanitization (P
 | `graph_engine/` | Graph derivation (stub crate; no presentation) |
 | `collector/` | Linux collector binary (lifecycle stub only) |
 | `bridge/` | Local loopback bridge binary (`glass_bridge`) + resync types — skeleton HTTP/WS (no live ingest) |
-| `viewer/` | TypeScript **Tier B static replay** (`loadGlassPack`, `replayModel`) + optional **`?live=1`** **live-session shell** (`src/live/`): **`GET /capabilities`** preflight, **`/ws`**, bounded **`GET /sessions/:id/snapshot`** (F-04 read-only), sessionStorage convenience (no token persistence); not WebGPU, not a finished live product |
+| `viewer/` | TypeScript **Tier B static replay** (`loadGlassPack`, `replayModel`) + optional **`?live=1`** **live-session shell** (`src/live/`): **`GET /capabilities`** preflight, **`/ws`**, bounded **`GET /sessions/:id/snapshot`** (F-04 read-only), sessionStorage convenience (no token persistence); **Vertical Slice v0** — one bounded demo path: shared Scene v0 + Drawable Primitives in replay and live (Canvas 2D; live may use WebGPU geometry + Canvas overlay — see `docs/VERTICAL_SLICE_V0.md`); not a finished live product |
 | `tools/glass-pack` | CLI: validate / inspect packs; strict kinds + share-safe vs raw-dev expectations |
 | `tools/golden_scenes/` | Golden-scene harness scaffold |
 | `docs/` | Phase 0 tracker, boundaries, test strategy, status |
@@ -67,9 +67,13 @@ cargo run -p glass-collector -- ipc-serve --shared-secret fipc-dev --listen 127.
 cargo run -p glass_bridge -- --token dev-http-bearer --collector-ipc-endpoint 127.0.0.1:9876 --collector-ipc-secret fipc-dev
 ```
 
-Default bridge listen: `127.0.0.1:9781`. **Live-session WebSocket** (`/ws`) exists for bounded polling + optional `session_delta` v0 when configured — see `docs/IMPLEMENTATION_STATUS.md`, `docs/contracts/live_session_ws_session_delta_v0.md`, and `viewer/src/live/`. **WebGPU live scene** is still out of scope.
+Default bridge listen: `127.0.0.1:9781`. **Live-session WebSocket** (`/ws`) exists for bounded polling + optional `session_delta` v0 when configured — see `docs/IMPLEMENTATION_STATUS.md`, `docs/contracts/live_session_ws_session_delta_v0.md`, and `viewer/src/live/`. **`?live=1`** may render Scene v0 with **WebGPU geometry + Canvas text overlay** when `navigator.gpu` is available — still bounded, not Phase-6 topology.
 
 **Retained snapshot demo** (collector background poll + fixture + bridge + `GET /sessions/…/snapshot`): see [`docs/DEMO_RETAINED_SNAPSHOT.md`](docs/DEMO_RETAINED_SNAPSHOT.md) and `scripts/retained_snapshot_demo/` (`demo.ps1` / `demo.sh`). CI runs `cargo test -p integration_tests --test retained_snapshot_demo_smoke` as a **named** Actions job (`Retained snapshot demo smoke (collector ↔ bridge F-IPC)`).
+
+## Vertical Slice v0 (demo path)
+
+One bounded scenario through replay + live: same Scene System v0 strip, honest wire semantics (no fake topology). See [docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md).
 
 ## Status
 

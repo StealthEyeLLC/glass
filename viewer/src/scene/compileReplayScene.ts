@@ -19,9 +19,13 @@ const REPLAY_HONESTY_LINE =
 
 function replayZones(): SceneZone[] {
   return [
-    { id: "z_primary", kind: "primary_band", label: "Playback / sample band" },
-    { id: "z_density", kind: "density_lane", label: "Prefix density vs pack" },
-    { id: "z_playback", kind: "annotation", label: "Playback state" },
+    {
+      id: "z_primary",
+      kind: "primary_band",
+      label: "Prefix depth + wire-mode band (replay sample)",
+    },
+    { id: "z_density", kind: "density_lane", label: "Prefix density vs pack cardinality" },
+    { id: "z_playback", kind: "annotation", label: "Playback / cursor (not wall-clock)" },
   ];
 }
 

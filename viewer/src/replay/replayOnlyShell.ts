@@ -1,4 +1,10 @@
 import { getBuildMode } from "../app/mode.js";
+import {
+  VERTICAL_SLICE_SCENARIO_BODY,
+  VERTICAL_SLICE_SCENARIO_LABEL,
+  VERTICAL_SLICE_SCENARIO_TITLE,
+  replayHeroSubtitle,
+} from "../app/verticalSliceV0.js";
 import { loadGlassPack } from "../pack/loadPack.js";
 import { attachPackDropHandlers, wirePackFileInput } from "./dragDrop.js";
 import { renderLiveVisualOnCanvas } from "../live/liveVisualCanvas.js";
@@ -48,11 +54,22 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   let state = initialReplayState();
   let playTimer: ReturnType<typeof setInterval> | null = null;
 
-  const banner = el("div", "glass-banner");
-  banner.textContent =
-    mode === "static_replay"
-      ? "Glass — static replay (Tier B). Replay-only build: no live capture, no bridge."
-      : "Glass";
+  const hero = el("section", "glass-vs-hero glass-replay-vs-hero");
+  hero.setAttribute("data-testid", "replay-vs-hero");
+  hero.append(
+    el("h1", "glass-vs-title", "Glass — Vertical Slice v0"),
+    el(
+      "p",
+      "glass-vs-badge",
+      mode === "static_replay"
+        ? "Tier B · static replay (default surface)"
+        : "Dev build — not the shipped static bundle",
+    ),
+    el("p", "glass-vs-scenario-kicker", VERTICAL_SLICE_SCENARIO_TITLE),
+    el("p", "glass-vs-nickname", VERTICAL_SLICE_SCENARIO_LABEL),
+    el("p", "glass-vs-subtitle", replayHeroSubtitle()),
+    el("p", "glass-vs-scenario", VERTICAL_SLICE_SCENARIO_BODY),
+  );
 
   const liveNav = el("div", "glass-live-nav");
   const liveA = document.createElement("a");
@@ -119,11 +136,15 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
 
   const sceneSection = el("section", "glass-scene-v0");
   sceneSection.setAttribute("data-testid", "replay-scene-v0");
-  const sceneTitle = el("h3", "glass-scene-v0-title", "Bounded scene (Glass Scene System v0)");
+  const sceneTitle = el(
+    "h3",
+    "glass-scene-v0-title",
+    "Scene v0 — same strip semantics as live (prefix depth + R/A/Rz emphasis)",
+  );
   const sceneNote = el(
     "p",
     "glass-status-line glass-scene-v0-note",
-    "Canvas path — index-ordered prefix sample; not live WebSocket tail; not process topology.",
+    "Canvas 2D from the replay compiler — index-ordered prefix vs pack cardinality; not the bounded WS tail; not topology.",
   );
   const sceneCanvas = document.createElement("canvas");
   sceneCanvas.className = "glass-scene-v0-canvas";
@@ -154,7 +175,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   chipsRow.setAttribute("data-testid", "replay-entity-chips");
 
   root.append(
-    banner,
+    hero,
     liveNav,
     dropZone,
     fileRow,
@@ -162,8 +183,8 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     readingLine,
     metaSection,
     sanitizedSection,
-    controls,
     sceneSection,
+    controls,
     scrub,
     positionLine,
     timeline,

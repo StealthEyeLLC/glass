@@ -21,10 +21,14 @@ export interface LiveSceneCompileInput {
 
 function liveZones(): SceneZone[] {
   return [
-    { id: "z_primary", kind: "primary_band", label: "Wire mode band" },
-    { id: "z_density", kind: "density_lane", label: "Tail density" },
-    { id: "z_markers", kind: "marker_lane", label: "R/A/Rz slots" },
-    { id: "z_http", kind: "annotation", label: "HTTP reconcile chip" },
+    {
+      id: "z_primary",
+      kind: "primary_band",
+      label: "Wire mode (replace / append / resync)",
+    },
+    { id: "z_density", kind: "density_lane", label: "Bounded WS tail density" },
+    { id: "z_markers", kind: "marker_lane", label: "R · A · Rz wire slots" },
+    { id: "z_http", kind: "annotation", label: "HTTP reconcile chip (F-04)" },
   ];
 }
 
