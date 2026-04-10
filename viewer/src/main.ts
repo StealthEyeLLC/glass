@@ -1,11 +1,17 @@
 /**
- * Tier B static replay shell only. No WebGPU rendering yet (Phase 6).
- * Live capture entrypoints are explicitly absent.
+ * Tier B static replay shell by default; optional `?live=1` mounts the live-session skeleton
+ * (bridge WS + HTTP) — see `docs/IMPLEMENTATION_STATUS.md`.
  */
+import { getUiSurface } from "./app/mode.js";
+import { mountLiveSessionShell } from "./live/liveSessionShell.js";
 import { mountReplayShell } from "./replay/replayOnlyShell.js";
 
 const root = document.querySelector("#app");
 if (!root) {
   throw new Error("#app missing");
 }
-mountReplayShell(root);
+if (getUiSurface() === "live_session") {
+  mountLiveSessionShell(root);
+} else {
+  mountReplayShell(root);
+}

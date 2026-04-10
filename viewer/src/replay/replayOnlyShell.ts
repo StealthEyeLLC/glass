@@ -51,6 +51,14 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
       ? "Glass — static replay (Tier B). Replay-only build: no live capture, no bridge."
       : "Glass";
 
+  const liveNav = el("div", "glass-live-nav");
+  const liveA = document.createElement("a");
+  liveA.href = "?live=1";
+  liveA.setAttribute("data-testid", "replay-link-live-session");
+  liveA.textContent =
+    "Open live session skeleton (bridge WebSocket + HTTP) — ?live=1";
+  liveNav.append(liveA);
+
   const dropZone = el("div", "glass-drop-zone");
   dropZone.textContent =
     "Drop a .glass_pack here, or use Open file. Tier B: manifest.json plus events.jsonl (glass.pack.v0.scaffold) or events.seg (glass.pack.v0.scaffold_seg).";
@@ -130,6 +138,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
 
   root.append(
     banner,
+    liveNav,
     dropZone,
     fileRow,
     errorBox,

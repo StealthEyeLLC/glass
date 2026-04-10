@@ -1,0 +1,53 @@
+.glass-live-root {
+  font-family: system-ui, sans-serif;
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.glass-live-root .glass-banner {
+  padding: 0.5rem 0;
+  font-weight: 600;
+}
+
+.glass-live-nav {
+  margin-bottom: 0.75rem;
+}
+
+.glass-live-nav a {
+  color: #2563eb;
+}
+
+.glass-live-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.glass-live-field {
+  font-size: 0.75rem;
+  color: #444;
+  margin-top: 0.25rem;
+}
+
+.glass-live-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.35rem 0.5rem;
+}
+
+.glass-live-status {
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  color: #333;
+}
+
+.glass-live-pre {
+  background: #f4f4f5;
+  padding: 0.5rem;
+  overflow: auto;
+  max-height: 14rem;
+  font-size: 0.75rem;
+  border: 1px solid #ddd;
+}

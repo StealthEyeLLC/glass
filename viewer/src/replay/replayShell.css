@@ -12,6 +12,15 @@
   margin-bottom: 8px;
 }
 
+.glass-live-nav {
+  margin-bottom: 8px;
+}
+
+.glass-live-nav a {
+  font-size: 0.9rem;
+  color: #2563eb;
+}
+
 .glass-drop-zone {
   border: 2px dashed #888;
   padding: 16px;

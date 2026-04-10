@@ -15,7 +15,7 @@ This repository is the Glass v0 **monorepo spine**: session/pack/sanitization (P
 | `graph_engine/` | Graph derivation (stub crate; no presentation) |
 | `collector/` | Linux collector binary (lifecycle stub only) |
 | `bridge/` | Local loopback bridge binary (`glass_bridge`) + resync types — skeleton HTTP/WS (no live ingest) |
-| `viewer/` | TypeScript static replay shell (Tier B): `glass.pack.v0.scaffold` (`events.jsonl`) and `glass.pack.v0.scaffold_seg` (`events.seg`); live mode is explicitly absent |
+| `viewer/` | TypeScript **Tier B static replay** (`loadGlassPack`, `replayModel`) + optional **`?live=1`** **live-session skeleton** (`src/live/`) consuming bridge **`/ws`** + bounded **`GET /sessions/:id/snapshot`** (F-04 read-only); not WebGPU, not a finished live product |
 | `tools/glass-pack` | CLI: validate / inspect packs; strict kinds + share-safe vs raw-dev expectations |
 | `tools/golden_scenes/` | Golden-scene harness scaffold |
 | `docs/` | Phase 0 tracker, boundaries, test strategy, status |
@@ -67,7 +67,7 @@ cargo run -p glass-collector -- ipc-serve --shared-secret fipc-dev --listen 127.
 cargo run -p glass_bridge -- --token dev-http-bearer --collector-ipc-endpoint 127.0.0.1:9876 --collector-ipc-secret fipc-dev
 ```
 
-Default bridge listen: `127.0.0.1:9781`. **No** live WS delta stream — see `docs/IMPLEMENTATION_STATUS.md` and `docs/PRIVILEGE_SEPARATION.md`.
+Default bridge listen: `127.0.0.1:9781`. **Live-session WebSocket** (`/ws`) exists for bounded polling + optional `session_delta` v0 when configured — see `docs/IMPLEMENTATION_STATUS.md`, `docs/contracts/live_session_ws_session_delta_v0.md`, and `viewer/src/live/`. **WebGPU live scene** is still out of scope.
 
 **Retained snapshot demo** (collector background poll + fixture + bridge + `GET /sessions/…/snapshot`): see [`docs/DEMO_RETAINED_SNAPSHOT.md`](docs/DEMO_RETAINED_SNAPSHOT.md) and `scripts/retained_snapshot_demo/` (`demo.ps1` / `demo.sh`). CI runs `cargo test -p integration_tests --test retained_snapshot_demo_smoke` as a **named** Actions job (`Retained snapshot demo smoke (collector ↔ bridge F-IPC)`).
 
