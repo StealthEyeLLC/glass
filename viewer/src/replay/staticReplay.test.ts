@@ -5,6 +5,7 @@ import {
   CANONICAL_EVENT_SCHEMA_VERSION,
   PACK_FORMAT_SCAFFOLD_V0,
 } from "../pack/types.js";
+import { GLASS_SCENE_V0 } from "../scene/glassSceneV0.js";
 import { mountReplayShell } from "./replayOnlyShell.js";
 
 function sampleManifest(sanitized: boolean): GlassManifest {
@@ -54,6 +55,15 @@ describe("static replay shell", () => {
     expect(root.querySelector(".glass-drop-zone")).toBeTruthy();
     expect(root.querySelector('[data-testid="replay-open-file"]')).toBeTruthy();
     expect(root.querySelector('[data-testid="replay-file-input"]')).toBeTruthy();
+  });
+
+  it("mounts Scene System v0 bounded canvas", () => {
+    const root = document.createElement("div");
+    mountReplayShell(root);
+    expect(root.querySelector('[data-testid="replay-scene-v0"]')).toBeTruthy();
+    const cv = root.querySelector('[data-testid="replay-scene-canvas"]') as HTMLCanvasElement | null;
+    expect(cv).toBeTruthy();
+    expect(cv?.getAttribute("data-scene")).toBe(GLASS_SCENE_V0);
   });
 
   it("shows pack metadata and inspector after programmatic load", () => {

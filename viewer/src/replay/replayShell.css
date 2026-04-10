@@ -131,3 +131,30 @@
   word-break: break-word;
   font-size: 0.8rem;
 }
+
+/* Glass Scene System v0 — bounded Canvas (no WebGPU in static replay shell) */
+.glass-scene-v0 {
+  margin: 12px 0;
+  padding: 8px 0;
+  border-top: 1px solid #e2e8f0;
+}
+
+.glass-scene-v0-title {
+  font-size: 0.95rem;
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.glass-scene-v0-note {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  color: #475569;
+}
+
+.glass-scene-v0-canvas {
+  display: block;
+  max-width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 2px;
+  background: #f8fafc;
+}

@@ -1,6 +1,10 @@
 import { getBuildMode } from "../app/mode.js";
 import { loadGlassPack } from "../pack/loadPack.js";
 import { attachPackDropHandlers, wirePackFileInput } from "./dragDrop.js";
+import { renderLiveVisualOnCanvas } from "../live/liveVisualCanvas.js";
+import { GLASS_SCENE_V0 } from "../scene/glassSceneV0.js";
+import { compileReplayToGlassSceneV0 } from "../scene/compileReplayScene.js";
+import { liveVisualSpecFromScene } from "../scene/sceneToLiveVisualSpec.js";
 import {
   currentEvent,
   cursorFraction,
@@ -114,6 +118,20 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     btnClose,
   );
 
+  const sceneSection = el("section", "glass-scene-v0");
+  sceneSection.setAttribute("data-testid", "replay-scene-v0");
+  const sceneTitle = el("h3", "glass-scene-v0-title", "Bounded scene (Glass Scene System v0)");
+  const sceneNote = el(
+    "p",
+    "glass-status-line glass-scene-v0-note",
+    "Canvas path — index-ordered prefix sample; not live WebSocket tail; not process topology.",
+  );
+  const sceneCanvas = document.createElement("canvas");
+  sceneCanvas.className = "glass-scene-v0-canvas";
+  sceneCanvas.setAttribute("data-testid", "replay-scene-canvas");
+  sceneCanvas.setAttribute("data-scene", GLASS_SCENE_V0);
+  sceneSection.append(sceneTitle, sceneNote, sceneCanvas);
+
   const scrub = document.createElement("input");
   scrub.type = "range";
   scrub.min = "0";
@@ -146,6 +164,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     metaSection,
     sanitizedSection,
     controls,
+    sceneSection,
     scrub,
     positionLine,
     timeline,
@@ -171,6 +190,12 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
         dispatch({ type: "tick_advance" });
       }, PLAY_INTERVAL_MS);
     }
+  }
+
+  function paintReplayScene(): void {
+    const scene = compileReplayToGlassSceneV0(state);
+    const spec = liveVisualSpecFromScene(scene);
+    void renderLiveVisualOnCanvas(sceneCanvas, spec);
   }
 
   function dispatch(a: ReplayAction): void {
@@ -377,6 +402,8 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
       positionLine.textContent = "";
       scrub.value = "0";
     }
+
+    paintReplayScene();
   }
 
   render();

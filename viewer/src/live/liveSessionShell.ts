@@ -51,7 +51,10 @@ import {
   type WebGpuLiveStatus,
 } from "./liveWebGpuProbe.js";
 import { formatLiveVisualLegendBlock } from "./liveVisualMarkers.js";
-import { buildLiveVisualSpec } from "./liveVisualModel.js";
+import { compileLiveToGlassSceneV0 } from "../scene/compileLiveScene.js";
+import { GLASS_SCENE_V0 } from "../scene/glassSceneV0.js";
+import { liveVisualSpecFromScene } from "../scene/sceneToLiveVisualSpec.js";
+import type { LiveVisualSpec } from "./liveVisualModel.js";
 import {
   buildLiveVisualProvenanceStrip,
   formatLiveVisualProvenanceStripText,
@@ -329,7 +332,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const visualIntro = el(
     "div",
     "glass-live-field",
-    "Bounded live visual (Canvas 2D, or WebGPU geometry + Canvas text overlay — not topology)",
+    "Bounded live visual — Scene System v0 (Canvas 2D and/or WebGPU geometry + Canvas text overlay — not topology)",
   );
   visualIntro.setAttribute("id", "live-visual-surface-title");
   const visualGpuStatus = el("p", "glass-live-visual-gpu-status");
@@ -349,6 +352,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     "glass-live-visual-canvas glass-live-visual-canvas--text-overlay";
   visualCanvasTextOverlay.setAttribute("data-testid", "live-visual-canvas-text-overlay");
   visualCanvasTextOverlay.hidden = true;
+  visualCanvasStack.setAttribute("data-scene", GLASS_SCENE_V0);
   visualCanvasStack.append(visualCanvas, visualCanvasWebGpu, visualCanvasTextOverlay);
   const visualFallback = el("p", "glass-live-visual-fallback");
   visualFallback.setAttribute("data-testid", "live-visual-fallback");
@@ -391,8 +395,12 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   let webGpuBundle: LiveVisualWebGpuBundle | null = null;
   let lastPaintResult: PaintLiveVisualSurfaceResult | null = null;
 
+  function buildCurrentLiveVisualSpec(): LiveVisualSpec {
+    return liveVisualSpecFromScene(compileLiveToGlassSceneV0({ model, lastReconcile }));
+  }
+
   function buildCurrentProvenanceStrip() {
-    const spec = buildLiveVisualSpec(model, lastReconcile);
+    const spec = buildCurrentLiveVisualSpec();
     return buildLiveVisualProvenanceStrip({
       webGpuProbeStatus: webGpuStatus,
       webGpuBundlePresent: webGpuBundle !== null,
@@ -535,7 +543,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   }
 
   async function paintLiveVisual(): Promise<void> {
-    const spec = buildLiveVisualSpec(model, lastReconcile);
+    const spec = buildCurrentLiveVisualSpec();
     const result = await paintLiveVisualSurface(
       visualCanvas,
       visualCanvasWebGpu,

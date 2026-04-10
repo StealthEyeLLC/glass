@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { GLASS_SCENE_V0 } from "../scene/glassSceneV0.js";
 import { mountLiveSessionShell } from "./liveSessionShell.js";
 
 describe("mountLiveSessionShell", () => {
@@ -19,6 +20,9 @@ describe("mountLiveSessionShell", () => {
     expect(root.querySelector('[data-testid="live-visual-gpu-status"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="live-visual-canvas-webgpu"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="live-visual-canvas-text-overlay"]')).not.toBeNull();
+    expect(
+      root.querySelector(".glass-live-visual-canvas-stack")?.getAttribute("data-scene"),
+    ).toBe(GLASS_SCENE_V0);
     const prov = root.querySelector('[data-testid="live-visual-provenance-strip"]');
     expect(prov).not.toBeNull();
     expect((prov?.textContent ?? "").toLowerCase()).toContain("renderer=");

@@ -1,0 +1,100 @@
+/**
+ * Glass Scene System v0 — bounded, deterministic, DOM-free.
+ * Not topology, not full history — explicit sample scope per source.
+ */
+
+import type { LiveVisualMode } from "../live/liveVisualModel.js";
+
+export const GLASS_SCENE_V0 = "glass.scene.v0" as const;
+
+export type SceneSource = "replay" | "live";
+
+/** How the bounded sample is scoped (honesty for legend / tooling). */
+export type SceneSampleScope =
+  | "live_ws_tail"
+  | "replay_index_prefix"
+  | "empty"
+  | "load_error";
+
+export interface SceneBounds {
+  widthCss: number;
+  heightCss: number;
+}
+
+export type SceneZoneKind =
+  | "primary_band"
+  | "density_lane"
+  | "marker_lane"
+  | "annotation"
+  | "provenance_hook";
+
+export interface SceneZone {
+  id: string;
+  kind: SceneZoneKind;
+  /** Short implementation-facing label */
+  label: string;
+}
+
+export type SceneNodeKind =
+  | "mode_band"
+  | "density_value"
+  | "playback_badge"
+  | "cursor_position"
+  | "text_annotation";
+
+export interface SceneNode {
+  id: string;
+  zoneId: string;
+  kind: SceneNodeKind;
+  /** Small bounded payload — string/number/bool only */
+  payload: Record<string, string | number | boolean | null | undefined>;
+}
+
+/** Honest edge: only ordering/temporal hints we actually have (no process tree). */
+export type SceneEdgeKind = "sequential_in_tail" | "replay_cursor_points_at";
+
+export interface SceneEdge {
+  id: string;
+  kind: SceneEdgeKind;
+  fromNodeId: string;
+  toNodeId: string;
+  note?: string;
+}
+
+export interface SceneHonesty {
+  sampleScope: SceneSampleScope;
+  /** Shown as footer / legend — must stay non-authoritative */
+  line: string;
+}
+
+/**
+ * Single bounded visual scene: same family for replay and live.
+ * `wireMode` + counts align with `LiveVisualSpec` where applicable.
+ */
+export interface GlassSceneV0 {
+  kind: typeof GLASS_SCENE_V0;
+  source: SceneSource;
+  bounds: SceneBounds;
+  wireMode: LiveVisualMode;
+  /** Session id (live) or pack session id / placeholder (replay) */
+  sessionLabel: string;
+  /** Bounded count driving density (live: WS tail length; replay: prefix length cursor+1) */
+  boundedSampleCount: number;
+  /** Optional total for density denominator (replay: pack size; live: may be omitted) */
+  totalEventCardinality: number | null;
+  density01: number;
+  lastWireMsg: string | null;
+  lastWireSummary: string | null;
+  warningCode: string | null;
+  resyncReason: string | null;
+  reconcileSummary: string | null;
+  zones: readonly SceneZone[];
+  nodes: readonly SceneNode[];
+  edges: readonly SceneEdge[];
+  honesty: SceneHonesty;
+}
+
+export const DEFAULT_SCENE_BOUNDS: SceneBounds = {
+  widthCss: 360,
+  heightCss: 132,
+};
