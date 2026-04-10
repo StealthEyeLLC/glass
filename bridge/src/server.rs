@@ -117,6 +117,7 @@ async fn session_snapshot(
             live_session_ingest: false,
             resync_hint: None,
             collector_ipc: None,
+            retained_snapshot_unix_ms: None,
         })
         .into_response(),
         Some(cfg) => {
@@ -134,6 +135,7 @@ async fn session_snapshot(
                     snapshot_cursor,
                     events,
                     live_session_ingest,
+                    retained_snapshot_unix_ms,
                 }) => Json(SessionSnapshotResponse {
                     session_id: sid,
                     cursor_requested,
@@ -146,6 +148,7 @@ async fn session_snapshot(
                         status: "ok",
                         detail: None,
                     }),
+                    retained_snapshot_unix_ms,
                 })
                 .into_response(),
                 Ok(other) => (

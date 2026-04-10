@@ -11,9 +11,9 @@ use glass_collector::ipc::{
     PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION, PROVISIONAL_IPC_AUTH_TOKEN_VERSION,
 };
 use glass_collector::{
-    handle_ipc_dev_tcp_connection, run_ipc_dev_tcp_listener, AdapterId, IpcDevTcpListenConfig,
-    IpcDevTcpRuntime, ProcfsSnapshotFeedConfig, RawObservation, RawObservationKind,
-    RawSourceQuality, SnapshotStore,
+    handle_ipc_dev_tcp_connection, retained_procfs_poll_tick, run_ipc_dev_tcp_listener, AdapterId,
+    IpcDevTcpListenConfig, IpcDevTcpRuntime, ProcfsSnapshotFeedConfig, RawObservation,
+    RawObservationKind, RawSourceQuality, RetainedPollMeta, SnapshotStore,
 };
 
 fn write_line(w: &mut impl Write, v: &impl serde::Serialize) -> std::io::Result<()> {
@@ -41,6 +41,7 @@ fn fipc_handshake_success_and_bounded_snapshot() {
     let runtime = Arc::new(IpcDevTcpRuntime {
         store,
         procfs_feed: None,
+        retained_poll_meta: None,
     });
     let secret = Arc::<str>::from("super-secret-fipc");
     let rt = runtime.clone();
@@ -100,6 +101,7 @@ fn fipc_rejects_wire_protocol_mismatch() {
     let runtime = Arc::new(IpcDevTcpRuntime {
         store: Arc::new(SnapshotStore::new()),
         procfs_feed: None,
+        retained_poll_meta: None,
     });
     let secret = Arc::<str>::from("s");
     let rt = runtime.clone();
@@ -137,6 +139,7 @@ fn fipc_rejects_auth_token_version_mismatch() {
     let runtime = Arc::new(IpcDevTcpRuntime {
         store: Arc::new(SnapshotStore::new()),
         procfs_feed: None,
+        retained_poll_meta: None,
     });
     let secret = Arc::<str>::from("s");
     let rt = runtime.clone();
@@ -174,6 +177,7 @@ fn fipc_rejects_shared_secret_mismatch() {
     let runtime = Arc::new(IpcDevTcpRuntime {
         store: Arc::new(SnapshotStore::new()),
         procfs_feed: None,
+        retained_poll_meta: None,
     });
     let secret = Arc::<str>::from("server-secret");
     let rt = runtime.clone();
@@ -216,6 +220,7 @@ fn fipc_listener_accepts_connection() {
     let runtime = Arc::new(IpcDevTcpRuntime {
         store: Arc::new(SnapshotStore::new()),
         procfs_feed: None,
+        retained_poll_meta: None,
     });
     thread::spawn(move || {
         let _ = run_ipc_dev_tcp_listener(cfg, runtime);
@@ -262,6 +267,7 @@ fn fipc_procfs_raw_json_returns_normalized_bounded_snapshot() {
             twice: false,
             from_raw_json: Some(path),
         }),
+        retained_poll_meta: None,
     });
     let secret = Arc::<str>::from("sec-proc");
     let rt = runtime.clone();
@@ -309,6 +315,11 @@ fn fipc_procfs_raw_json_returns_normalized_bounded_snapshot() {
         }
         _ => panic!("expected BoundedSnapshotReply, got {snap:?}"),
     }
+    let line_obj: serde_json::Value = serde_json::from_str(&snap_line).unwrap();
+    assert!(!line_obj
+        .as_object()
+        .expect("object")
+        .contains_key("retained_snapshot_unix_ms"));
 }
 
 #[test]
@@ -331,6 +342,7 @@ fn fipc_procfs_snapshot_clamped_by_request_max_events() {
             twice: false,
             from_raw_json: Some(path),
         }),
+        retained_poll_meta: None,
     });
     let secret = Arc::<str>::from("s");
     let rt = runtime.clone();
@@ -398,6 +410,7 @@ fn fipc_procfs_mismatched_session_uses_snapshot_store_only() {
             twice: false,
             from_raw_json: Some(path),
         }),
+        retained_poll_meta: None,
     });
     let secret = Arc::<str>::from("s");
     let rt = runtime.clone();
@@ -455,6 +468,7 @@ fn fipc_procfs_empty_raw_array_honest_v0_empty() {
             twice: false,
             from_raw_json: Some(path),
         }),
+        retained_poll_meta: None,
     });
     let secret = Arc::<str>::from("s");
     let rt = runtime.clone();
@@ -520,6 +534,7 @@ fn fipc_procfs_global_cap_matches_provisional_constant() {
             twice: false,
             from_raw_json: Some(path),
         }),
+        retained_poll_meta: None,
     });
     let secret = Arc::<str>::from("s");
     let rt = runtime.clone();
@@ -558,4 +573,235 @@ fn fipc_procfs_global_cap_matches_provisional_constant() {
         }
         _ => panic!("expected BoundedSnapshotReply, got {snap:?}"),
     }
+}
+
+#[test]
+fn fipc_retained_store_snapshot_includes_retained_unix_ms() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("ret.json");
+    let raw = vec![
+        procfs_sample_raw("ret_ipc", 1, 9),
+        procfs_sample_raw("ret_ipc", 2, 8),
+    ];
+    std::fs::write(&path, serde_json::to_string(&raw).unwrap()).unwrap();
+
+    let store = Arc::new(SnapshotStore::new());
+    let feed = ProcfsSnapshotFeedConfig {
+        session_id: "ret_ipc".to_string(),
+        max_samples: 512,
+        twice: false,
+        from_raw_json: Some(path),
+    };
+    let meta = Arc::new(RetainedPollMeta::new("ret_ipc"));
+    retained_procfs_poll_tick(store.as_ref(), &feed, 256, Some(meta.as_ref())).unwrap();
+
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let runtime = Arc::new(IpcDevTcpRuntime {
+        store,
+        procfs_feed: None,
+        retained_poll_meta: Some(meta),
+    });
+    let secret = Arc::<str>::from("s");
+    let rt = runtime.clone();
+    let sec = secret.clone();
+    thread::spawn(move || {
+        let (s, _) = listener.accept().unwrap();
+        handle_ipc_dev_tcp_connection(s, sec.as_ref(), rt.as_ref()).unwrap();
+    });
+    thread::sleep(Duration::from_millis(30));
+    let mut c = TcpStream::connect(addr).unwrap();
+    let mut r = BufReader::new(c.try_clone().unwrap());
+    write_line(
+        &mut c,
+        &FipcBridgeToCollector::Hello {
+            wire_protocol_version: PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION,
+            auth_token_version: PROVISIONAL_IPC_AUTH_TOKEN_VERSION,
+            shared_secret: "s".to_string(),
+        },
+    )
+    .unwrap();
+    let _ack = read_line(&mut r);
+    write_line(
+        &mut c,
+        &FipcBridgeToCollector::BoundedSnapshotRequest {
+            session_id: "ret_ipc".to_string(),
+            cursor: None,
+            max_events: 10,
+        },
+    )
+    .unwrap();
+    let snap_line = read_line(&mut r);
+    let snap: FipcCollectorToBridge = serde_json::from_str(&snap_line).unwrap();
+    match snap {
+        FipcCollectorToBridge::BoundedSnapshotReply {
+            events,
+            retained_snapshot_unix_ms,
+            ..
+        } => {
+            assert_eq!(events.len(), 2);
+            assert!(retained_snapshot_unix_ms.is_some());
+        }
+        _ => panic!("expected BoundedSnapshotReply, got {snap:?}"),
+    }
+}
+
+#[test]
+fn fipc_retained_meta_wrong_session_omits_retained_unix_ms() {
+    let store = Arc::new(SnapshotStore::new());
+    store.set_session_events("other", vec![serde_json::json!({"k":1})]);
+    let meta = Arc::new(RetainedPollMeta::new("ret_only"));
+
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let runtime = Arc::new(IpcDevTcpRuntime {
+        store,
+        procfs_feed: None,
+        retained_poll_meta: Some(meta),
+    });
+    let secret = Arc::<str>::from("s");
+    let rt = runtime.clone();
+    let sec = secret.clone();
+    thread::spawn(move || {
+        let (s, _) = listener.accept().unwrap();
+        handle_ipc_dev_tcp_connection(s, sec.as_ref(), rt.as_ref()).unwrap();
+    });
+    thread::sleep(Duration::from_millis(30));
+    let mut c = TcpStream::connect(addr).unwrap();
+    let mut r = BufReader::new(c.try_clone().unwrap());
+    write_line(
+        &mut c,
+        &FipcBridgeToCollector::Hello {
+            wire_protocol_version: PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION,
+            auth_token_version: PROVISIONAL_IPC_AUTH_TOKEN_VERSION,
+            shared_secret: "s".to_string(),
+        },
+    )
+    .unwrap();
+    let _ack = read_line(&mut r);
+    write_line(
+        &mut c,
+        &FipcBridgeToCollector::BoundedSnapshotRequest {
+            session_id: "other".to_string(),
+            cursor: None,
+            max_events: 10,
+        },
+    )
+    .unwrap();
+    let snap_line = read_line(&mut r);
+    let snap: FipcCollectorToBridge = serde_json::from_str(&snap_line).unwrap();
+    match snap {
+        FipcCollectorToBridge::BoundedSnapshotReply {
+            retained_snapshot_unix_ms,
+            ..
+        } => {
+            assert!(retained_snapshot_unix_ms.is_none());
+        }
+        _ => panic!("expected BoundedSnapshotReply, got {snap:?}"),
+    }
+}
+
+#[test]
+fn fipc_per_rpc_and_retained_sessions_independent() {
+    let dir = tempfile::tempdir().unwrap();
+    let p_ret = dir.path().join("ret.json");
+    let p_rpc = dir.path().join("rpc.json");
+    std::fs::write(
+        &p_ret,
+        serde_json::to_string(&vec![procfs_sample_raw("sess_ret", 1, 1)]).unwrap(),
+    )
+    .unwrap();
+    std::fs::write(
+        &p_rpc,
+        serde_json::to_string(&vec![procfs_sample_raw("sess_rpc", 1, 2)]).unwrap(),
+    )
+    .unwrap();
+
+    let store = Arc::new(SnapshotStore::new());
+    let feed_ret = ProcfsSnapshotFeedConfig {
+        session_id: "sess_ret".to_string(),
+        max_samples: 512,
+        twice: false,
+        from_raw_json: Some(p_ret),
+    };
+    let meta = Arc::new(RetainedPollMeta::new("sess_ret"));
+    retained_procfs_poll_tick(store.as_ref(), &feed_ret, 64, Some(meta.as_ref())).unwrap();
+
+    let runtime = Arc::new(IpcDevTcpRuntime {
+        store,
+        procfs_feed: Some(ProcfsSnapshotFeedConfig {
+            session_id: "sess_rpc".to_string(),
+            max_samples: 512,
+            twice: false,
+            from_raw_json: Some(p_rpc),
+        }),
+        retained_poll_meta: Some(meta),
+    });
+
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let secret = Arc::<str>::from("s");
+    let rt = runtime.clone();
+    let sec = secret.clone();
+    thread::spawn(move || {
+        let (s, _) = listener.accept().unwrap();
+        handle_ipc_dev_tcp_connection(s, sec.as_ref(), rt.as_ref()).unwrap();
+    });
+    thread::sleep(Duration::from_millis(30));
+    let mut c = TcpStream::connect(addr).unwrap();
+    let mut r = BufReader::new(c.try_clone().unwrap());
+    write_line(
+        &mut c,
+        &FipcBridgeToCollector::Hello {
+            wire_protocol_version: PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION,
+            auth_token_version: PROVISIONAL_IPC_AUTH_TOKEN_VERSION,
+            shared_secret: "s".to_string(),
+        },
+    )
+    .unwrap();
+    let _ack = read_line(&mut r);
+
+    write_line(
+        &mut c,
+        &FipcBridgeToCollector::BoundedSnapshotRequest {
+            session_id: "sess_rpc".to_string(),
+            cursor: None,
+            max_events: 10,
+        },
+    )
+    .unwrap();
+    let rpc_line = read_line(&mut r);
+    let rpc_snap: FipcCollectorToBridge = serde_json::from_str(&rpc_line).unwrap();
+    let FipcCollectorToBridge::BoundedSnapshotReply {
+        events: rpc_ev,
+        retained_snapshot_unix_ms: rpc_ret,
+        ..
+    } = rpc_snap
+    else {
+        panic!("expected reply");
+    };
+    assert_eq!(rpc_ev.len(), 1);
+    assert!(rpc_ret.is_none());
+
+    write_line(
+        &mut c,
+        &FipcBridgeToCollector::BoundedSnapshotRequest {
+            session_id: "sess_ret".to_string(),
+            cursor: None,
+            max_events: 10,
+        },
+    )
+    .unwrap();
+    let ret_line = read_line(&mut r);
+    let ret_snap: FipcCollectorToBridge = serde_json::from_str(&ret_line).unwrap();
+    let FipcCollectorToBridge::BoundedSnapshotReply {
+        events: ret_ev,
+        retained_snapshot_unix_ms: ret_ts,
+        ..
+    } = ret_snap
+    else {
+        panic!("expected reply");
+    };
+    assert_eq!(ret_ev.len(), 1);
+    assert!(ret_ts.is_some());
 }

@@ -11,8 +11,9 @@ use glass_bridge::http_types::SNAPSHOT_CURSOR_EMPTY;
 use glass_bridge::{app_router, BridgeConfig, CollectorIpcClientConfig};
 use glass_collector::ipc::PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION;
 use glass_collector::{
-    handle_ipc_dev_tcp_connection, AdapterId, IpcDevTcpRuntime, ProcfsSnapshotFeedConfig,
-    RawObservation, RawObservationKind, RawSourceQuality, SnapshotStore,
+    handle_ipc_dev_tcp_connection, retained_procfs_poll_tick, AdapterId, IpcDevTcpRuntime,
+    ProcfsSnapshotFeedConfig, RawObservation, RawObservationKind, RawSourceQuality,
+    RetainedPollMeta, SnapshotStore,
 };
 use http_body_util::BodyExt;
 use tower::ServiceExt;
@@ -29,6 +30,7 @@ async fn snapshot_populated_via_collector_fipc() {
     let runtime = Arc::new(IpcDevTcpRuntime {
         store,
         procfs_feed: None,
+        retained_poll_meta: None,
     });
     let secret = Arc::<str>::from("fipc-test-secret");
     let rt = runtime.clone();
@@ -114,6 +116,7 @@ async fn empty_session_snapshot_cursor_via_fipc() {
     let runtime = Arc::new(IpcDevTcpRuntime {
         store: Arc::new(SnapshotStore::new()),
         procfs_feed: None,
+        retained_poll_meta: None,
     });
     let secret = Arc::<str>::from("sec");
     let rt = runtime.clone();
@@ -182,6 +185,7 @@ async fn snapshot_via_procfs_fixture_normalized_envelope() {
             twice: false,
             from_raw_json: Some(path),
         }),
+        retained_poll_meta: None,
     });
     let secret = Arc::<str>::from("bridge-procfs-ipc-secret");
     let rt = runtime.clone();
@@ -222,4 +226,79 @@ async fn snapshot_via_procfs_fixture_normalized_envelope() {
     assert_eq!(events[0]["kind"], "process_poll_sample");
     assert_eq!(v["snapshot_cursor"], "v0:off:1");
     assert_eq!(v["collector_ipc"]["status"], "ok");
+}
+
+#[tokio::test]
+async fn snapshot_retained_store_includes_retained_unix_ms() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("br_ret.json");
+    let o = RawObservation::new(
+        1,
+        "bridge_retained_sess",
+        11,
+        RawObservationKind::ProcessSample,
+        RawSourceQuality::ProcfsDerived,
+        AdapterId::ProcfsProcess,
+        serde_json::json!({
+            "semantics": "procfs_poll_snapshot",
+            "pid": 7,
+            "comm": "br-ret",
+            "ppid": 1,
+        }),
+    );
+    std::fs::write(&path, serde_json::to_string(&vec![o]).unwrap()).unwrap();
+
+    let store = Arc::new(SnapshotStore::new());
+    let feed = ProcfsSnapshotFeedConfig {
+        session_id: "bridge_retained_sess".to_string(),
+        max_samples: 512,
+        twice: false,
+        from_raw_json: Some(path),
+    };
+    let meta = Arc::new(RetainedPollMeta::new("bridge_retained_sess"));
+    retained_procfs_poll_tick(store.as_ref(), &feed, 256, Some(meta.as_ref())).unwrap();
+
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let runtime = Arc::new(IpcDevTcpRuntime {
+        store,
+        procfs_feed: None,
+        retained_poll_meta: Some(meta),
+    });
+    let secret = Arc::<str>::from("bridge-retained-secret");
+    let rt = runtime.clone();
+    let sec = secret.clone();
+    thread::spawn(move || {
+        let (stream, _) = listener.accept().expect("accept");
+        handle_ipc_dev_tcp_connection(stream, sec.as_ref(), rt.as_ref()).expect("handle");
+    });
+    thread::sleep(Duration::from_millis(40));
+
+    let cfg = BridgeConfig {
+        bind: "127.0.0.1:0".parse().unwrap(),
+        bearer_token: Arc::from("bridge-http-token"),
+        allow_non_loopback: false,
+        collector_ipc: Some(CollectorIpcClientConfig {
+            addr,
+            shared_secret: secret,
+            timeout: Duration::from_secs(2),
+        }),
+    };
+    let app = app_router(&cfg);
+    let res = app
+        .oneshot(
+            Request::builder()
+                .uri("/sessions/bridge_retained_sess/snapshot")
+                .header("Authorization", "Bearer bridge-http-token")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let b = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&b).unwrap();
+    assert_eq!(v["events"].as_array().unwrap().len(), 1);
+    assert!(v["retained_snapshot_unix_ms"].as_u64().is_some());
+    assert_eq!(v["live_session_ingest"], false);
 }

@@ -1,15 +1,17 @@
 //! Collector binary. **`run`** exits without live loop; subcommands for dev verification.
 
 use std::path::PathBuf;
+use std::time::Duration;
 
 use clap::{Parser, Subcommand};
 use std::sync::Arc;
 
 use glass_collector::{
     build_fidelity_report, default_adapter_stack, ingest_procfs_raw_to_session_log,
-    load_procfs_observations_for_cli, run_ipc_dev_tcp_listener, CollectorAdapter, CollectorConfig,
-    IpcDevTcpListenConfig, IpcDevTcpRuntime, PrivilegeMode, ProcfsProcessAdapter,
-    ProcfsSnapshotFeedConfig, SelfSilencePolicy, SnapshotStore,
+    load_procfs_observations_for_cli, run_ipc_dev_tcp_listener, spawn_retained_procfs_loop,
+    CollectorAdapter, CollectorConfig, IpcDevTcpListenConfig, IpcDevTcpRuntime, PrivilegeMode,
+    ProcfsProcessAdapter, ProcfsSnapshotFeedConfig, RetainedPollMeta, RetainedProcfsLoopConfig,
+    SelfSilencePolicy, SnapshotStore,
 };
 use session_engine::{materialize_share_safe_procfs_pack_bytes, write_glass_pack, SessionManifest};
 
@@ -104,6 +106,13 @@ enum Command {
         /// Read `RawObservation[]` instead of `/proc` (fixtures / non-Linux).
         #[arg(long)]
         procfs_from_raw_json: Option<PathBuf>,
+        /// Background poll fills in-memory SnapshotStore for this session (bounded tail); F-IPC reads store (no per-RPC repoll). Not live deltas. Incompatible with `--procfs-session` for the same session id.
+        #[arg(long)]
+        procfs_retained_session: Option<String>,
+        #[arg(long, default_value_t = 1000_u64)]
+        procfs_retained_interval_ms: u64,
+        #[arg(long, default_value_t = 256_usize)]
+        procfs_retained_max_events: usize,
     },
 }
 
@@ -226,6 +235,9 @@ fn main() {
             procfs_max_samples,
             procfs_twice,
             procfs_from_raw_json,
+            procfs_retained_session,
+            procfs_retained_interval_ms,
+            procfs_retained_max_events,
         }) => {
             let bind: std::net::SocketAddr = listen.parse().unwrap_or_else(|e| {
                 eprintln!("ipc-serve: invalid --listen: {e}");
@@ -244,6 +256,23 @@ fn main() {
                 );
                 std::process::exit(2);
             }
+            if procfs_retained_session.is_some()
+                && procfs_from_raw_json.is_none()
+                && !cfg!(target_os = "linux")
+            {
+                eprintln!(
+                    "ipc-serve: --procfs-retained-session on non-Linux requires --procfs-from-raw-json"
+                );
+                std::process::exit(2);
+            }
+            if let (Some(a), Some(b)) = (&procfs_session, &procfs_retained_session) {
+                if a == b {
+                    eprintln!(
+                        "ipc-serve: --procfs-session and --procfs-retained-session must not use the same session id (pick per-RPC or retained mode)"
+                    );
+                    std::process::exit(2);
+                }
+            }
             let store = Arc::new(SnapshotStore::new());
             if let (Some(sid), Some(path)) = (seed_session, seed_events_json) {
                 let raw = std::fs::read_to_string(&path).unwrap_or_else(|e| {
@@ -261,8 +290,29 @@ fn main() {
                 session_id,
                 max_samples: procfs_max_samples,
                 twice: procfs_twice,
-                from_raw_json: procfs_from_raw_json,
+                from_raw_json: procfs_from_raw_json.clone(),
             });
+            let mut retained_poll_meta = None;
+            if let Some(rs) = procfs_retained_session {
+                let feed = ProcfsSnapshotFeedConfig {
+                    session_id: rs.clone(),
+                    max_samples: procfs_max_samples,
+                    twice: procfs_twice,
+                    from_raw_json: procfs_from_raw_json.clone(),
+                };
+                let loop_cfg = RetainedProcfsLoopConfig {
+                    feed,
+                    interval: Duration::from_millis(procfs_retained_interval_ms),
+                    max_retained_events: procfs_retained_max_events,
+                };
+                let meta = Arc::new(RetainedPollMeta::new(rs));
+                let _join = spawn_retained_procfs_loop(store.clone(), loop_cfg, meta.clone());
+                retained_poll_meta = Some(meta);
+                eprintln!(
+                    "ipc-serve: retained procfs loop → bounded SnapshotStore (not live ingest; interval {} ms)",
+                    procfs_retained_interval_ms
+                );
+            }
             if procfs_feed.is_some() {
                 eprintln!(
                     "ipc-serve: procfs-backed bounded snapshots for configured session (per-request poll+normalize; not live ingest)"
@@ -275,7 +325,11 @@ fn main() {
                 bind,
                 shared_secret: Arc::from(shared_secret.into_boxed_str()),
             };
-            let runtime = Arc::new(IpcDevTcpRuntime { store, procfs_feed });
+            let runtime = Arc::new(IpcDevTcpRuntime {
+                store,
+                procfs_feed,
+                retained_poll_meta,
+            });
             if let Err(e) = run_ipc_dev_tcp_listener(cfg, runtime) {
                 eprintln!("ipc-serve: {e}");
                 std::process::exit(1);

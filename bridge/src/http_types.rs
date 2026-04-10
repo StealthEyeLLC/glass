@@ -67,6 +67,9 @@ pub struct SessionSnapshotResponse {
     pub resync_hint: Option<ResyncHint>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub collector_ipc: Option<CollectorIpcSnapshotMeta>,
+    /// Unix **ms** when collector last successfully refreshed retained snapshot data for this session; **provisional**; omitted when not applicable.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub retained_snapshot_unix_ms: Option<u64>,
 }
 
 /// Initial cursor for an empty session timeline (opaque string; format TBD when F-04 closes).

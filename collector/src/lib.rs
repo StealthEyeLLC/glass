@@ -6,6 +6,7 @@
 //! - **Adapters** — capability-first; **no** claim of complete eBPF/procfs capture until implemented.
 //! - **[`ipc`] / [`ipc_dev_tcp`]** — versioned F-IPC messages; **provisional** dev TCP server (not final transport).
 //! - **[`procfs_ipc_feed`]** — procfs or fixture `RawObservation[]` → normalize → JSON for bounded F-IPC snapshots (`ipc-serve --procfs-session`).
+//! - **[`procfs_retained_loop`]** — optional background poll → bounded retained [`SnapshotStore`] (`ipc-serve --procfs-retained-session`); **not** live deltas.
 //! - **[`self_silence`]** — suppress Glass-owned processes **before** any normalization input.
 //!
 //! See `docs/PRIVILEGE_SEPARATION.md`, `docs/REPO_BOUNDARIES.md`.
@@ -18,6 +19,7 @@ pub mod ipc_dev_tcp;
 pub mod pipeline;
 pub mod privilege;
 pub mod procfs_ipc_feed;
+pub mod procfs_retained_loop;
 pub mod procfs_session;
 pub mod procfs_snapshot;
 pub mod raw;
@@ -38,12 +40,16 @@ pub use ipc::{
     PROVISIONAL_IPC_AUTH_TOKEN_VERSION,
 };
 pub use ipc_dev_tcp::{
-    handle_ipc_dev_tcp_connection, run_ipc_dev_tcp_listener, IpcDevTcpListenConfig,
-    IpcDevTcpRuntime, SnapshotStore,
+    handle_ipc_dev_tcp_connection, run_ipc_dev_tcp_listener, unix_epoch_millis_now,
+    IpcDevTcpListenConfig, IpcDevTcpRuntime, RetainedPollMeta, SnapshotStore,
 };
 pub use pipeline::{filter_for_normalization_input, PipelineStats};
 pub use privilege::{CollectorProcessRole, PrivilegeContext, PrivilegeMode};
 pub use procfs_ipc_feed::{load_procfs_observations_for_cli, ProcfsSnapshotFeedConfig};
+pub use procfs_retained_loop::{
+    retained_procfs_poll_tick, spawn_retained_procfs_loop, RetainedProcfsLoopConfig,
+    PROVISIONAL_MAX_RETAINED_SNAPSHOT_EVENTS,
+};
 pub use raw::{RawObservation, RawObservationKind, RawSourceQuality};
 pub use self_silence::{GlassComponent, LineageIdentity, SelfSilenceCounters, SelfSilencePolicy};
 

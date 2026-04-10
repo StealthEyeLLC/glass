@@ -4,7 +4,9 @@
 use std::collections::HashMap;
 use std::io::{self, BufRead, BufReader, Write};
 use std::net::{TcpListener, TcpStream};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::ipc::{
     validate_ipc_auth_version, FipcBridgeToCollector, FipcCollectorToBridge,
@@ -15,6 +17,30 @@ use crate::ipc::{
 /// Matches `session_engine` / viewer F-07-style bound per line (honest cap for one NDJSON line).
 const PROVISIONAL_FIPC_MAX_LINE_BYTES: usize = 4 * 1024 * 1024;
 
+/// Last successful **retained** procfs poll time (`0` = never). Lives here to avoid a module cycle
+/// with [`crate::procfs_retained_loop`].
+#[derive(Debug)]
+pub struct RetainedPollMeta {
+    pub session_id: String,
+    pub last_ok_unix_ms: AtomicU64,
+}
+
+impl RetainedPollMeta {
+    pub fn new(session_id: impl Into<String>) -> Self {
+        Self {
+            session_id: session_id.into(),
+            last_ok_unix_ms: AtomicU64::new(0),
+        }
+    }
+}
+
+pub fn unix_epoch_millis_now() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
+}
+
 /// Runtime for one F-IPC TCP connection: optional procfs-backed snapshot feed + in-memory store.
 #[derive(Debug, Clone)]
 pub struct IpcDevTcpRuntime {
@@ -22,6 +48,9 @@ pub struct IpcDevTcpRuntime {
     /// When `Some` and the snapshot request `session_id` matches, serve from
     /// [`crate::procfs_ipc_feed::ProcfsSnapshotFeedConfig::poll_normalized_json`] (per RPC).
     pub procfs_feed: Option<crate::procfs_ipc_feed::ProcfsSnapshotFeedConfig>,
+    /// When `Some` and the request `session_id` matches, F-IPC may include
+    /// `retained_snapshot_unix_ms` from the last successful retained poll (see `procfs_retained_loop`).
+    pub retained_poll_meta: Option<Arc<RetainedPollMeta>>,
 }
 
 /// In-memory session → normalized events as JSON (collector-owned; bridge never mutates).
@@ -47,7 +76,11 @@ impl SnapshotStore {
         g.insert(session_id.into(), events);
     }
 
-    fn get_bounded(&self, session_id: &str, max: usize) -> (Vec<serde_json::Value>, String) {
+    pub(crate) fn get_bounded(
+        &self,
+        session_id: &str,
+        max: usize,
+    ) -> (Vec<serde_json::Value>, String) {
         let g = self.inner.lock().expect("snapshot store poisoned");
         let Some(ev) = g.get(session_id) else {
             return (Vec::new(), "v0:empty".to_string());
@@ -202,7 +235,8 @@ pub fn handle_ipc_dev_tcp_connection(
                 max_events,
             } => {
                 let cap = (max_events as usize).min(PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS);
-                let (events, snapshot_cursor) = bounded_snapshot_events(runtime, &session_id, cap);
+                let (events, snapshot_cursor, retained_snapshot_unix_ms) =
+                    bounded_snapshot_events(runtime, &session_id, cap);
                 write_ndjson_line(
                     &mut writer,
                     &FipcCollectorToBridge::BoundedSnapshotReply {
@@ -210,6 +244,7 @@ pub fn handle_ipc_dev_tcp_connection(
                         snapshot_cursor,
                         events,
                         live_session_ingest: false,
+                        retained_snapshot_unix_ms,
                     },
                 )?;
             }
@@ -219,31 +254,42 @@ pub fn handle_ipc_dev_tcp_connection(
     Ok(())
 }
 
+fn retained_timestamp_for_session(runtime: &IpcDevTcpRuntime, session_id: &str) -> Option<u64> {
+    let meta = runtime.retained_poll_meta.as_ref()?;
+    if meta.session_id != session_id {
+        return None;
+    }
+    let ms = meta.last_ok_unix_ms.load(Ordering::Relaxed);
+    (ms > 0).then_some(ms)
+}
+
 fn bounded_snapshot_events(
     runtime: &IpcDevTcpRuntime,
     session_id: &str,
     cap: usize,
-) -> (Vec<serde_json::Value>, String) {
+) -> (Vec<serde_json::Value>, String, Option<u64>) {
     if let Some(ref feed) = runtime.procfs_feed {
         if session_id == feed.session_id {
             return match feed.poll_normalized_json() {
                 Ok(full) => {
                     if full.is_empty() {
-                        (Vec::new(), "v0:empty".to_string())
+                        (Vec::new(), "v0:empty".to_string(), None)
                     } else {
                         let n = cap.min(full.len());
                         let slice: Vec<serde_json::Value> = full.iter().take(n).cloned().collect();
-                        (slice, format!("v0:off:{n}"))
+                        (slice, format!("v0:off:{n}"), None)
                     }
                 }
                 Err(e) => {
                     eprintln!("ipc-serve: procfs snapshot poll/ingest failed: {e}");
-                    (Vec::new(), "v0:empty".to_string())
+                    (Vec::new(), "v0:empty".to_string(), None)
                 }
             };
         }
     }
-    runtime.store.get_bounded(session_id, cap)
+    let (events, cursor) = runtime.store.get_bounded(session_id, cap);
+    let retained = retained_timestamp_for_session(runtime, session_id);
+    (events, cursor, retained)
 }
 
 /// Bind `config.bind` and accept connections until error. Each connection is handled on a new thread.

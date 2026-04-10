@@ -131,5 +131,10 @@ pub enum FipcCollectorToBridge {
         events: Vec<serde_json::Value>,
         /// Still **false** in this skeleton (no live WS delta stream).
         live_session_ingest: bool,
+        /// When set, Unix **ms** of last successful **retained** procfs poll that updated the store
+        /// for this `session_id`. Omitted on per-RPC procfs replies and when never polled. **Provisional** telemetry.
+        #[serde(default)]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        retained_snapshot_unix_ms: Option<u64>,
     },
 }
