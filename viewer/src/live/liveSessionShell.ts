@@ -25,6 +25,14 @@ import {
   liveConnectDisabledFromPreflight,
   serializePresentationDoc,
 } from "./liveStatePresentation.js";
+import {
+  buildWsStatusJson,
+  formatLastCloseLine,
+  formatWsPhaseLine,
+  resolveCloseInitiator,
+  type WsLastCloseDisplay,
+  type WsUiPhase,
+} from "./liveWsSessionStatus.js";
 import "./liveSessionShell.css";
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -113,6 +121,10 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const btnConnect = el("button", undefined, "Connect");
   btnConnect.type = "button";
   btnConnect.setAttribute("data-testid", "live-connect");
+  const btnDisconnect = el("button", undefined, "Disconnect");
+  btnDisconnect.type = "button";
+  btnDisconnect.setAttribute("data-testid", "live-disconnect");
+  btnDisconnect.disabled = true;
   const connectHint = el("span", "glass-live-connect-hint");
   connectHint.setAttribute("data-testid", "live-connect-hint");
   const btnSnapshot = el("button", undefined, "Refresh HTTP snapshot");
@@ -129,6 +141,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     deltaLabel,
     btnPreflight,
     btnConnect,
+    btnDisconnect,
     connectHint,
     btnSnapshot,
   );
@@ -144,7 +157,14 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     deltaWire.checked = prefs.sessionDeltaWire;
   }
 
-  let ws: WebSocket | null = null;
+  let activeWs: WebSocket | null = null;
+  const closeAttribution = new WeakMap<WebSocket, "operator" | "reconnect">();
+  const errorSeenOnSocket = new WeakMap<WebSocket, boolean>();
+
+  let wsUiPhase: WsUiPhase = "idle";
+  let lastWsCloseDisplay: WsLastCloseDisplay | null = null;
+  let hadErrorEventOnActiveSocket = false;
+
   let model = createInitialLiveSessionModelState("");
   let lastHttp: BoundedSnapshotF04 | null = null;
   let lastReconcileProcessed = 0;
@@ -152,11 +172,44 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   let capsError: string | null = null;
   let lastReconcile: HttpReconcileRecord | null = null;
 
-  const status = el("div", "glass-live-status");
-  status.setAttribute("data-testid", "live-status");
+  const connectionStatus = el("div", "glass-live-connection-status");
+  connectionStatus.setAttribute("data-testid", "live-connection-status");
 
-  function setStatus(t: string): void {
-    status.textContent = t;
+  const ephemeralStatus = el("div", "glass-live-status");
+  ephemeralStatus.setAttribute("data-testid", "live-status");
+
+  function setEphemeralStatus(t: string): void {
+    ephemeralStatus.textContent = t;
+  }
+
+  const wsStatusHeader = el("div", "glass-live-panel-header");
+  wsStatusHeader.append(
+    el("span", "glass-live-field", "WebSocket session / close (debug)"),
+    copyButton("ws status", () => {
+      return buildWsStatusJson({
+        phase: wsUiPhase,
+        lastClose: lastWsCloseDisplay,
+        hadUnhandledErrorEvent:
+          hadErrorEventOnActiveSocket && (wsUiPhase === "open" || wsUiPhase === "connecting"),
+      });
+    }, setEphemeralStatus),
+  );
+  const wsStatusPre = el("pre", "glass-live-pre glass-live-pre--compact");
+  wsStatusPre.setAttribute("data-testid", "live-ws-status");
+
+  function updateWsSessionPanel(): void {
+    if (wsUiPhase === "idle" && lastWsCloseDisplay) {
+      connectionStatus.textContent = formatLastCloseLine(lastWsCloseDisplay);
+    } else {
+      connectionStatus.textContent = formatWsPhaseLine(wsUiPhase);
+    }
+    wsStatusPre.textContent = buildWsStatusJson({
+      phase: wsUiPhase,
+      lastClose: lastWsCloseDisplay,
+      hadUnhandledErrorEvent:
+        hadErrorEventOnActiveSocket && (wsUiPhase === "open" || wsUiPhase === "connecting"),
+    });
+    btnDisconnect.disabled = activeWs === null;
   }
 
   const statePanel = el("section", "glass-live-state-panel");
@@ -165,7 +218,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const capsHeader = el("div", "glass-live-panel-header");
   capsHeader.append(
     el("span", "glass-live-field", "Preflight (GET /capabilities)"),
-    copyButton("capabilities", () => capsPre.textContent ?? "", setStatus),
+    copyButton("capabilities", () => capsPre.textContent ?? "", setEphemeralStatus),
   );
   const capsPre = el("pre", "glass-live-pre");
   capsPre.setAttribute("data-testid", "live-capabilities");
@@ -173,7 +226,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const reconcileHeader = el("div", "glass-live-panel-header");
   reconcileHeader.append(
     el("span", "glass-live-field", "Last HTTP snapshot reconcile (F-04)"),
-    copyButton("reconcile", () => reconcilePre.textContent ?? "", setStatus),
+    copyButton("reconcile", () => reconcilePre.textContent ?? "", setEphemeralStatus),
   );
   const reconcilePre = el("pre", "glass-live-pre");
   reconcilePre.setAttribute("data-testid", "live-reconcile");
@@ -185,7 +238,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       return serializePresentationDoc(
         buildLiveStatePresentationDoc(model, lastReconcile, lastHttp),
       );
-    }, setStatus),
+    }, setEphemeralStatus),
   );
 
   const presentationPre = el("pre", "glass-live-pre glass-live-pre--compact");
@@ -194,7 +247,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const metaHeader = el("div", "glass-live-panel-header");
   metaHeader.append(
     el("span", "glass-live-field", "Wire + full model JSON (debug)"),
-    copyButton("model", () => metaPre.textContent ?? "", setStatus),
+    copyButton("model", () => metaPre.textContent ?? "", setEphemeralStatus),
   );
   const metaPre = el("pre", "glass-live-pre");
   metaPre.setAttribute("data-testid", "live-meta");
@@ -212,7 +265,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const eventsHeader = el("div", "glass-live-panel-header");
   eventsHeader.append(
     el("span", "glass-live-field", "Bounded WS event tail (debug)"),
-    copyButton("event tail", () => JSON.stringify(model.eventTail, null, 2), setStatus),
+    copyButton("event tail", () => JSON.stringify(model.eventTail, null, 2), setEphemeralStatus),
   );
   const eventsPre = el("pre", "glass-live-pre glass-live-pre--hidden");
   eventsPre.setAttribute("data-testid", "live-events");
@@ -238,8 +291,12 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     capsPre,
     reconcileHeader,
     reconcilePre,
-    el("div", "glass-live-field", "Connection status"),
-    status,
+    el("div", "glass-live-field", "WebSocket connection"),
+    connectionStatus,
+    wsStatusHeader,
+    wsStatusPre,
+    el("div", "glass-live-field", "Activity (preflight / HTTP / clipboard)"),
+    ephemeralStatus,
     metaHeader,
     metaPre,
   );
@@ -352,14 +409,25 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     renderReconcile();
     renderStatePresentation();
     renderMeta();
+    updateWsSessionPanel();
   }
 
-  function disconnect(): void {
-    if (ws) {
-      ws.close();
-      ws = null;
+  function closeActiveSocket(attribution: "operator" | "reconnect"): void {
+    if (!activeWs) {
+      return;
     }
-    setStatus("disconnected");
+    const s = activeWs;
+    closeAttribution.set(s, attribution);
+    s.close();
+  }
+
+  function disconnectOperator(): void {
+    if (!activeWs) {
+      return;
+    }
+    setEphemeralStatus("disconnect — closing WebSocket (operator)");
+    closeActiveSocket("operator");
+    updateWsSessionPanel();
   }
 
   function persistFormSafe(): void {
@@ -383,14 +451,14 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     const tok = tokenInput.value.trim();
     const sid = sessionInput.value.trim();
     if (!base || !tok || !sid) {
-      setStatus("bridge URL, token, and session id required");
+      setEphemeralStatus("bridge URL, token, and session id required");
       lastReconcile = makeReconcileRecord(trigger, "error", {
         errorMessage: "missing bridge URL, token, or session id",
       });
       renderReconcile();
       return;
     }
-    setStatus(
+    setEphemeralStatus(
       trigger === "operator"
         ? "fetching HTTP snapshot (operator Refresh)…"
         : "fetching HTTP snapshot (automatic after session_resync_required)…",
@@ -404,7 +472,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
         trigger === "operator"
           ? "operator Refresh"
           : "session_resync_required → reconcile";
-      setStatus(
+      setEphemeralStatus(
         `HTTP snapshot ok (${trig}) — ${lastHttp.events?.length ?? 0} events in response body`,
       );
     } catch (e) {
@@ -413,7 +481,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       lastReconcile = makeReconcileRecord(trigger, "error", {
         errorMessage: msg,
       });
-      setStatus(`HTTP snapshot error: ${msg}`);
+      setEphemeralStatus(`HTTP snapshot error: ${msg}`);
     }
     persistFormSafe();
     renderAll();
@@ -437,21 +505,21 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       syncConnectGate();
       if (!base || !tok) {
         capsError = "bridge URL and bearer token required";
-        setStatus("preflight skipped — need URL + token");
+        setEphemeralStatus("preflight skipped — need URL + token");
         renderCaps();
         return;
       }
-      setStatus("preflight: fetching /capabilities…");
+      setEphemeralStatus("preflight: fetching /capabilities…");
       const r = await fetchBridgeCapabilities(base, tok);
       if (!r.ok) {
         capsError = r.error;
         lastCaps = null;
-        setStatus(`preflight failed: ${r.error}`);
+        setEphemeralStatus(`preflight failed: ${r.error}`);
       } else {
         lastCaps = r.value;
         capsError = null;
         saveLiveBridgeUrl(base);
-        setStatus("preflight ok — see capabilities panel");
+        setEphemeralStatus("preflight ok — see capabilities panel");
       }
       renderAll();
     })();
@@ -461,33 +529,47 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     if (btnConnect.disabled) {
       return;
     }
-    disconnect();
+    closeActiveSocket("reconnect");
+    lastWsCloseDisplay = null;
     const base = bridgeInput.value.trim();
     const tok = tokenInput.value.trim();
     const sid = sessionInput.value.trim();
     if (!base || !tok || !sid) {
-      setStatus("bridge URL, token, and session id required");
+      setEphemeralStatus("bridge URL, token, and session id required");
+      wsUiPhase = "idle";
+      updateWsSessionPanel();
       return;
     }
     model = createInitialLiveSessionModelState(sid);
     lastReconcileProcessed = 0;
     lastHttp = null;
+    hadErrorEventOnActiveSocket = false;
     persistFormSafe();
     let url: string;
     try {
       url = bridgeHttpToLiveWsUrl(base, tok);
     } catch (e) {
-      setStatus(e instanceof Error ? e.message : String(e));
+      setEphemeralStatus(e instanceof Error ? e.message : String(e));
+      wsUiPhase = "idle";
+      updateWsSessionPanel();
       return;
     }
-    setStatus("connecting WebSocket…");
-    ws = new WebSocket(url);
-    ws.addEventListener("open", () => {
-      setStatus("connected — subscribing…");
-      const socket = ws;
-      if (!socket) {
+    wsUiPhase = "connecting";
+    setEphemeralStatus("opening WebSocket…");
+    updateWsSessionPanel();
+
+    const sock = new WebSocket(url);
+    activeWs = sock;
+    updateWsSessionPanel();
+
+    sock.addEventListener("open", () => {
+      if (sock !== activeWs) {
         return;
       }
+      hadErrorEventOnActiveSocket = false;
+      wsUiPhase = "open";
+      updateWsSessionPanel();
+      setEphemeralStatus("subscribing (live_session_subscribe sent)…");
       const sub: Record<string, unknown> = {
         type: "glass.bridge.live_session.v1",
         msg: "live_session_subscribe",
@@ -497,33 +579,87 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       if (deltaWire.checked) {
         sub.session_delta_wire = true;
       }
-      socket.send(JSON.stringify(sub));
+      sock.send(JSON.stringify(sub));
     });
-    ws.addEventListener("message", (ev) => {
+    sock.addEventListener("message", (ev) => {
+      if (sock !== activeWs) {
+        return;
+      }
       const text = typeof ev.data === "string" ? ev.data : "";
       model = applyLiveSessionLine(model, text);
-      setStatus("connected — receiving live_session wire");
+      setEphemeralStatus("receiving live_session wire (see bounded tail below)");
       onModelUpdated();
     });
-    ws.addEventListener("error", () => {
-      setStatus("WebSocket error");
+    sock.addEventListener("error", () => {
+      if (sock !== activeWs) {
+        return;
+      }
+      errorSeenOnSocket.set(sock, true);
+      hadErrorEventOnActiveSocket = true;
+      setEphemeralStatus(
+        "WebSocket error event — close code/reason will appear when the socket closes",
+      );
+      updateWsSessionPanel();
     });
-    ws.addEventListener("close", () => {
-      setStatus("WebSocket closed");
-      ws = null;
+    sock.addEventListener("close", (ev) => {
+      if (ev.target !== activeWs) {
+        return;
+      }
+      const e = ev as CloseEvent;
+      const s = activeWs;
+      activeWs = null;
+      const attr = s ? closeAttribution.get(s) ?? null : null;
+      if (s) {
+        closeAttribution.delete(s);
+      }
+      const hadErr = s ? errorSeenOnSocket.get(s) ?? false : false;
+      if (s) {
+        errorSeenOnSocket.delete(s);
+      }
+      hadErrorEventOnActiveSocket = false;
+
+      wsUiPhase = "idle";
+      if (attr === "reconnect") {
+        lastWsCloseDisplay = null;
+        updateWsSessionPanel();
+        return;
+      }
+      const attributionForInit =
+        attr === "operator" ? "operator" : null;
+      lastWsCloseDisplay = {
+        initiator: resolveCloseInitiator(attributionForInit, hadErr),
+        code: e.code,
+        reason: e.reason ?? "",
+        wasClean: e.wasClean,
+      };
+      if (attr === "operator") {
+        setEphemeralStatus("WebSocket closed (operator disconnect)");
+      } else {
+        setEphemeralStatus("WebSocket closed — see connection line for code/reason");
+      }
+      updateWsSessionPanel();
     });
     onModelUpdated();
+  });
+
+  btnDisconnect.addEventListener("click", () => {
+    if (btnDisconnect.disabled) {
+      return;
+    }
+    disconnectOperator();
   });
 
   btnSnapshot.addEventListener("click", () => {
     void runHttpSnapshot("operator");
   });
 
-  setStatus("disconnected");
+  setEphemeralStatus("");
+  wsUiPhase = "idle";
+  lastWsCloseDisplay = null;
   renderAll();
 
   return {
-    disconnect,
+    disconnect: () => disconnectOperator(),
     getModel: () => model,
     getLastHttpSnapshot: () => lastHttp,
     getLastCapabilities: () => lastCaps,
