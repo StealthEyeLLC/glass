@@ -9,7 +9,7 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": [],
+    "types": ["@webgpu/types"],
     "rootDir": "src",
     "noUnusedLocals": true,
     "noUnusedParameters": true

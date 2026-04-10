@@ -195,6 +195,16 @@
   border-top: 1px solid #e2e8f0;
 }
 
+.glass-live-visual-gpu-status {
+  font-size: 0.68rem;
+  color: #64748b;
+  margin: 0.2rem 0 0;
+}
+
+.glass-live-visual-canvas-stack {
+  position: relative;
+}
+
 .glass-live-visual-canvas {
   display: block;
   margin-top: 0.35rem;

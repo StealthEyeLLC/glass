@@ -44,9 +44,17 @@ import {
   type LiveSessionLogSource,
   type LiveSessionLogState,
 } from "./liveSessionLog.js";
+import {
+  formatWebGpuLiveStatusLine,
+  hasNavigatorGpu,
+  initialWebGpuLiveStatus,
+  type WebGpuLiveStatus,
+} from "./liveWebGpuProbe.js";
 import { formatLiveVisualLegendBlock } from "./liveVisualMarkers.js";
 import { buildLiveVisualSpec } from "./liveVisualModel.js";
-import { renderLiveVisualOnCanvas } from "./liveVisualCanvas.js";
+import { paintLiveVisualSurface } from "./liveVisualRenderer.js";
+import type { LiveVisualWebGpuBundle } from "./liveVisualWebGpu.js";
+import { tryInitWebGpuCanvas } from "./liveVisualWebGpu.js";
 import "./liveSessionShell.css";
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -309,16 +317,26 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
 
   const visualSurface = el("section", "glass-live-visual-surface");
   visualSurface.setAttribute("data-testid", "live-visual-surface");
-  visualSurface.append(
-    el(
-      "div",
-      "glass-live-field",
-      "Bounded live visual (Canvas 2D skeleton — not WebGPU; not topology)",
-    ),
+  visualSurface.setAttribute("aria-labelledby", "live-visual-surface-title");
+  const visualIntro = el(
+    "div",
+    "glass-live-field",
+    "Bounded live visual (Canvas 2D + optional WebGPU bootstrap — not topology)",
   );
+  visualIntro.setAttribute("id", "live-visual-surface-title");
+  const visualGpuStatus = el("p", "glass-live-visual-gpu-status");
+  visualGpuStatus.setAttribute("data-testid", "live-visual-gpu-status");
+  let webGpuStatus: WebGpuLiveStatus = initialWebGpuLiveStatus(navigator);
+  visualGpuStatus.textContent = formatWebGpuLiveStatusLine(webGpuStatus);
+  const visualCanvasStack = el("div", "glass-live-visual-canvas-stack");
   const visualCanvas = document.createElement("canvas");
   visualCanvas.className = "glass-live-visual-canvas";
   visualCanvas.setAttribute("data-testid", "live-visual-canvas");
+  const visualCanvasWebGpu = document.createElement("canvas");
+  visualCanvasWebGpu.className = "glass-live-visual-canvas glass-live-visual-canvas--webgpu";
+  visualCanvasWebGpu.setAttribute("data-testid", "live-visual-canvas-webgpu");
+  visualCanvasWebGpu.hidden = true;
+  visualCanvasStack.append(visualCanvas, visualCanvasWebGpu);
   const visualFallback = el("p", "glass-live-visual-fallback");
   visualFallback.setAttribute("data-testid", "live-visual-fallback");
   visualFallback.textContent =
@@ -326,8 +344,38 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   visualFallback.hidden = true;
   const visualLegend = el("p", "glass-live-visual-legend");
   visualLegend.setAttribute("data-testid", "live-visual-legend");
+  visualLegend.setAttribute("id", "live-visual-legend");
   visualLegend.textContent = formatLiveVisualLegendBlock();
-  visualSurface.append(visualCanvas, visualFallback, visualLegend);
+  visualCanvas.setAttribute("aria-describedby", "live-visual-legend");
+  visualCanvasWebGpu.setAttribute("aria-describedby", "live-visual-legend");
+  visualSurface.append(visualIntro, visualGpuStatus, visualCanvasStack, visualFallback, visualLegend);
+
+  let webGpuBundle: LiveVisualWebGpuBundle | null = null;
+
+  function updateWebGpuStatusDisplay(): void {
+    visualGpuStatus.textContent = formatWebGpuLiveStatusLine(webGpuStatus);
+  }
+
+  void (async () => {
+    if (!hasNavigatorGpu(navigator)) {
+      webGpuStatus = "unavailable";
+      updateWebGpuStatusDisplay();
+      return;
+    }
+    webGpuStatus = "available_but_not_initialized";
+    updateWebGpuStatusDisplay();
+    const b = await tryInitWebGpuCanvas(visualCanvasWebGpu, navigator);
+    if (!b) {
+      webGpuStatus = "failed_with_fallback";
+      updateWebGpuStatusDisplay();
+      void paintLiveVisual();
+      return;
+    }
+    webGpuBundle = b;
+    webGpuStatus = "initialized";
+    updateWebGpuStatusDisplay();
+    void paintLiveVisual();
+  })();
 
   const eventList = el("div", "glass-live-event-list");
   eventList.setAttribute("data-testid", "live-event-list");
@@ -425,13 +473,19 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
 
     eventsPre.textContent = JSON.stringify(model.eventTail, null, 2);
 
-    paintLiveVisual();
+    void paintLiveVisual();
   }
 
-  function paintLiveVisual(): void {
+  async function paintLiveVisual(): Promise<void> {
     const spec = buildLiveVisualSpec(model, lastReconcile);
-    const ok = renderLiveVisualOnCanvas(visualCanvas, spec);
-    visualFallback.hidden = ok;
+    const result = await paintLiveVisualSurface(
+      visualCanvas,
+      visualCanvasWebGpu,
+      spec,
+      undefined,
+      webGpuBundle,
+    );
+    visualFallback.hidden = result.fallbackTextShouldHide;
     visualLegend.textContent = formatLiveVisualLegendBlock();
   }
 

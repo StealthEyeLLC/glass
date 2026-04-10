@@ -1,5 +1,6 @@
 /**
- * Canvas 2D renderer for bounded live visual skeleton — no WebGPU in this pass.
+ * Canvas 2D renderer for bounded live visual (full labels + honesty lines).
+ * When WebGPU bootstrap is active, this canvas may be hidden; see `liveVisualRenderer.ts`.
  */
 
 import {
