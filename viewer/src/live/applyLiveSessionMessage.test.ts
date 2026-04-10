@@ -21,6 +21,8 @@ describe("applyLiveSessionLine", () => {
     s = applyLiveSessionLine(s, line);
     expect(s.lastHello?.msg).toBe("session_hello");
     expect(s.lastHello?.session_delta_wire_active).toBe(true);
+    expect(s.lastAppliedWire?.msg).toBe("session_hello");
+    expect(s.lastAppliedWire?.eventTailMutation).toBe("none");
   });
 
   it("applies session_snapshot_replaced as bounded replacement (sample list)", () => {
@@ -42,6 +44,10 @@ describe("applyLiveSessionLine", () => {
     expect(s.lastReplaced?.snapshot_cursor).toBe("v0:off:2");
     expect(s.lastReplaced?.snapshot_origin).toBe("collector_store");
     expect(s.eventTail).toEqual([{ seq: 1 }, { seq: 2 }]);
+    expect(s.lastAppliedWire?.msg).toBe("session_snapshot_replaced");
+    expect(s.lastAppliedWire?.eventTailMutation).toBe("replace");
+    expect(s.lastAppliedWire?.appendedEventCount).toBe(2);
+    expect(s.lastAppliedWire?.summary).toContain("events_sample");
   });
 
   it("appends non-empty session_delta events only", () => {
@@ -73,6 +79,9 @@ describe("applyLiveSessionLine", () => {
     );
     expect(s.eventTail).toEqual([{ seq: 1 }, { seq: 2 }]);
     expect(s.lastDeltaWsSeq).toBe(0);
+    expect(s.lastAppliedWire?.msg).toBe("session_delta");
+    expect(s.lastAppliedWire?.eventTailMutation).toBe("append");
+    expect(s.lastAppliedWire?.appendedEventCount).toBe(1);
   });
 
   it("does not append when session_delta has no events", () => {
@@ -102,6 +111,9 @@ describe("applyLiveSessionLine", () => {
       }),
     );
     expect(s.eventTail.length).toBe(before);
+    expect(s.lastAppliedWire?.msg).toBe("session_delta");
+    expect(s.lastAppliedWire?.eventTailMutation).toBe("none");
+    expect(s.lastAppliedWire?.summary).toContain("no events appended");
   });
 
   it("session_resync_required increments reconcile counter", () => {
@@ -118,6 +130,9 @@ describe("applyLiveSessionLine", () => {
     );
     expect(s.httpReconcileRequested).toBe(1);
     expect(s.lastResync?.reason).toContain("poll_failed");
+    expect(s.lastAppliedWire?.msg).toBe("session_resync_required");
+    expect(s.lastAppliedWire?.summary).toContain("session_resync_required");
+    expect(s.lastAppliedWire?.summary).toContain("HTTP reconcile");
   });
 
   it("session_warning", () => {
@@ -134,6 +149,25 @@ describe("applyLiveSessionLine", () => {
     );
     expect(s.lastWarning?.code).toBe("x");
     expect(s.lastWarning?.detail).toBe("y");
+    expect(s.lastAppliedWire?.msg).toBe("session_warning");
+  });
+
+  it("session_snapshot_replaced notes bounded sample when truncated", () => {
+    let s = createInitialLiveSessionModelState("s1");
+    s = applyLiveSessionLine(
+      s,
+      JSON.stringify({
+        type: "glass.bridge.live_session.v1",
+        msg: "session_snapshot_replaced",
+        session_id: "s1",
+        snapshot_cursor: "c",
+        snapshot_origin: "collector_store",
+        truncated_by_max_events: true,
+        events_sample: [{ a: 1 }],
+        events_omitted_from_sample: 3,
+      }),
+    );
+    expect(s.lastAppliedWire?.summary).toContain("bounded sample");
   });
 
   it("ignores unrelated JSON", () => {

@@ -51,3 +51,130 @@
   font-size: 0.75rem;
   border: 1px solid #ddd;
 }
+
+.glass-live-pre--compact {
+  max-height: 10rem;
+}
+
+.glass-live-pre--hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.glass-live-state-heading {
+  font-size: 1rem;
+  margin: 0 0 0.5rem;
+}
+
+.glass-live-panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.glass-live-copy {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.45rem;
+  cursor: pointer;
+}
+
+.glass-live-connect-hint {
+  font-size: 0.75rem;
+  color: #b45309;
+  margin-left: 0.25rem;
+}
+
+.glass-live-tail-origin {
+  font-size: 0.8rem;
+  margin: 0.35rem 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: baseline;
+}
+
+.glass-live-tail-summary {
+  color: #374151;
+  flex: 1 1 12rem;
+}
+
+.glass-live-badge {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.1rem 0.35rem;
+  border-radius: 2px;
+}
+
+.glass-live-badge--replace {
+  background: #dbeafe;
+  color: #1e3a8a;
+}
+
+.glass-live-badge--append {
+  background: #dcfce7;
+  color: #14532d;
+}
+
+.glass-live-badge--none {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.glass-live-event-honesty {
+  font-size: 0.72rem;
+  color: #4b5563;
+  margin: 0.25rem 0;
+  line-height: 1.35;
+}
+
+.glass-live-event-list {
+  border: 1px solid #e5e7eb;
+  background: #fafafa;
+  max-height: 16rem;
+  overflow: auto;
+  padding: 0.35rem;
+}
+
+.glass-live-event-row {
+  display: grid;
+  grid-template-columns: 2rem 1fr;
+  gap: 0.35rem;
+  align-items: start;
+  border-bottom: 1px solid #eee;
+  padding: 0.25rem 0;
+}
+
+.glass-live-event-row:last-child {
+  border-bottom: none;
+}
+
+.glass-live-event-idx {
+  font-size: 0.65rem;
+  color: #9ca3af;
+  text-align: right;
+  padding-top: 0.2rem;
+}
+
+.glass-live-event-json {
+  margin: 0;
+  font-size: 0.68rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.glass-live-event-empty {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin: 0.25rem;
+}

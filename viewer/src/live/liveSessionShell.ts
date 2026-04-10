@@ -20,6 +20,11 @@ import {
   saveLiveFormPrefs,
 } from "./liveSessionStorage.js";
 import { makeReconcileRecord, type HttpReconcileRecord } from "./liveHttpReconcile.js";
+import {
+  buildLiveStatePresentationDoc,
+  liveConnectDisabledFromPreflight,
+  serializePresentationDoc,
+} from "./liveStatePresentation.js";
 import "./liveSessionShell.css";
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -37,6 +42,26 @@ function el<K extends keyof HTMLElementTagNameMap>(
   return e;
 }
 
+function copyButton(
+  label: string,
+  getText: () => string,
+  onStatus: (t: string) => void,
+): HTMLButtonElement {
+  const b = el("button", "glass-live-copy", "Copy JSON");
+  b.type = "button";
+  b.addEventListener("click", () => {
+    void (async () => {
+      try {
+        await navigator.clipboard.writeText(getText());
+        onStatus(`copied ${label}`);
+      } catch {
+        onStatus(`copy failed (${label})`);
+      }
+    })();
+  });
+  return b;
+}
+
 export interface LiveSessionShellHandle {
   disconnect: () => void;
   getModel: () => LiveSessionModelState;
@@ -51,7 +76,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
 
   const banner = el("div", "glass-banner");
   banner.textContent =
-    "Glass — live session skeleton (bridge WS + HTTP snapshot). F-IPC provisional. Bearer token is not persisted (sessionStorage keeps URL / session id / delta-wire preference only).";
+    "Glass — live session (bridge WS + bounded HTTP snapshot). F-IPC transport is provisional. Bearer token is not persisted (sessionStorage keeps URL / session id / delta-wire preference only). WebGPU live scene is not implemented.";
 
   const nav = el("div", "glass-live-nav");
   const back = document.createElement("a");
@@ -88,6 +113,8 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const btnConnect = el("button", undefined, "Connect");
   btnConnect.type = "button";
   btnConnect.setAttribute("data-testid", "live-connect");
+  const connectHint = el("span", "glass-live-connect-hint");
+  connectHint.setAttribute("data-testid", "live-connect-hint");
   const btnSnapshot = el("button", undefined, "Refresh HTTP snapshot");
   btnSnapshot.type = "button";
   btnSnapshot.setAttribute("data-testid", "live-http-snapshot");
@@ -102,6 +129,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     deltaLabel,
     btnPreflight,
     btnConnect,
+    connectHint,
     btnSnapshot,
   );
 
@@ -116,36 +144,6 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     deltaWire.checked = prefs.sessionDeltaWire;
   }
 
-  const status = el("div", "glass-live-status");
-  status.setAttribute("data-testid", "live-status");
-
-  const capsPre = el("pre", "glass-live-pre");
-  capsPre.setAttribute("data-testid", "live-capabilities");
-
-  const reconcilePre = el("pre", "glass-live-pre");
-  reconcilePre.setAttribute("data-testid", "live-reconcile");
-
-  const metaPre = el("pre", "glass-live-pre");
-  metaPre.setAttribute("data-testid", "live-meta");
-
-  const eventsPre = el("pre", "glass-live-pre");
-  eventsPre.setAttribute("data-testid", "live-events");
-
-  root.append(
-    banner,
-    nav,
-    form,
-    el("div", "glass-live-field", "Preflight (GET /capabilities)"),
-    capsPre,
-    el("div", "glass-live-field", "Last HTTP snapshot reconcile"),
-    reconcilePre,
-    status,
-    el("div", "glass-live-field", "Wire + model JSON"),
-    metaPre,
-    el("div", "glass-live-field", "events_sample / session_delta tail (debug)"),
-    eventsPre,
-  );
-
   let ws: WebSocket | null = null;
   let model = createInitialLiveSessionModelState("");
   let lastHttp: BoundedSnapshotF04 | null = null;
@@ -153,6 +151,148 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   let lastCaps: BridgeCapabilitiesLive | null = null;
   let capsError: string | null = null;
   let lastReconcile: HttpReconcileRecord | null = null;
+
+  const status = el("div", "glass-live-status");
+  status.setAttribute("data-testid", "live-status");
+
+  function setStatus(t: string): void {
+    status.textContent = t;
+  }
+
+  const statePanel = el("section", "glass-live-state-panel");
+  statePanel.setAttribute("data-testid", "live-state-panel");
+
+  const capsHeader = el("div", "glass-live-panel-header");
+  capsHeader.append(
+    el("span", "glass-live-field", "Preflight (GET /capabilities)"),
+    copyButton("capabilities", () => capsPre.textContent ?? "", setStatus),
+  );
+  const capsPre = el("pre", "glass-live-pre");
+  capsPre.setAttribute("data-testid", "live-capabilities");
+
+  const reconcileHeader = el("div", "glass-live-panel-header");
+  reconcileHeader.append(
+    el("span", "glass-live-field", "Last HTTP snapshot reconcile (F-04)"),
+    copyButton("reconcile", () => reconcilePre.textContent ?? "", setStatus),
+  );
+  const reconcilePre = el("pre", "glass-live-pre");
+  reconcilePre.setAttribute("data-testid", "live-reconcile");
+
+  const presentationHeader = el("div", "glass-live-panel-header");
+  presentationHeader.append(
+    el("span", "glass-live-field", "Live state summary (JSON)"),
+    copyButton("live state", () => {
+      return serializePresentationDoc(
+        buildLiveStatePresentationDoc(model, lastReconcile, lastHttp),
+      );
+    }, setStatus),
+  );
+
+  const presentationPre = el("pre", "glass-live-pre glass-live-pre--compact");
+  presentationPre.setAttribute("data-testid", "live-presentation-json");
+
+  const metaHeader = el("div", "glass-live-panel-header");
+  metaHeader.append(
+    el("span", "glass-live-field", "Wire + full model JSON (debug)"),
+    copyButton("model", () => metaPre.textContent ?? "", setStatus),
+  );
+  const metaPre = el("pre", "glass-live-pre");
+  metaPre.setAttribute("data-testid", "live-meta");
+
+  const tailOrigin = el("div", "glass-live-tail-origin");
+  tailOrigin.setAttribute("data-testid", "live-tail-origin");
+
+  const eventHonesty = el("p", "glass-live-event-honesty");
+  eventHonesty.setAttribute("data-testid", "live-event-honesty");
+
+  const eventList = el("div", "glass-live-event-list");
+  eventList.setAttribute("data-testid", "live-event-list");
+  eventList.setAttribute("data-live-events", "bounded-tail");
+
+  const eventsHeader = el("div", "glass-live-panel-header");
+  eventsHeader.append(
+    el("span", "glass-live-field", "Bounded WS event tail (debug)"),
+    copyButton("event tail", () => JSON.stringify(model.eventTail, null, 2), setStatus),
+  );
+  const eventsPre = el("pre", "glass-live-pre glass-live-pre--hidden");
+  eventsPre.setAttribute("data-testid", "live-events");
+  eventsPre.setAttribute("aria-hidden", "true");
+
+  statePanel.append(
+    el("h2", "glass-live-state-heading", "Live state (operator)"),
+    presentationHeader,
+    presentationPre,
+    tailOrigin,
+    eventHonesty,
+    eventList,
+    eventsHeader,
+    eventsPre,
+  );
+
+  root.append(
+    banner,
+    nav,
+    form,
+    statePanel,
+    capsHeader,
+    capsPre,
+    reconcileHeader,
+    reconcilePre,
+    el("div", "glass-live-field", "Connection status"),
+    status,
+    metaHeader,
+    metaPre,
+  );
+
+  function syncConnectGate(): void {
+    const g = liveConnectDisabledFromPreflight(capsError, lastCaps);
+    btnConnect.disabled = g.disabled;
+    connectHint.textContent = g.reason;
+  }
+
+  function renderStatePresentation(): void {
+    const doc = buildLiveStatePresentationDoc(model, lastReconcile, lastHttp);
+    presentationPre.textContent = serializePresentationDoc(doc);
+
+    tailOrigin.innerHTML = "";
+    const w = model.lastAppliedWire;
+    if (w) {
+      const badge = el("span", `glass-live-badge glass-live-badge--${w.eventTailMutation}`);
+      badge.setAttribute("data-testid", "live-tail-mutation-badge");
+      badge.textContent = `${w.msg} · ${w.eventTailMutation}`;
+      const sum = el("span", "glass-live-tail-summary");
+      sum.textContent = w.summary;
+      sum.setAttribute("data-testid", "live-tail-summary");
+      tailOrigin.append(badge, sum);
+    } else {
+      tailOrigin.textContent = "No wire messages applied yet.";
+    }
+
+    eventHonesty.textContent = [
+      doc.boundedSampleHonesty,
+      "WS tail order: oldest at top → newest at bottom (bridge order).",
+      "HTTP snapshot events are listed in reconcile/meta — not merged into this WS tail.",
+    ].join(" ");
+
+    eventList.innerHTML = "";
+    if (model.eventTail.length === 0) {
+      const empty = el("p", "glass-live-event-empty");
+      empty.setAttribute("data-testid", "live-event-empty");
+      empty.textContent = "(no events in bounded WS tail yet)";
+      eventList.append(empty);
+    } else {
+      model.eventTail.forEach((ev, i) => {
+        const row = el("div", "glass-live-event-row");
+        const idx = el("span", "glass-live-event-idx", String(i + 1));
+        const pre = el("pre", "glass-live-event-json");
+        pre.textContent = JSON.stringify(ev, null, 2);
+        row.append(idx, pre);
+        eventList.append(row);
+      });
+    }
+
+    eventsPre.textContent = JSON.stringify(model.eventTail, null, 2);
+  }
 
   function renderCaps(): void {
     capsPre.textContent = capsError
@@ -182,10 +322,6 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       : "(no HTTP snapshot refresh yet)";
   }
 
-  function setStatus(t: string): void {
-    status.textContent = t;
-  }
-
   function renderMeta(): void {
     metaPre.textContent = JSON.stringify(
       {
@@ -194,6 +330,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
         lastReplaced: model.lastReplaced,
         lastResync: model.lastResync,
         lastWarning: model.lastWarning,
+        lastAppliedWire: model.lastAppliedWire,
         httpReconcileRequested: model.httpReconcileRequested,
         lastDeltaWsSeq: model.lastDeltaWsSeq,
         lastHttpSnapshot: lastHttp
@@ -209,15 +346,12 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     );
   }
 
-  function renderEvents(): void {
-    eventsPre.textContent = JSON.stringify(model.eventTail, null, 2);
-  }
-
   function renderAll(): void {
+    syncConnectGate();
     renderCaps();
     renderReconcile();
+    renderStatePresentation();
     renderMeta();
-    renderEvents();
   }
 
   function disconnect(): void {
@@ -258,15 +392,21 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     }
     setStatus(
       trigger === "operator"
-        ? "fetching HTTP snapshot (operator)…"
-        : "fetching HTTP snapshot (after session_resync_required)…",
+        ? "fetching HTTP snapshot (operator Refresh)…"
+        : "fetching HTTP snapshot (automatic after session_resync_required)…",
     );
     try {
       lastHttp = await fetchBoundedSnapshot(base, tok, sid);
       lastReconcile = makeReconcileRecord(trigger, "ok", {
         eventsCount: lastHttp.events?.length ?? 0,
       });
-      setStatus(`HTTP snapshot ok — ${lastHttp.events?.length ?? 0} events`);
+      const trig =
+        trigger === "operator"
+          ? "operator Refresh"
+          : "session_resync_required → reconcile";
+      setStatus(
+        `HTTP snapshot ok (${trig}) — ${lastHttp.events?.length ?? 0} events in response body`,
+      );
     } catch (e) {
       lastHttp = null;
       const msg = e instanceof Error ? e.message : String(e);
@@ -294,6 +434,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       capsError = null;
       lastCaps = null;
       renderCaps();
+      syncConnectGate();
       if (!base || !tok) {
         capsError = "bridge URL and bearer token required";
         setStatus("preflight skipped — need URL + token");
@@ -317,6 +458,9 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   });
 
   btnConnect.addEventListener("click", () => {
+    if (btnConnect.disabled) {
+      return;
+    }
     disconnect();
     const base = bridgeInput.value.trim();
     const tok = tokenInput.value.trim();
@@ -358,7 +502,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     ws.addEventListener("message", (ev) => {
       const text = typeof ev.data === "string" ? ev.data : "";
       model = applyLiveSessionLine(model, text);
-      setStatus("connected — receiving");
+      setStatus("connected — receiving live_session wire");
       onModelUpdated();
     });
     ws.addEventListener("error", () => {

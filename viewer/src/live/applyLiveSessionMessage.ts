@@ -11,6 +11,18 @@ import type {
   SessionWarningWire,
 } from "./liveSessionTypes.js";
 
+/** How the bounded WS `eventTail` last changed (HTTP snapshot is separate). */
+export type EventTailMutation = "none" | "replace" | "append";
+
+/** Last recognized live_session wire message applied to model (for operator UI). */
+export interface LastAppliedWireSurface {
+  msg: string;
+  eventTailMutation: EventTailMutation;
+  appendedEventCount: number;
+  /** Short honest description — not a continuity guarantee */
+  summary: string;
+}
+
 export interface LiveSessionModelState {
   sessionId: string;
   lastHello: SessionHelloWire | null;
@@ -23,6 +35,8 @@ export interface LiveSessionModelState {
   lastWarning: SessionWarningWire | null;
   /** Count of HTTP snapshot reconciliations triggered by resync handling */
   httpReconcileRequested: number;
+  /** Last applied wire message (ignored lines leave this unchanged) */
+  lastAppliedWire: LastAppliedWireSurface | null;
 }
 
 export function createInitialLiveSessionModelState(
@@ -37,6 +51,7 @@ export function createInitialLiveSessionModelState(
     lastResync: null,
     lastWarning: null,
     httpReconcileRequested: 0,
+    lastAppliedWire: null,
   };
 }
 
@@ -202,12 +217,27 @@ export function applyLiveSessionRecord(
 ): LiveSessionModelState {
   const hello = parseSessionHello(r);
   if (hello) {
-    return { ...state, lastHello: hello };
+    return {
+      ...state,
+      lastHello: hello,
+      lastAppliedWire: {
+        msg: "session_hello",
+        eventTailMutation: "none",
+        appendedEventCount: 0,
+        summary: "session_hello — bounded event tail unchanged",
+      },
+    };
   }
 
   const replaced = parseSessionSnapshotReplaced(r);
   if (replaced) {
     const sample = replaced.events_sample ?? [];
+    const truncated = replaced.truncated_by_max_events === true;
+    const omitted = replaced.events_omitted_from_sample;
+    const sampleNote =
+      truncated || (typeof omitted === "number" && omitted > 0)
+        ? " (bounded sample; not full history)"
+        : "";
     return {
       ...state,
       lastReplaced: {
@@ -224,6 +254,12 @@ export function applyLiveSessionRecord(
         events_omitted_from_sample: replaced.events_omitted_from_sample,
       },
       eventTail: [...sample],
+      lastAppliedWire: {
+        msg: "session_snapshot_replaced",
+        eventTailMutation: "replace",
+        appendedEventCount: sample.length,
+        summary: `session_snapshot_replaced — bounded view replaced from events_sample${sampleNote}`,
+      },
     };
   }
 
@@ -237,11 +273,24 @@ export function applyLiveSessionRecord(
         ...state,
         lastDeltaWsSeq,
         eventTail: [...state.eventTail, ...ev],
+        lastAppliedWire: {
+          msg: "session_delta",
+          eventTailMutation: "append",
+          appendedEventCount: ev.length,
+          summary: `session_delta — appended ${ev.length} event(s) to bounded tail`,
+        },
       };
     }
     return {
       ...state,
       lastDeltaWsSeq,
+      lastAppliedWire: {
+        msg: "session_delta",
+        eventTailMutation: "none",
+        appendedEventCount: 0,
+        summary:
+          "session_delta — no events appended (empty or omitted events array)",
+      },
     };
   }
 
@@ -251,12 +300,27 @@ export function applyLiveSessionRecord(
       ...state,
       lastResync: resync,
       httpReconcileRequested: state.httpReconcileRequested + 1,
+      lastAppliedWire: {
+        msg: "session_resync_required",
+        eventTailMutation: "none",
+        appendedEventCount: 0,
+        summary: `session_resync_required — reason ${resync.reason} (viewer should HTTP reconcile)`,
+      },
     };
   }
 
   const warn = parseSessionWarning(r);
   if (warn) {
-    return { ...state, lastWarning: warn };
+    return {
+      ...state,
+      lastWarning: warn,
+      lastAppliedWire: {
+        msg: "session_warning",
+        eventTailMutation: "none",
+        appendedEventCount: 0,
+        summary: `session_warning — ${warn.code}: ${warn.detail}`,
+      },
+    };
   }
 
   return state;
