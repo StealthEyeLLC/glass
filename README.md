@@ -20,7 +20,7 @@ This repository is the Glass v0 **monorepo spine**: session/pack/sanitization (P
 | `tools/golden_scenes/` | Golden-scene harness scaffold |
 | `docs/` | Phase 0 tracker, boundaries, test strategy, status |
 | `scripts/retained_snapshot_demo/` | Fixture + scripts for retained collector ↔ bridge snapshot demo (`docs/DEMO_RETAINED_SNAPSHOT.md`) |
-| `tests/fixtures/` | Sanitization and pack fixtures |
+| `tests/fixtures/` | Pack fixtures; **`vertical_slice_v0/`** — committed `.glass_pack` for Vertical Slice v0 (`docs/VERTICAL_SLICE_V0.md`) |
 
 ## Verify bootstrap
 
@@ -73,7 +73,7 @@ Default bridge listen: `127.0.0.1:9781`. **Live-session WebSocket** (`/ws`) exis
 
 ## Vertical Slice v0 (demo path)
 
-One bounded scenario through replay + live: same Scene System v0 strip, honest wire semantics (no fake topology). See [docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md).
+One bounded scenario through replay + live: same Scene System v0 strip, honest wire semantics (no fake topology). **Quick replay check:** from `viewer/` run `npm run dev`, then **Open file** on `tests/fixtures/vertical_slice_v0/glass_vertical_slice_v0_tier_b.glass_pack` in your checkout. See [docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md).
 
 ## Status
 

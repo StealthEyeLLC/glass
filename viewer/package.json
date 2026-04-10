@@ -11,7 +11,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "lint": "eslint src --max-warnings 0"
+    "lint": "eslint src --max-warnings 0",
+    "fixture:vertical-slice": "node scripts/writeVerticalSliceFixture.mjs",
+    "verify:vertical-slice-fixture": "node scripts/verifyVerticalSliceFixture.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

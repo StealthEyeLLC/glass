@@ -22,9 +22,27 @@ A single **bounded** demo path through the real Glass v0 substrate: **Tier B sta
 - F-IPC transport remains **provisional** (not frozen here).
 - Phase-6 topology/runtime scene is **out of scope** for this slice.
 
-## How to run the demo
+## Known-good fixture path (replay)
 
-1. **Replay (default):** build or serve the viewer; open the app (static bundle is replay-only). Drop or open a `.glass_pack`; use transport controls and scrub — the **Scene v0** canvas sits above the scrubber in the layout.
+**One** committed pack is the canonical Vertical Slice v0 demo input:
+
+| Path | Description |
+|------|-------------|
+| `tests/fixtures/vertical_slice_v0/glass_vertical_slice_v0_tier_b.glass_pack` | Tier B **`glass.pack.v0.scaffold`**, 3 synthetic `process_poll_sample` events, session id **`glass_vertical_slice_v0`**. |
+
+- **Synthetic:** labeled in event `attrs` / adapter — not collector truth; used for deterministic load + Scene v0 honesty checks.
+- **Proves:** `loadGlassPack(…, strict_kinds)` succeeds; `compileReplayToGlassSceneV0` reports index-prefix sample, “not live tail” / “not process topology”, bounded counts — see `viewer/src/replay/verticalSliceFixture.integration.test.ts`.
+- **Does not prove:** bridge, WS, HTTP snapshot, F-IPC, retained loops, or any live path.
+
+**Run in the viewer:** `cd viewer && npm run dev` → open the app → **Open file** → select `tests/fixtures/vertical_slice_v0/glass_vertical_slice_v0_tier_b.glass_pack` (from a checkout at repo root). Scrub/step — Scene v0 canvas shows prefix depth and R/A/Rz semantics.
+
+**Regenerate bytes** (if the fixture shape changes intentionally): `cd viewer && npm run fixture:vertical-slice`
+
+**Verify with Rust validator:** `cd viewer && npm run verify:vertical-slice-fixture` (or `cargo run -p glass-pack -- validate …` from repo root — see `tests/fixtures/vertical_slice_v0/README.md`).
+
+## How to run the demo (general)
+
+1. **Replay (default):** same as above; the fixture is optional but is the **documented** known-good pack.
 2. **Live:** append **`?live=1`**; connect to a loopback bridge with token + session id as documented in `README.md` and `docs/IMPLEMENTATION_STATUS.md`.
 
 ## Next major step

@@ -45,3 +45,14 @@ fn retained_snapshot_demo_bundle_present() {
         assert!(p.is_file(), "missing retained demo file: {}", p.display());
     }
 }
+
+#[test]
+fn vertical_slice_v0_tier_b_pack_present() {
+    let p = repo_root()
+        .join("tests/fixtures/vertical_slice_v0/glass_vertical_slice_v0_tier_b.glass_pack");
+    assert!(
+        p.is_file(),
+        "missing Vertical Slice v0 fixture pack: {}",
+        p.display()
+    );
+}

@@ -32,7 +32,7 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `bridge::tests::snapshot_fipc` | HTTP snapshot over F-IPC (**bounded F-04 frozen**): **`v0:empty`** disambiguated by **`snapshot_origin`** (unknown vs empty per-RPC procfs); opaque cursor; **`resync_hint`** tokens + optional **`detail`**; truncation / per-RPC / retained tail; known-empty store `v0:off:0`; seeded store without retained **no** hint; **503** / auth unchanged |
 | `glass_bridge::snapshot_contract` (unit) | `bounded_http_from_fipc_meta`: no hint for `unknown_or_empty` or full single-page store; truncation / per-RPC / retained + `retained_snapshot_unix_ms` reasons |
 | `glass_collector::ipc_dev_tcp` (`snapshot_store_contract_tests`) | `SnapshotStore::get_bounded`: `v0:empty` + `session_known == false` vs `v0:off:0` for known empty vec; prefix cursor; **`try_live_delta_tail_v0`** append-only vs replacement revision |
-| `integration_tests::repo_layout` | Monorepo shape |
+| `integration_tests::repo_layout` | Monorepo shape; **Vertical Slice v0** `.glass_pack` fixture file present |
 | `integration_tests::hvt_policy` | HVT count ≤ cap |
 | `integration_tests::golden_scaffold` | Golden harness files exist |
 | `integration_tests::tests::retained_snapshot_demo_smoke` | Subprocess: build `glass-collector` + `glass_bridge`, retained `ipc-serve` + fixture, bridge F-IPC client; HTTP GET snapshot asserts `live_session_ingest: false`, `retained_snapshot_unix_ms`, bounded cursors/events; empty raw `[]` honest zero events; retained max-events tail clamp. **CI:** also run as standalone job `Retained snapshot demo smoke (collector ↔ bridge F-IPC)` (`.github/workflows/ci.yml`) for visibility |
@@ -58,6 +58,7 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 |-------|------------|
 | `src/app/mode.test.ts` | `getBuildMode` stays **`static_replay`**; `uiSurfaceFromSearch` for `?live=1` |
 | `src/app/verticalSliceV0.test.ts` | **Vertical Slice v0** copy exports (`VERTICAL_SLICE_V0_ID`, hero subtitle strings mention static replay / live) |
+| `src/replay/verticalSliceFixture.integration.test.ts` | **`@vitest-environment node`**: committed **`tests/fixtures/vertical_slice_v0/glass_vertical_slice_v0_tier_b.glass_pack`** → **`loadGlassPack` strict_kinds** → **`compileReplayToGlassSceneV0`**: honesty line (not live tail / not topology), prefix sample scope, bounded counts, replace→append wire mode |
 | `src/live/applyLiveSessionMessage.test.ts` | Live wire reducer: `session_hello`, `session_snapshot_replaced` replacement sample, non-empty `session_delta` append, empty delta no-op, `session_resync_required` reconcile counter, `session_warning`; **`lastAppliedWire`** surface (replace / append / none, resync summary, truncated sample honesty) |
 | `src/live/liveStatePresentation.test.ts` | `buildLiveStatePresentationDoc` (resync + reconcile trigger, bounded-sample honesty, HTTP snapshot_meta fallback); **`liveConnectDisabledFromPreflight`** (F-IPC not configured vs failed/missing preflight) |
 | `src/live/liveVisualModel.test.ts` | **`buildLiveVisualSpec`**: idle / hello / replace / append / **none_delta** / **resync** / **warning** priority; **`liveVisualDensity01`** cap; **`LIVE_VISUAL_MODE_FILL`** distinctness; reconcile summary line |
