@@ -1,17 +1,16 @@
 //! Optional background procfs (or fixture) poll that writes **bounded** normalized JSON into
 //! [`crate::ipc_dev_tcp::SnapshotStore`] for one session. Bridge F-IPC reads see **retained** state
-//! without per-RPC repoll. **Not** a live WS delta stream — bounded snapshot materialization only.
+//! without per-RPC repoll. Each tick uses [`SnapshotStore::apply_retained_poll_continuity`] — **prefix
+//! extension** of the normalized poll keeps **`store_revision`**; otherwise **replace** (revision bump).
 
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
+use crate::ipc::PROVISIONAL_MAX_RETAINED_SNAPSHOT_EVENTS;
 use crate::ipc_dev_tcp::{unix_epoch_millis_now, RetainedPollMeta, SnapshotStore};
 use crate::procfs_ipc_feed::ProcfsSnapshotFeedConfig;
-
-/// Hard cap on how many normalized events the retained store keeps for one session (memory bound).
-pub const PROVISIONAL_MAX_RETAINED_SNAPSHOT_EVENTS: usize = 2048;
 
 #[derive(Debug, Clone)]
 pub struct RetainedProcfsLoopConfig {
@@ -27,21 +26,18 @@ impl RetainedProcfsLoopConfig {
     }
 }
 
-/// Single poll → normalize → **replace** session events in `store`, keeping the **tail** up to
-/// `max_retained` (most recent by slice order). Updates `meta.last_ok_unix_ms` on success.
+/// Single poll → normalize → update `store` with **prefix continuity** when the full poll extends the
+/// prior retained timeline (same revision); otherwise **replace** (new revision). Tail is capped at
+/// `max_retained`. Updates `meta.last_ok_unix_ms` on success.
 pub fn retained_procfs_poll_tick(
     store: &SnapshotStore,
     feed: &ProcfsSnapshotFeedConfig,
     max_retained: usize,
     meta: Option<&RetainedPollMeta>,
 ) -> Result<(), String> {
-    let mut events = feed.poll_normalized_json()?;
+    let events = feed.poll_normalized_json()?;
     let cap = max_retained.clamp(1, PROVISIONAL_MAX_RETAINED_SNAPSHOT_EVENTS);
-    if events.len() > cap {
-        let drop_n = events.len() - cap;
-        events.drain(..drop_n);
-    }
-    store.set_session_events(feed.session_id.clone(), events);
+    store.apply_retained_poll_continuity(&feed.session_id, events, cap);
     if let Some(m) = meta {
         m.last_ok_unix_ms
             .store(unix_epoch_millis_now(), Ordering::Relaxed);
@@ -115,6 +111,64 @@ mod tests {
         assert_eq!(ev.len(), 2);
         assert_eq!(cur, "v0:off:2");
         assert!(meta.last_ok_unix_ms.load(Ordering::Relaxed) > 0);
+    }
+
+    #[test]
+    fn tick_extends_prefix_keeps_store_revision() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("grow.json");
+        let raw5: Vec<_> = (1u64..=5)
+            .map(|i| sample("grow_sess", i, i as u32))
+            .collect();
+        std::fs::write(&path, serde_json::to_string(&raw5).unwrap()).unwrap();
+
+        let feed = ProcfsSnapshotFeedConfig {
+            session_id: "grow_sess".to_string(),
+            max_samples: 512,
+            twice: false,
+            from_raw_json: Some(path.clone()),
+        };
+        let store = SnapshotStore::new();
+        retained_procfs_poll_tick(&store, &feed, 512, None).unwrap();
+        let (_, _, t1, _, rev1) = store.get_bounded("grow_sess", 10_000);
+
+        let raw6: Vec<_> = (1u64..=6)
+            .map(|i| sample("grow_sess", i, i as u32))
+            .collect();
+        std::fs::write(&path, serde_json::to_string(&raw6).unwrap()).unwrap();
+        retained_procfs_poll_tick(&store, &feed, 512, None).unwrap();
+        let (_, _, t2, _, rev2) = store.get_bounded("grow_sess", 10_000);
+
+        assert_eq!(t2, t1 + 1);
+        assert_eq!(rev1, rev2, "prefix extension must not bump store_revision");
+    }
+
+    #[test]
+    fn tick_non_prefix_replaces_and_bumps_revision() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("sw.json");
+        let raw_a: Vec<_> = (1u64..=3).map(|i| sample("sw_sess", i, i as u32)).collect();
+        std::fs::write(&path, serde_json::to_string(&raw_a).unwrap()).unwrap();
+
+        let feed = ProcfsSnapshotFeedConfig {
+            session_id: "sw_sess".to_string(),
+            max_samples: 512,
+            twice: false,
+            from_raw_json: Some(path.clone()),
+        };
+        let store = SnapshotStore::new();
+        retained_procfs_poll_tick(&store, &feed, 512, None).unwrap();
+        let (_, _, _, _, rev1) = store.get_bounded("sw_sess", 10);
+
+        let raw_b: Vec<_> = (10u64..=11)
+            .map(|i| sample("sw_sess", i, i as u32))
+            .collect();
+        std::fs::write(&path, serde_json::to_string(&raw_b).unwrap()).unwrap();
+        retained_procfs_poll_tick(&store, &feed, 512, None).unwrap();
+        let (_, _, t2, _, rev2) = store.get_bounded("sw_sess", 10);
+
+        assert_eq!(t2, 2);
+        assert!(rev2 > rev1);
     }
 
     #[test]

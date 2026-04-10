@@ -16,7 +16,7 @@ use crate::ipc::{
     FIPC_SNAPSHOT_ORIGIN_PER_RPC_FILE_LANE, FIPC_SNAPSHOT_ORIGIN_PER_RPC_PROCFS,
     FIPC_SNAPSHOT_ORIGIN_UNKNOWN_OR_EMPTY, PROVISIONAL_FIPC_MAX_DELTA_EVENTS,
     PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS, PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION,
-    PROVISIONAL_IPC_AUTH_TOKEN_VERSION,
+    PROVISIONAL_IPC_AUTH_TOKEN_VERSION, PROVISIONAL_MAX_RETAINED_SNAPSHOT_EVENTS,
 };
 
 /// Matches `session_engine` / viewer F-07-style bound per line (honest cap for one NDJSON line).
@@ -71,6 +71,15 @@ struct SessionState {
     store_revision: u64,
 }
 
+/// Result of [`SnapshotStore::apply_retained_poll_continuity`] (retained procfs / file-lane ticks).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RetainedPollApply {
+    /// Prior store was a prefix of the new full poll; timeline extended and tail-trimmed without bumping revision.
+    ExtendedSameRevision,
+    /// First fill, empty→empty, or non-prefix poll — [`SessionState::store_revision`] incremented.
+    ReplacedBumpedRevision,
+}
+
 /// In-memory session → normalized events as JSON (collector-owned; bridge never mutates).
 #[derive(Debug, Default)]
 pub struct SnapshotStore {
@@ -120,6 +129,77 @@ impl SnapshotStore {
             return;
         };
         st.events.extend(extra);
+    }
+
+    /// Retained background poll: if `incoming_full` **extends** the current store as an exact prefix,
+    /// update in place (same `store_revision`) after keeping the last `max_retained` events; otherwise
+    /// replace with the tail of this poll (revision bump). Empty `incoming_full` always replaces with `[]`.
+    pub fn apply_retained_poll_continuity(
+        &self,
+        session_id: impl AsRef<str>,
+        incoming_full: Vec<serde_json::Value>,
+        max_retained: usize,
+    ) -> RetainedPollApply {
+        let cap = max_retained.clamp(1, PROVISIONAL_MAX_RETAINED_SNAPSHOT_EVENTS);
+        let sid = session_id.as_ref().to_string();
+        let mut g = self.inner.lock().expect("snapshot store poisoned");
+
+        fn trim_keep_last(events: &mut Vec<serde_json::Value>, cap: usize) {
+            if events.len() > cap {
+                let drop_n = events.len() - cap;
+                events.drain(0..drop_n);
+            }
+        }
+
+        if incoming_full.is_empty() {
+            let next_rev = g
+                .get(&sid)
+                .map(|s| s.store_revision.saturating_add(1))
+                .unwrap_or(1);
+            g.insert(
+                sid,
+                SessionState {
+                    events: Vec::new(),
+                    store_revision: next_rev,
+                },
+            );
+            return RetainedPollApply::ReplacedBumpedRevision;
+        }
+
+        let prev: Option<Vec<serde_json::Value>> = g.get(&sid).map(|s| s.events.clone());
+        let prev_slice = prev.as_deref().unwrap_or(&[]);
+
+        let prefix_extends = !prev_slice.is_empty()
+            && incoming_full.len() >= prev_slice.len()
+            && prev_slice
+                .iter()
+                .zip(incoming_full.iter().take(prev_slice.len()))
+                .all(|(a, b)| a == b);
+
+        if prefix_extends {
+            let mut combined = incoming_full;
+            trim_keep_last(&mut combined, cap);
+            let st = g
+                .get_mut(&sid)
+                .expect("prefix extend implies existing non-empty session");
+            st.events = combined;
+            RetainedPollApply::ExtendedSameRevision
+        } else {
+            let mut incoming_tail = incoming_full;
+            trim_keep_last(&mut incoming_tail, cap);
+            let next_rev = g
+                .get(&sid)
+                .map(|s| s.store_revision.saturating_add(1))
+                .unwrap_or(1);
+            g.insert(
+                sid,
+                SessionState {
+                    events: incoming_tail,
+                    store_revision: next_rev,
+                },
+            );
+            RetainedPollApply::ReplacedBumpedRevision
+        }
     }
 
     /// Returns `(events, cursor, total_in_store, session_known, store_revision)`.
@@ -251,6 +331,39 @@ mod snapshot_store_contract_tests {
             Some(FIPC_LIVE_DELTA_CONTINUITY_APPEND_TAIL_V0)
         );
         assert_eq!(ev.as_ref().map(|v| v.len()), Some(1));
+    }
+
+    #[test]
+    fn apply_retained_poll_extended_then_replaced() {
+        use super::RetainedPollApply;
+
+        let s = SnapshotStore::new();
+        assert_eq!(
+            s.apply_retained_poll_continuity(
+                "x",
+                vec![serde_json::json!(1), serde_json::json!(2)],
+                8,
+            ),
+            RetainedPollApply::ReplacedBumpedRevision
+        );
+        assert_eq!(
+            s.apply_retained_poll_continuity(
+                "x",
+                vec![
+                    serde_json::json!(1),
+                    serde_json::json!(2),
+                    serde_json::json!(3)
+                ],
+                8,
+            ),
+            RetainedPollApply::ExtendedSameRevision
+        );
+        let (_, _, t, _, _) = s.get_bounded("x", 10);
+        assert_eq!(t, 3);
+        assert_eq!(
+            s.apply_retained_poll_continuity("x", vec![serde_json::json!(9)], 8,),
+            RetainedPollApply::ReplacedBumpedRevision
+        );
     }
 }
 

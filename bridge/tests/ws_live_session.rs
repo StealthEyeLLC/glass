@@ -12,6 +12,7 @@ use futures_util::{SinkExt, StreamExt};
 use glass_bridge::ipc_client::fetch_bounded_snapshot;
 use glass_bridge::live_session_ws::{
     F03_V0_LIVE_WS_QUEUE_MAX_BYTES, F03_V0_LIVE_WS_QUEUE_MAX_EVENTS, LIVE_SESSION_WS_PROTOCOL_V1,
+    LIVE_WS_REASON_STORE_REPLACED_SINCE_WATERMARK,
 };
 use glass_bridge::resync::{
     RESYNC_HINT_REASON_BOUNDED_TRUNCATION, RESYNC_HINT_REASON_RETAINED_TAIL_REPLACES,
@@ -28,10 +29,10 @@ use tokio::time::timeout;
 use tokio_tungstenite::connect_async;
 use tower::ServiceExt;
 
-fn file_lane_obs(seq: u64, path: &str) -> RawObservation {
+fn file_lane_obs(session: &str, seq: u64, path: &str) -> RawObservation {
     RawObservation::new(
         seq,
-        "ws_live_sess",
+        session,
         10u64 + seq,
         RawObservationKind::FileSeenInPollSnapshot,
         RawSourceQuality::DirectoryPollDerived,
@@ -90,7 +91,7 @@ async fn retained_file_lane_change_emits_session_snapshot_replaced() {
 
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("fl1.json");
-    let o1 = file_lane_obs(1, "a.txt");
+    let o1 = file_lane_obs("ws_live_sess", 1, "a.txt");
     std::fs::write(&path, serde_json::to_string(&vec![o1]).unwrap()).unwrap();
 
     let store = Arc::new(SnapshotStore::new());
@@ -303,7 +304,7 @@ async fn session_delta_emitted_after_snapshot_replaced_when_wire_enabled() {
 
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("fl_delta.json");
-    let o1 = file_lane_obs(1, "a.txt");
+    let o1 = file_lane_obs("ws_delta_sess", 1, "a.txt");
     std::fs::write(&path, serde_json::to_string(&vec![o1]).unwrap()).unwrap();
 
     let store = Arc::new(SnapshotStore::new());
@@ -483,6 +484,168 @@ async fn session_delta_emitted_after_snapshot_replaced_when_wire_enabled() {
     assert_eq!(ev.len(), 1);
     assert_eq!(ev[0]["seq"], 999);
     assert!(got_delta["ws_seq"].as_u64().is_some());
+
+    let _ = ws.close(None).await;
+    std::env::remove_var("GLASS_BRIDGE_LIVE_WS_POLL_MS");
+}
+
+/// Retained file-lane ticks grow the fixture with prefix continuity → append tails → non-empty `session_delta`;
+/// forced `set_session_events` reset → withheld tail → `session_resync_required`.
+#[tokio::test]
+async fn retained_file_lane_grows_fixture_then_forced_replace_triggers_resync() {
+    std::env::set_var("GLASS_BRIDGE_LIVE_WS_POLL_MS", "40");
+
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("ret_grow.json");
+    let sid = "ws_ret_append";
+    let raw257: Vec<_> = (1u64..=257)
+        .map(|i| file_lane_obs(sid, i, &format!("p{i}.txt")))
+        .collect();
+    std::fs::write(&path, serde_json::to_string(&raw257).unwrap()).unwrap();
+
+    let store = Arc::new(SnapshotStore::new());
+    let feed = FileLaneSnapshotFeedConfig {
+        session_id: sid.to_string(),
+        watch_root: PathBuf::from("."),
+        max_samples: 512,
+        max_depth: 8,
+        twice: false,
+        from_raw_json: Some(path.clone()),
+    };
+    let meta = Arc::new(RetainedPollMeta::new(sid));
+    retained_file_lane_poll_tick(store.as_ref(), &feed, 512, Some(meta.as_ref())).unwrap();
+
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let runtime = Arc::new(IpcDevTcpRuntime {
+        store,
+        procfs_feed: None,
+        file_lane_feed: None,
+        retained_poll_meta: None,
+        file_lane_retained_poll_meta: Some(meta),
+    });
+    let secret = Arc::<str>::from("ws-ret-append-secret");
+    let rt_loop = runtime.clone();
+    let sec_loop = secret.clone();
+    thread::spawn(move || loop {
+        let Ok((stream, _)) = listener.accept() else {
+            break;
+        };
+        let rt = rt_loop.clone();
+        let sec = sec_loop.clone();
+        thread::spawn(move || {
+            let _ = handle_ipc_dev_tcp_connection(stream, sec.as_ref(), rt.as_ref());
+        });
+    });
+    thread::sleep(Duration::from_millis(40));
+
+    let listener_b = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let baddr = listener_b.local_addr().unwrap();
+    let bridge_cfg = BridgeConfig {
+        bind: baddr,
+        bearer_token: Arc::from("bridge-ret-append-token"),
+        allow_non_loopback: false,
+        collector_ipc: Some(CollectorIpcClientConfig {
+            addr,
+            shared_secret: secret.clone(),
+            timeout: Duration::from_secs(3),
+        }),
+        session_delta_wire_v0: true,
+    };
+    let cfg_clone = bridge_cfg.clone();
+    tokio::spawn(async move {
+        let _ = glass_bridge::serve_listener(listener_b, &cfg_clone).await;
+    });
+    tokio::time::sleep(Duration::from_millis(80)).await;
+
+    let url = format!(
+        "ws://127.0.0.1:{}/ws?access_token=bridge-ret-append-token",
+        baddr.port()
+    );
+    let (mut ws, _) = connect_async(url).await.expect("ws connect");
+    let _ = ws.next().await.expect("hello").expect("ok");
+
+    let sub = serde_json::json!({
+        "msg": "live_session_subscribe",
+        "session_id": sid,
+        "protocol": LIVE_SESSION_WS_PROTOCOL_V1,
+        "session_delta_wire": true
+    });
+    ws.send(tokio_tungstenite::tungstenite::Message::Text(
+        sub.to_string().into(),
+    ))
+    .await
+    .unwrap();
+    let _ = ws.next().await.expect("session_hello").expect("ok");
+
+    // Grow fixture **after** baseline watermark (257) so the next poll can emit a non-empty tail.
+    let feed_bg = feed.clone();
+    let store_bg = runtime.store.clone();
+    let path_bg = path.clone();
+    let sid_owned = sid.to_string();
+    thread::spawn(move || {
+        thread::sleep(Duration::from_millis(200));
+        let raw258: Vec<_> = (1u64..=258)
+            .map(|i| file_lane_obs(sid_owned.as_str(), i, &format!("p{i}.txt")))
+            .collect();
+        std::fs::write(&path_bg, serde_json::to_string(&raw258).unwrap()).unwrap();
+        let _ = retained_file_lane_poll_tick(store_bg.as_ref(), &feed_bg, 512, None);
+    });
+
+    let got_delta = timeout(Duration::from_secs(8), async {
+        while let Some(m) = ws.next().await {
+            let Ok(m) = m else { break };
+            let tokio_tungstenite::tungstenite::Message::Text(t) = m else {
+                continue;
+            };
+            let Ok(v) = serde_json::from_str::<serde_json::Value>(&t) else {
+                continue;
+            };
+            if v["msg"] == "session_delta" {
+                return Some(v);
+            }
+        }
+        None
+    })
+    .await
+    .expect("timeout delta")
+    .expect("session_delta from retained append");
+
+    let ev = got_delta["events"].as_array().expect("events");
+    assert_eq!(
+        ev.len(),
+        1,
+        "append tail should deliver exactly one new normalized event"
+    );
+
+    // Watermark advanced; force replacement — next poll must escalate live WS resync (revision mismatch on tail).
+    runtime.store.set_session_events(
+        sid,
+        vec![serde_json::json!({"kind": "forced_reset", "note": "test"})],
+    );
+
+    let got_resync = timeout(Duration::from_secs(8), async {
+        while let Some(m) = ws.next().await {
+            let Ok(m) = m else { break };
+            let tokio_tungstenite::tungstenite::Message::Text(t) = m else {
+                continue;
+            };
+            let Ok(v) = serde_json::from_str::<serde_json::Value>(&t) else {
+                continue;
+            };
+            if v["msg"] == "session_resync_required"
+                && v["reason"] == LIVE_WS_REASON_STORE_REPLACED_SINCE_WATERMARK
+            {
+                return Some(v);
+            }
+        }
+        None
+    })
+    .await
+    .expect("timeout resync")
+    .expect("session_resync_required after forced replace");
+
+    assert_eq!(got_resync["action"], "use_http_snapshot");
 
     let _ = ws.close(None).await;
     std::env::remove_var("GLASS_BRIDGE_LIVE_WS_POLL_MS");

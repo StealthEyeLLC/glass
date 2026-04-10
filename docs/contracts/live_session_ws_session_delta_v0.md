@@ -23,8 +23,12 @@
 ## F-IPC (provisional) — honest append-only tail
 
 - **`BoundedSnapshotRequest`**: optional **`live_delta_tail_v0`** — `{ after_available_exclusive, base_store_revision }` (must match the client’s last acknowledged `available_in_view` and `snapshot_meta.store_revision` from a prior reply).
-- **`BoundedSnapshotReply`**: optional **`live_delta_events`** + **`live_delta_continuity_v0`**; **`FipcBoundedSnapshotMeta.store_revision`** is set for **`collector_store`** (increments on **`set_session_events`** replacement; **stable** on **`append_session_events`**).
+- **`BoundedSnapshotReply`**: optional **`live_delta_events`** + **`live_delta_continuity_v0`**; **`FipcBoundedSnapshotMeta.store_revision`** is set for **`collector_store`** (increments on **`set_session_events`** replacement; **stable** on **`append_session_events`** and on **prefix-extending** retained polls — see below).
 - **Caps:** `PROVISIONAL_FIPC_MAX_DELTA_EVENTS` (collector) bounds tail size per reply. Bounded HTTP F-04 remains **unchanged**.
+
+## Retained procfs / file-lane loops (`ipc-serve`)
+
+Background **`--procfs-retained-session`** / **`--file-lane-retained-session`** ticks call **`SnapshotStore::apply_retained_poll_continuity`**: when the **full** normalized poll vector **extends** the previous store as an exact prefix (same leading JSON values), the store is updated **without** bumping **`store_revision`** (trimmed to the last `max_retained` events). When the poll is **not** a prefix extension (reordered window, disjoint fixture, empty→non-empty reset, etc.), the store is **replaced** and **`store_revision`** increments — the bridge may then emit **`session_resync_required`** if a live client had a stale tail watermark.
 
 ## Envelope (minimal)
 
@@ -51,4 +55,5 @@
 ## Provisional / next
 
 - **F-IPC transport** remains **provisional** (dev TCP); not frozen.
+- Prefix detection is **value-equality** on normalized JSON in order — not a cryptographic or causal guarantee across arbitrary host polls.
 - **Durable** push ingest, multi-subscriber history, and non-`collector_store` incremental semantics remain **out of scope** for this v0 path.

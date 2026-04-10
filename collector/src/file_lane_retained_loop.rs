@@ -1,6 +1,7 @@
 //! Optional background file-lane (directory poll or fixture) that writes **bounded** normalized JSON
 //! into [`crate::ipc_dev_tcp::SnapshotStore`] for one session. F-IPC reads use the **retained** store
-//! without per-RPC repoll. **Not** a live WS delta stream — bounded snapshot materialization only.
+//! without per-RPC repoll. Ticks call [`SnapshotStore::apply_retained_poll_continuity`] (prefix extend
+//! vs replace — same semantics as procfs retained).
 
 use std::sync::atomic::Ordering;
 use std::sync::Arc;
@@ -8,8 +9,8 @@ use std::thread;
 use std::time::Duration;
 
 use crate::file_lane_ipc_feed::FileLaneSnapshotFeedConfig;
+use crate::ipc::PROVISIONAL_MAX_RETAINED_SNAPSHOT_EVENTS;
 use crate::ipc_dev_tcp::{unix_epoch_millis_now, RetainedPollMeta, SnapshotStore};
-use crate::procfs_retained_loop::PROVISIONAL_MAX_RETAINED_SNAPSHOT_EVENTS;
 
 #[derive(Debug, Clone)]
 pub struct RetainedFileLaneLoopConfig {
@@ -25,7 +26,8 @@ impl RetainedFileLaneLoopConfig {
     }
 }
 
-/// Single poll → normalize → **replace** session events in `store`, keeping the **tail** up to
+/// Single poll → normalize → update `store` with **prefix continuity** when the full poll extends the
+/// prior retained timeline (same revision); otherwise **replace** (new revision). Tail is capped at
 /// `max_retained`. Updates `meta.last_ok_unix_ms` on success (including empty poll results).
 pub fn retained_file_lane_poll_tick(
     store: &SnapshotStore,
@@ -33,13 +35,9 @@ pub fn retained_file_lane_poll_tick(
     max_retained: usize,
     meta: Option<&RetainedPollMeta>,
 ) -> Result<(), String> {
-    let mut events = feed.poll_normalized_json()?;
+    let events = feed.poll_normalized_json()?;
     let cap = max_retained.clamp(1, PROVISIONAL_MAX_RETAINED_SNAPSHOT_EVENTS);
-    if events.len() > cap {
-        let drop_n = events.len() - cap;
-        events.drain(..drop_n);
-    }
-    store.set_session_events(feed.session_id.clone(), events);
+    store.apply_retained_poll_continuity(&feed.session_id, events, cap);
     if let Some(m) = meta {
         m.last_ok_unix_ms
             .store(unix_epoch_millis_now(), Ordering::Relaxed);
@@ -119,6 +117,38 @@ mod tests {
         assert_eq!(ev.len(), 2);
         assert_eq!(cur, "v0:off:2");
         assert!(meta.last_ok_unix_ms.load(Ordering::Relaxed) > 0);
+    }
+
+    #[test]
+    fn tick_extends_prefix_keeps_store_revision() {
+        let dir = tempdir().unwrap();
+        let path = dir.path().join("fl_grow.json");
+        let raw5: Vec<_> = (1u64..=5)
+            .map(|i| fl_sample("fl_grow", i, &format!("g{i}.txt")))
+            .collect();
+        std::fs::write(&path, serde_json::to_string(&raw5).unwrap()).unwrap();
+
+        let feed = FileLaneSnapshotFeedConfig {
+            session_id: "fl_grow".to_string(),
+            watch_root: dir.path().to_path_buf(),
+            max_samples: 512,
+            max_depth: 8,
+            twice: false,
+            from_raw_json: Some(path.clone()),
+        };
+        let store = SnapshotStore::new();
+        retained_file_lane_poll_tick(&store, &feed, 512, None).unwrap();
+        let (_, _, t1, _, rev1) = store.get_bounded("fl_grow", 10_000);
+
+        let raw6: Vec<_> = (1u64..=6)
+            .map(|i| fl_sample("fl_grow", i, &format!("g{i}.txt")))
+            .collect();
+        std::fs::write(&path, serde_json::to_string(&raw6).unwrap()).unwrap();
+        retained_file_lane_poll_tick(&store, &feed, 512, None).unwrap();
+        let (_, _, t2, _, rev2) = store.get_bounded("fl_grow", 10_000);
+
+        assert_eq!(t2, t1 + 1);
+        assert_eq!(rev1, rev2);
     }
 
     #[test]

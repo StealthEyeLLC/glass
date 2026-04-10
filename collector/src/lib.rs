@@ -51,18 +51,17 @@ pub use ipc::{
     FIPC_SNAPSHOT_ORIGIN_PER_RPC_FILE_LANE, FIPC_SNAPSHOT_ORIGIN_PER_RPC_PROCFS,
     FIPC_SNAPSHOT_ORIGIN_UNKNOWN_OR_EMPTY, PROVISIONAL_FIPC_MAX_DELTA_EVENTS,
     PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS, PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION,
-    PROVISIONAL_IPC_AUTH_TOKEN_VERSION,
+    PROVISIONAL_IPC_AUTH_TOKEN_VERSION, PROVISIONAL_MAX_RETAINED_SNAPSHOT_EVENTS,
 };
 pub use ipc_dev_tcp::{
     handle_ipc_dev_tcp_connection, run_ipc_dev_tcp_listener, unix_epoch_millis_now,
-    IpcDevTcpListenConfig, IpcDevTcpRuntime, RetainedPollMeta, SnapshotStore,
+    IpcDevTcpListenConfig, IpcDevTcpRuntime, RetainedPollApply, RetainedPollMeta, SnapshotStore,
 };
 pub use pipeline::{filter_for_normalization_input, PipelineStats};
 pub use privilege::{CollectorProcessRole, PrivilegeContext, PrivilegeMode};
 pub use procfs_ipc_feed::{load_procfs_observations_for_cli, ProcfsSnapshotFeedConfig};
 pub use procfs_retained_loop::{
     retained_procfs_poll_tick, spawn_retained_procfs_loop, RetainedProcfsLoopConfig,
-    PROVISIONAL_MAX_RETAINED_SNAPSHOT_EVENTS,
 };
 pub use raw::{RawObservation, RawObservationKind, RawSourceQuality};
 pub use self_silence::{GlassComponent, LineageIdentity, SelfSilenceCounters, SelfSilencePolicy};

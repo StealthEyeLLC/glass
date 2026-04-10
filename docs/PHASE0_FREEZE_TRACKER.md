@@ -50,7 +50,7 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | `PROVISIONAL_MAX_FS_DELTA_PER_DIRECTION` | `64` | `glass_collector::adapters::fs_file_lane` | Cap on created/missing/changed rows per poll direction |
 | `PROVISIONAL_MAX_FS_SCAN_PATHS_FOR_STATE` | `4096` | `glass_collector::adapters::fs_file_lane` | Max paths stored between polls for gap comparison (sample emission may be lower) |
 | `PROVISIONAL_DEFAULT_FS_MAX_DEPTH` | `8` | `glass_collector::adapters::fs_file_lane` | Default max recursion depth under declared watch root |
-| `PROVISIONAL_MAX_RETAINED_SNAPSHOT_EVENTS` | `2048` | `glass_collector::procfs_retained_loop`, `glass_collector::file_lane_retained_loop` (shared constant) | Max normalized events kept in `SnapshotStore` per retained session after each poll (tail); per-mode max-events CLI may clamp lower |
+| `PROVISIONAL_MAX_RETAINED_SNAPSHOT_EVENTS` | `2048` | `glass_collector::ipc` (re-exported); retained loops + `glass_collector::ipc_dev_tcp::SnapshotStore::apply_retained_poll_continuity` | Max normalized events kept in `SnapshotStore` per retained session after each poll (tail); per-mode max-events CLI may clamp lower |
 | Sanitization regex / socket heuristic | IPv4 private ranges, `.local`/`.internal`/`.corp`, `.sock` + `/var/run` paths | `session_engine::sanitization` | F-05 |
 
 ---

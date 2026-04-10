@@ -94,6 +94,9 @@ pub const PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS: usize = 256;
 /// Upper bound on optional `live_delta_events` tail per bounded reply (`collector_store` append-only path).
 pub const PROVISIONAL_FIPC_MAX_DELTA_EVENTS: usize = 64;
 
+/// Hard cap on normalized events kept per session in [`crate::ipc_dev_tcp::SnapshotStore`] (retained loops).
+pub const PROVISIONAL_MAX_RETAINED_SNAPSHOT_EVENTS: usize = 2048;
+
 /// [`BoundedSnapshotReply::live_delta_continuity_v0`] — tail matches append-only continuity.
 pub const FIPC_LIVE_DELTA_CONTINUITY_APPEND_TAIL_V0: &str = "append_only_tail_v0";
 /// Client `base_store_revision` is stale (store was replaced since watermark).
