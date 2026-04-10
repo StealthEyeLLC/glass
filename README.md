@@ -73,7 +73,7 @@ Default bridge listen: `127.0.0.1:9781`. **Live-session WebSocket** (`/ws`) exis
 
 ## Vertical Slice v0 (demo path)
 
-One bounded scenario through replay + live: same Scene System v0 strip, honest wire semantics (no fake topology). **Quick replay check:** from `viewer/` run `npm run dev`, then **Open file** on `tests/fixtures/vertical_slice_v0/glass_vertical_slice_v0_tier_b.glass_pack` in your checkout. See [docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md).
+One bounded scenario through replay + live: same Scene System v0 strip, honest wire semantics (no fake topology). **Quick replay check:** from `viewer/` run `npm run dev`, then either **Open file** on `tests/fixtures/vertical_slice_v0/glass_vertical_slice_v0_tier_b.glass_pack`, or open the dev server with **`?fixture=vertical_slice_v0`** (dev-only — see [docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md)). Static `dist/` does not auto-load fixtures.
 
 ## Status
 

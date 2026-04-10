@@ -48,6 +48,21 @@ describe("static replay shell", () => {
     expect(getBuildMode()).toBe("static_replay");
   });
 
+  it("does not auto-fetch dev fixture when ?fixture=vertical_slice_v0 (tests mirror production inert)", () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(new Response()),
+    );
+    history.replaceState({}, "", "/?fixture=vertical_slice_v0");
+    try {
+      const root = document.createElement("div");
+      mountReplayShell(root);
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      fetchSpy.mockRestore();
+      history.replaceState({}, "", "/");
+    }
+  });
+
   it("mounts vertical slice hero, drop zone, and file open control", () => {
     const root = document.createElement("div");
     mountReplayShell(root);

@@ -34,7 +34,9 @@ A single **bounded** demo path through the real Glass v0 substrate: **Tier B sta
 - **Proves:** `loadGlassPack(…, strict_kinds)` succeeds; `compileReplayToGlassSceneV0` reports index-prefix sample, “not live tail” / “not process topology”, bounded counts — see `viewer/src/replay/verticalSliceFixture.integration.test.ts`.
 - **Does not prove:** bridge, WS, HTTP snapshot, F-IPC, retained loops, or any live path.
 
-**Run in the viewer:** `cd viewer && npm run dev` → open the app → **Open file** → select `tests/fixtures/vertical_slice_v0/glass_vertical_slice_v0_tier_b.glass_pack` (from a checkout at repo root). Scrub/step — Scene v0 canvas shows prefix depth and R/A/Rz semantics.
+**Run in the viewer (manual):** `cd viewer && npm run dev` → **Open file** → select `tests/fixtures/vertical_slice_v0/glass_vertical_slice_v0_tier_b.glass_pack` from your checkout. Scrub/step — Scene v0 canvas shows prefix depth and R/A/Rz semantics.
+
+**Dev-only instant load (`npm run dev` only):** open e.g. `http://localhost:5173/?fixture=vertical_slice_v0` (Vite default port). The dev server serves the committed pack at `GET /__glass__/dev/vertical_slice_v0/glass_vertical_slice_v0_tier_b.glass_pack` (middleware in `viewer/vite.config.ts`); the replay shell fetches it once, then removes `fixture=` from the URL via `history.replaceState`. **Not available** in `vite build` / static `dist/` (`import.meta.env.DEV === false` — no auto-fetch). **`vite preview`** does not register this middleware — use `npm run dev` for the shortcut. **Vitest** sets `process.env.VITEST` — the replay shell does not auto-fetch fixtures in tests so `import.meta.env.DEV` in the test bundle does not imply a second code path.
 
 **Regenerate bytes** (if the fixture shape changes intentionally): `cd viewer && npm run fixture:vertical-slice`
 

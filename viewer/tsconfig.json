@@ -9,10 +9,15 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["@webgpu/types"],
+    "types": ["@webgpu/types", "vite/client"],
     "rootDir": "src",
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
-  "include": ["src/**/*.ts", "vite.config.ts", "vitest.config.ts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "vite.config.ts",
+    "vitest.config.ts"
+  ]
 }

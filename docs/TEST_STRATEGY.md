@@ -58,6 +58,7 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 |-------|------------|
 | `src/app/mode.test.ts` | `getBuildMode` stays **`static_replay`**; `uiSurfaceFromSearch` for `?live=1` |
 | `src/app/verticalSliceV0.test.ts` | **Vertical Slice v0** copy exports (`VERTICAL_SLICE_V0_ID`, hero subtitle strings mention static replay / live) |
+| `src/app/devFixtureRoute.test.ts` | **`planDevFixtureLoad`**: dev vs production inert (`DEV` flag); query parse; strip `fixture=` |
 | `src/replay/verticalSliceFixture.integration.test.ts` | **`@vitest-environment node`**: committed **`tests/fixtures/vertical_slice_v0/glass_vertical_slice_v0_tier_b.glass_pack`** → **`loadGlassPack` strict_kinds** → **`compileReplayToGlassSceneV0`**: honesty line (not live tail / not topology), prefix sample scope, bounded counts, replace→append wire mode |
 | `src/live/applyLiveSessionMessage.test.ts` | Live wire reducer: `session_hello`, `session_snapshot_replaced` replacement sample, non-empty `session_delta` append, empty delta no-op, `session_resync_required` reconcile counter, `session_warning`; **`lastAppliedWire`** surface (replace / append / none, resync summary, truncated sample honesty) |
 | `src/live/liveStatePresentation.test.ts` | `buildLiveStatePresentationDoc` (resync + reconcile trigger, bounded-sample honesty, HTTP snapshot_meta fallback); **`liveConnectDisabledFromPreflight`** (F-IPC not configured vs failed/missing preflight) |
@@ -84,7 +85,7 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `src/live/liveSessionStorage.test.ts` | sessionStorage round-trip for URL/session/delta-wire; **no** token key; `saveLiveBridgeUrl` partial |
 | `src/live/liveHttpReconcile.test.ts` | `makeReconcileRecord` operator vs `session_resync_required` |
 | `replayModel.test.ts` | Pure replay reducer: load lifecycle, play/pause/tick, seek/step, empty pack, entity selection |
-| `staticReplay.test.ts` | Mounted shell: **`replay-vs-hero`**, metadata + sanitized summary, **Scene v0** canvas (`data-scene`), timeline/inspector binding, play timer (fake), scrub, errors, empty pack |
+| `staticReplay.test.ts` | Mounted shell: **`replay-vs-hero`**, metadata + sanitized summary, **Scene v0** canvas (`data-scene`), timeline/inspector binding, play timer (fake), scrub, errors, empty pack; **`?fixture=vertical_slice_v0`** does not call **`fetch`** (`replayOnlyShell` **`devFixtureEnvForReplay()`** treats **`process.env.VITEST`** as non-dev — Vitest otherwise leaves **`import.meta.env.DEV` true**; mirrors production **`dist/`** inertness) |
 | `tierBReplay.integration.test.ts` | ZIP → `loadGlassPack` → `reduceReplay` (Node env / `fflate`); JSONL + **`scaffold_seg` / `events.seg`** (sanitized summary, **`process_poll_sample`** strict_kinds); empty JSONL |
 | `loadPack.test.ts` | `.glass_pack` validation mirrors Rust (`pack` exclusivity + manifest rules); JSONL + **seg** loads; mixed ZIP rejection; malformed seg; empty seg header-only; **`@vitest-environment node`** — jsdom VM can break `fflate` `zipSync`; real browser unaffected |
 | `eventsSeg.test.ts` | Raw `events.seg` v1 decode: magic/version, truncated header/prefix/payload, zero-length record, bad JSON/UTF-8; roundtrip with `encodeEventsSegV1` (test helper) |

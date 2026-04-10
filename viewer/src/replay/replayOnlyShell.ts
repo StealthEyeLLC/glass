@@ -1,3 +1,7 @@
+import {
+  planDevFixtureLoad,
+  stripVerticalSliceDevFixtureQuery,
+} from "../app/devFixtureRoute.js";
 import { getBuildMode } from "../app/mode.js";
 import {
   VERTICAL_SLICE_SCENARIO_BODY,
@@ -20,6 +24,17 @@ import {
   type ReplayState,
 } from "./replayModel.js";
 import "./replayShell.css";
+
+/**
+ * Vitest keeps `import.meta.env.DEV === true` while bundling tests — treat as non-dev here so
+ * `mountReplayShell` never fires fixture `fetch` in unit tests (mirrors static `dist/` inertness).
+ */
+function devFixtureEnvForReplay(): { DEV?: boolean } {
+  if (typeof process !== "undefined" && process.env.VITEST === "true") {
+    return { DEV: false };
+  }
+  return import.meta.env;
+}
 
 /** UX pacing only — not a spec freeze; Tier B uses index-based playback. */
 const PLAY_INTERVAL_MS = 400;
@@ -248,6 +263,64 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     });
   }
 
+  function tryDevFixtureAutoLoad(): void {
+    const plan = planDevFixtureLoad(
+      window.location.search,
+      devFixtureEnvForReplay(),
+    );
+    if (plan.kind !== "load_vertical_slice_v0") {
+      return;
+    }
+    dispatch({ type: "start_reading", fileName: plan.fileName });
+    const gen = ++loadGeneration;
+    void fetch(plan.url)
+      .then((res) => {
+        if (gen !== loadGeneration) {
+          return undefined;
+        }
+        if (!res.ok) {
+          dispatch({
+            type: "load_err",
+            fileName: plan.fileName,
+            message: `dev fixture HTTP ${res.status}`,
+          });
+          return undefined;
+        }
+        return res.arrayBuffer();
+      })
+      .then((buf) => {
+        if (buf === undefined || gen !== loadGeneration) {
+          return;
+        }
+        const r = loadGlassPack(new Uint8Array(buf), "strict_kinds");
+        if (!r.ok) {
+          dispatch({
+            type: "load_err",
+            fileName: plan.fileName,
+            message: r.error,
+          });
+          return;
+        }
+        dispatch({
+          type: "load_ok",
+          fileName: plan.fileName,
+          manifest: r.manifest,
+          events: r.events,
+        });
+        stripVerticalSliceDevFixtureQuery();
+      })
+      .catch((e: unknown) => {
+        if (gen !== loadGeneration) {
+          return;
+        }
+        dispatch({
+          type: "load_err",
+          fileName: plan.fileName,
+          message: e instanceof Error ? e.message : String(e),
+        });
+      });
+  }
+
   attachPackDropHandlers(dropZone, loadFromFile);
   wirePackFileInput(fileInput, loadFromFile);
 
@@ -426,6 +499,8 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   }
 
   render();
+
+  tryDevFixtureAutoLoad();
 
   return {
     getState: () => state,
