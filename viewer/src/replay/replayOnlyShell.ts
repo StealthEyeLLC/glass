@@ -53,7 +53,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
 
   const dropZone = el("div", "glass-drop-zone");
   dropZone.textContent =
-    "Drop a .glass_pack here, or use Open file. Format: ZIP with manifest.json + events.jsonl (glass.pack.v0.scaffold).";
+    "Drop a .glass_pack here, or use Open file. Tier B: manifest.json plus events.jsonl (glass.pack.v0.scaffold) or events.seg (glass.pack.v0.scaffold_seg).";
 
   const fileRow = el("div", "glass-file-row");
   const fileInput = document.createElement("input");
@@ -299,7 +299,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
 
       if (emptyPack) {
         positionLine.textContent =
-          "No events in pack (empty events.jsonl). Playback controls disabled.";
+          "No events in pack (empty timeline). Playback controls disabled.";
         inspectorPre.textContent = "{}";
       } else {
         const fr = cursorFraction(state);

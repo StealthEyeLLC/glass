@@ -43,8 +43,9 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 |-------|------------|
 | `replayModel.test.ts` | Pure replay reducer: load lifecycle, play/pause/tick, seek/step, empty pack, entity selection |
 | `staticReplay.test.ts` | Mounted shell: metadata + sanitized summary, timeline/inspector binding, play timer (fake), scrub, errors, empty pack |
-| `tierBReplay.integration.test.ts` | ZIP → `loadGlassPack` → `reduceReplay` (Node env / `fflate`); sanitized + empty JSONL; **sanitized `process_poll_sample`** strict_kinds + replay |
-| `loadPack.test.ts` | `.glass_pack` validation mirrors Rust; empty JSONL; bad manifest/JSONL/wrong format (**`@vitest-environment node`**) — jsdom VM can break `fflate` `zipSync`; real browser unaffected |
+| `tierBReplay.integration.test.ts` | ZIP → `loadGlassPack` → `reduceReplay` (Node env / `fflate`); JSONL + **`scaffold_seg` / `events.seg`** (sanitized summary, **`process_poll_sample`** strict_kinds); empty JSONL |
+| `loadPack.test.ts` | `.glass_pack` validation mirrors Rust (`pack` exclusivity + manifest rules); JSONL + **seg** loads; mixed ZIP rejection; malformed seg; empty seg header-only; **`@vitest-environment node`** — jsdom VM can break `fflate` `zipSync`; real browser unaffected |
+| `eventsSeg.test.ts` | Raw `events.seg` v1 decode: magic/version, truncated header/prefix/payload, zero-length record, bad JSON/UTF-8; roundtrip with `encodeEventsSegV1` (test helper) |
 
 ## Tools
 

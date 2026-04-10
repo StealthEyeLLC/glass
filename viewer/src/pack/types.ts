@@ -1,10 +1,11 @@
 /**
- * Mirrors `session_engine` JSON shapes for `glass.pack.v0.scaffold` (Tier B static replay).
+ * Mirrors `session_engine` JSON shapes for Tier B static replay (`glass.pack.v0.scaffold` / `glass.pack.v0.scaffold_seg`).
  * Codegen from `schema/` is future work — keep in sync manually until then.
  */
 
 export const CANONICAL_EVENT_SCHEMA_VERSION = "glass.event.v0";
 export const PACK_FORMAT_SCAFFOLD_V0 = "glass.pack.v0.scaffold";
+export const PACK_FORMAT_SCAFFOLD_SEG_V0 = "glass.pack.v0.scaffold_seg";
 
 /** Same as `session_engine::validate::PROVISIONAL_MAX_JSONL_LINE_BYTES` — see PHASE0_FREEZE_TRACKER F-07. */
 export const PROVISIONAL_MAX_JSONL_LINE_BYTES = 4 * 1024 * 1024;

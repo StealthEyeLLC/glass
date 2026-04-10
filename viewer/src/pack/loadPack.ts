@@ -3,9 +3,11 @@
  * Validation rules aligned with `session_engine::validate` + `session_engine::pack`.
  */
 import { strFromU8, unzipSync } from "fflate";
+import { decodeEventsSeg } from "./eventsSeg.js";
 import {
   CANONICAL_EVENT_SCHEMA_VERSION,
   KNOWN_EVENT_KINDS_V0,
+  PACK_FORMAT_SCAFFOLD_SEG_V0,
   PACK_FORMAT_SCAFFOLD_V0,
   PROVISIONAL_MAX_JSONL_LINE_BYTES,
   type GlassEvent,
@@ -15,7 +17,8 @@ import {
 } from "./types.js";
 
 const MANIFEST_PATH = "manifest.json";
-const EVENTS_PATH = "events.jsonl";
+const EVENTS_JSONL_PATH = "events.jsonl";
+const EVENTS_SEG_PATH = "events.seg";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null && !Array.isArray(v);
@@ -43,17 +46,23 @@ function validateNormalizedEvent(ev: GlassEvent): string | null {
   return null;
 }
 
-function validateScaffoldManifest(m: GlassManifest): string | null {
-  if (m.pack_format_version !== PACK_FORMAT_SCAFFOLD_V0) {
-    return "manifest.pack_format_version must be glass.pack.v0.scaffold";
-  }
+function validateManifestForReader(m: GlassManifest): string | null {
   if (!m.session_id || !m.capture_mode) {
     return "manifest.session_id and capture_mode required";
   }
-  if (m.events_blob !== undefined && m.events_blob !== "events.jsonl") {
-    return 'manifest.events_blob must be absent or "events.jsonl"';
+  if (m.pack_format_version === PACK_FORMAT_SCAFFOLD_V0) {
+    if (m.events_blob !== undefined && m.events_blob !== "events.jsonl") {
+      return 'manifest.events_blob must be absent or "events.jsonl"';
+    }
+    return null;
   }
-  return null;
+  if (m.pack_format_version === PACK_FORMAT_SCAFFOLD_SEG_V0) {
+    if (m.events_blob !== "events.seg") {
+      return 'manifest.events_blob must be "events.seg" for glass.pack.v0.scaffold_seg';
+    }
+    return null;
+  }
+  return "unsupported manifest.pack_format_version for this reader";
 }
 
 function validatePackEvents(
@@ -61,7 +70,7 @@ function validatePackEvents(
   events: GlassEvent[],
   level: PackValidationLevel,
 ): string | null {
-  const me = validateScaffoldManifest(m);
+  const me = validateManifestForReader(m);
   if (me) {
     return me;
   }
@@ -88,6 +97,30 @@ function validatePackEvents(
   return null;
 }
 
+type ParsedEvents =
+  | { ok: true; events: GlassEvent[] }
+  | { ok: false; error: string };
+
+function parseJsonlEvents(buf: Uint8Array): ParsedEvents {
+  const lines = strFromU8(buf).split(/\r?\n/);
+  const events: GlassEvent[] = [];
+  for (const line of lines) {
+    const t = line.trimEnd();
+    if (t.length === 0) {
+      continue;
+    }
+    if (t.length > PROVISIONAL_MAX_JSONL_LINE_BYTES) {
+      return { ok: false, error: "jsonl line exceeds maximum length" };
+    }
+    try {
+      events.push(JSON.parse(t) as GlassEvent);
+    } catch {
+      return { ok: false, error: "events.jsonl line is not valid JSON" };
+    }
+  }
+  return { ok: true, events };
+}
+
 /**
  * Load and validate pack bytes. `level` mirrors Rust `PackValidationLevel`.
  */
@@ -105,35 +138,61 @@ export function loadGlassPack(
     return { ok: false, error: "invalid ZIP" };
   }
   const manB = files[MANIFEST_PATH];
-  const evB = files[EVENTS_PATH];
   if (!manB) {
     return { ok: false, error: "missing manifest.json" };
   }
-  if (!evB) {
-    return { ok: false, error: "missing events.jsonl" };
-  }
+  const jsonlB = files[EVENTS_JSONL_PATH];
+  const segB = files[EVENTS_SEG_PATH];
+  const sawJsonl = jsonlB !== undefined;
+  const sawSeg = segB !== undefined;
+
   let manifest: GlassManifest;
   try {
     manifest = JSON.parse(strFromU8(manB)) as GlassManifest;
   } catch {
     return { ok: false, error: "manifest.json is not valid JSON" };
   }
-  const lines = strFromU8(evB).split(/\r?\n/);
-  const events: GlassEvent[] = [];
-  for (const line of lines) {
-    const t = line.trimEnd();
-    if (t.length === 0) {
-      continue;
+
+  let events: GlassEvent[];
+  const fmt = manifest.pack_format_version;
+
+  if (fmt === PACK_FORMAT_SCAFFOLD_V0) {
+    if (sawSeg) {
+      return {
+        ok: false,
+        error: "glass.pack.v0.scaffold pack must not contain events.seg",
+      };
     }
-    if (t.length > PROVISIONAL_MAX_JSONL_LINE_BYTES) {
-      return { ok: false, error: "jsonl line exceeds maximum length" };
+    if (!sawJsonl) {
+      return { ok: false, error: "missing events.jsonl" };
     }
-    try {
-      events.push(JSON.parse(t) as GlassEvent);
-    } catch {
-      return { ok: false, error: "events.jsonl line is not valid JSON" };
+    const parsed = parseJsonlEvents(jsonlB);
+    if (!parsed.ok) {
+      return parsed;
     }
+    events = parsed.events;
+  } else if (fmt === PACK_FORMAT_SCAFFOLD_SEG_V0) {
+    if (sawJsonl) {
+      return {
+        ok: false,
+        error: "glass.pack.v0.scaffold_seg pack must not contain events.jsonl",
+      };
+    }
+    if (!sawSeg) {
+      return { ok: false, error: "missing events.seg" };
+    }
+    const seg = decodeEventsSeg(segB);
+    if (!seg.ok) {
+      return seg;
+    }
+    events = seg.events;
+  } else {
+    return {
+      ok: false,
+      error: "unsupported manifest.pack_format_version for this reader",
+    };
   }
+
   const verr = validatePackEvents(manifest, events, level);
   if (verr) {
     return { ok: false, error: verr };

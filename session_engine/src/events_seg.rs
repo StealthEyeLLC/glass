@@ -8,7 +8,7 @@
 //!
 //! **Provisional:** max record bytes = [`PROVISIONAL_MAX_JSONL_LINE_BYTES`](crate::validate::PROVISIONAL_MAX_JSONL_LINE_BYTES) (F-07 parity with JSONL line bound).
 //!
-//! **Tier B viewer** today consumes `glass.pack.v0.scaffold` + `events.jsonl` only; packs using `glass.pack.v0.scaffold_seg` are for Rust/tooling and future viewer support.
+//! **Tier B viewer** (TypeScript) also loads `glass.pack.v0.scaffold_seg` + `events.seg` using the same normalized envelope JSON as JSONL records.
 
 use std::fs::{File, OpenOptions};
 use std::io::Write;

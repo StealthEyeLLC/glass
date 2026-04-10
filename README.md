@@ -15,7 +15,7 @@ This repository is the Glass v0 **monorepo spine**: session/pack/sanitization (P
 | `graph_engine/` | Graph derivation (stub crate; no presentation) |
 | `collector/` | Linux collector binary (lifecycle stub only) |
 | `bridge/` | Local API / resync contracts (types + docs; no browser server yet) |
-| `viewer/` | TypeScript static replay shell (Tier B); live mode is explicitly absent |
+| `viewer/` | TypeScript static replay shell (Tier B): `glass.pack.v0.scaffold` (`events.jsonl`) and `glass.pack.v0.scaffold_seg` (`events.seg`); live mode is explicitly absent |
 | `tools/glass-pack` | CLI: validate / inspect packs; strict kinds + share-safe vs raw-dev expectations |
 | `tools/golden_scenes/` | Golden-scene harness scaffold |
 | `docs/` | Phase 0 tracker, boundaries, test strategy, status |
