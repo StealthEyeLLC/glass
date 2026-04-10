@@ -89,12 +89,12 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 
 | Field | Content |
 |-------|---------|
-| **Status** | Open — **types only** landed |
-| **Decision-ready options** | Unix socket path under XDG_RUNTIME_DIR vs fixed `/run/glass/…`; SO_PEERCRED vs shared secret file; challenge nonce length |
+| **Status** | Open — **provisional dev TCP** landed; **final transport unfrozen** |
+| **Decision-ready options** | Unix socket path under XDG_RUNTIME_DIR vs fixed `/run/glass/…`; SO_PEERCRED vs shared secret file; challenge nonce length; replace NDJSON/TCP when frozen |
 | **Proposed default** | Abstract or path Unix socket + versioned envelope (`PROVISIONAL_IPC_AUTH_TOKEN_VERSION`) + peer cred check where available |
-| **Rationale** | Privilege separation (§10.3B / §18.4) requires a frozen contract before live bridge |
-| **Code / tests** | `glass_collector::ipc`, `collector/tests/ipc_and_privilege.rs`, `docs/PRIVILEGE_SEPARATION.md` |
-| **Provisional OK?** | **Yes** — no live socket yet |
+| **Rationale** | Privilege separation (§10.3B / §18.4) requires a frozen contract before production bridge |
+| **Code / tests** | `glass_collector::ipc` (`FipcBridgeToCollector`, `FipcCollectorToBridge`, `PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION`), `glass_collector::ipc_dev_tcp`, `collector/tests/ipc_fipc_tcp.rs`, `glass_bridge` `ipc_client` + `bridge/tests/snapshot_fipc.rs`, `docs/PRIVILEGE_SEPARATION.md` |
+| **Provisional OK?** | **Yes** — TCP loopback is **explicitly dev/skeleton**; Unix socket + credential story still human-owned |
 
 ### F-04 — `resync_hint` JSON wire shape
 

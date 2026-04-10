@@ -13,15 +13,15 @@
 | Piece | Location | Status |
 |--------|----------|--------|
 | Privilege / role types | `glass_collector::privilege` (`PrivilegeMode`, `CollectorProcessRole`, `PrivilegeContext`) | **Real types** — runtime probe still “not implemented” |
-| IPC contract (JSON-serializable) | `glass_collector::ipc` (`CollectorIpcMessage`, `IpcPayload`, `IpcAuthHandshake`, `validate_ipc_auth_version`) | **Skeleton** — no socket, no crypto |
-| Auth version constant | `PROVISIONAL_IPC_AUTH_TOKEN_VERSION` (`0`) | **Provisional** — see `docs/PHASE0_FREEZE_TRACKER.md` |
-| Bridge crate | `glass_bridge` | **Loopback HTTP + WebSocket skeleton** (`glass_bridge` binary): `/health`, `/capabilities`, `/sessions/:id/snapshot`, `/ws` — **no** embedded collector, **no** live ingest, **no** privileged syscalls; bearer token at startup (`GLASS_BRIDGE_TOKEN` / `--token`). Browser WS may use `?access_token=` on loopback (provisional; see crate rustdoc). |
+| IPC contract (JSON-serializable) | `glass_collector::ipc` + **provisional** `ipc_dev_tcp` (NDJSON over TCP, versioned `Hello` / `BoundedSnapshotRequest`) | **Dev transport** — not final; fail closed on version/secret mismatch |
+| Auth version constant | `PROVISIONAL_IPC_AUTH_TOKEN_VERSION` (`0`) + `PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION` (`1`) | **Provisional** — see `docs/PHASE0_FREEZE_TRACKER.md` |
+| Bridge crate | `glass_bridge` | **Loopback HTTP + WebSocket handshake** + optional **F-IPC client** (provisional **TCP loopback** to `glass-collector ipc-serve`) for **bounded** `GET /sessions/:id/snapshot` — **no** embedded collector logic, **no** privileged syscalls, **no** live WS deltas. HTTP bearer (`GLASS_BRIDGE_TOKEN` / `--token`) is **separate** from F-IPC shared secret (`--collector-ipc-secret`). Browser WS may use `?access_token=` on loopback (provisional). |
 
 ## Collector vs bridge boundary
 
 - **`glass-collector`** may run with **`capabilities`** to print JSON `FidelityReport` (stdout). **`run`** (default) still exits `2` with **no telemetry**.
 - **No** browser-facing code in the collector crate.
-- **No** live transport: IPC types are for future wiring only.
+- **Provisional** F-IPC: dev TCP between `ipc-serve` and `glass_bridge` (bounded snapshot only). **Final** Unix-socket transport + crypto still open (F-IPC).
 
 ## Open / human-owned
 

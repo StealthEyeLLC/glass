@@ -438,6 +438,7 @@ dependencies = [
  "axum",
  "clap",
  "futures-util",
+ "glass_collector",
  "http-body-util",
  "serde",
  "serde_json",

@@ -52,14 +52,21 @@ Procfs dev → share flow: `glass-collector normalize-procfs` (raw pack) → `gl
 
 ### Local bridge (Phase 5 skeleton)
 
-Requires a bearer token (same string for HTTP `Authorization: Bearer …` and optional WS `?access_token=` on loopback):
+HTTP bearer token (for `Authorization: Bearer …` and optional WS `?access_token=` on loopback) is **separate** from **F-IPC** shared secret:
 
 ```bash
 cargo run -p glass_bridge -- --help
-cargo run -p glass_bridge -- --token dev-local-only
+cargo run -p glass_bridge -- --token dev-http-bearer
 ```
 
-Default listen: `127.0.0.1:9781`. No collector telemetry is served yet — see `docs/IMPLEMENTATION_STATUS.md` and `docs/PRIVILEGE_SEPARATION.md`.
+Optional **bounded snapshot** via provisional TCP to `glass-collector ipc-serve` (loopback only):
+
+```bash
+cargo run -p glass-collector -- ipc-serve --shared-secret fipc-dev --listen 127.0.0.1:9876
+cargo run -p glass_bridge -- --token dev-http-bearer --collector-ipc-endpoint 127.0.0.1:9876 --collector-ipc-secret fipc-dev
+```
+
+Default bridge listen: `127.0.0.1:9781`. **No** live WS delta stream — see `docs/IMPLEMENTATION_STATUS.md` and `docs/PRIVILEGE_SEPARATION.md`.
 
 ## Status
 

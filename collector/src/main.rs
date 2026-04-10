@@ -3,10 +3,12 @@
 use std::path::PathBuf;
 
 use clap::{Parser, Subcommand};
+use std::sync::Arc;
+
 use glass_collector::{
     build_fidelity_report, default_adapter_stack, ingest_procfs_raw_to_session_log,
-    CollectorAdapter, CollectorConfig, PrivilegeMode, ProcfsProcessAdapter, RawObservation,
-    SelfSilencePolicy,
+    run_ipc_dev_tcp_listener, CollectorAdapter, CollectorConfig, IpcDevTcpListenConfig,
+    PrivilegeMode, ProcfsProcessAdapter, RawObservation, SelfSilencePolicy, SnapshotStore,
 };
 use session_engine::{materialize_share_safe_procfs_pack_bytes, write_glass_pack, SessionManifest};
 
@@ -107,6 +109,19 @@ enum Command {
         output: PathBuf,
         #[arg(long)]
         from_raw_json: Option<PathBuf>,
+    },
+    /// **Provisional** F-IPC dev server (TCP loopback): versioned handshake + bounded snapshot RPC. Not final transport.
+    IpcServe {
+        #[arg(long, default_value = "127.0.0.1:9876")]
+        listen: String,
+        /// Shared secret for F-IPC (pair with bridge `--collector-ipc-secret`).
+        #[arg(long)]
+        shared_secret: String,
+        /// Optional: load JSON array of event objects into this session id for demos/tests.
+        #[arg(long)]
+        seed_session: Option<String>,
+        #[arg(long)]
+        seed_events_json: Option<PathBuf>,
     },
 }
 
@@ -220,6 +235,45 @@ fn main() {
                 out.display()
             );
         }
+        Some(Command::IpcServe {
+            listen,
+            shared_secret,
+            seed_session,
+            seed_events_json,
+        }) => {
+            let bind: std::net::SocketAddr = listen.parse().unwrap_or_else(|e| {
+                eprintln!("ipc-serve: invalid --listen: {e}");
+                std::process::exit(2);
+            });
+            if !bind.ip().is_loopback() {
+                eprintln!("ipc-serve: --listen must be loopback (provisional dev transport)");
+                std::process::exit(2);
+            }
+            let store = Arc::new(SnapshotStore::new());
+            if let (Some(sid), Some(path)) = (seed_session, seed_events_json) {
+                let raw = std::fs::read_to_string(&path).unwrap_or_else(|e| {
+                    eprintln!("ipc-serve: read {}: {e}", path.display());
+                    std::process::exit(1);
+                });
+                let events: Vec<serde_json::Value> =
+                    serde_json::from_str(&raw).unwrap_or_else(|e| {
+                        eprintln!("ipc-serve: parse seed JSON: {e}");
+                        std::process::exit(1);
+                    });
+                store.set_session_events(sid, events);
+            }
+            eprintln!(
+                "ipc-serve: provisional TCP F-IPC on {bind} (Ctrl+C stops the process if foreground)"
+            );
+            let cfg = IpcDevTcpListenConfig {
+                bind,
+                shared_secret: Arc::from(shared_secret.into_boxed_str()),
+            };
+            if let Err(e) = run_ipc_dev_tcp_listener(cfg, store) {
+                eprintln!("ipc-serve: {e}");
+                std::process::exit(1);
+            }
+        }
         Some(Command::ExportProcfsPack {
             session,
             max_samples,
@@ -273,7 +327,7 @@ fn main() {
         }
         None => {
             eprintln!(
-                "glass-collector {}: no live capture loop. Subcommands: `capabilities`, `sample-procfs`, `normalize-procfs`, `export-procfs-pack`.",
+                "glass-collector {}: no live capture loop. Subcommands: `capabilities`, `sample-procfs`, `normalize-procfs`, `export-procfs-pack`, `ipc-serve`.",
                 env!("CARGO_PKG_VERSION")
             );
             eprintln!("Default invocation exits without emitting a long-running stream.");

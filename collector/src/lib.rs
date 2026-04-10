@@ -4,7 +4,7 @@
 //! - **[`raw`]** — host observations **before** normalization. Not `NormalizedEventEnvelope`.
 //! - **`session_engine`** — canonical normalized + export/sanitization; **procfs** DTO → envelope in `session_engine::procfs_normalize` (collector calls via `procfs_session`).
 //! - **Adapters** — capability-first; **no** claim of complete eBPF/procfs capture until implemented.
-//! - **[`ipc`]** — skeleton for **authenticated local IPC** toward the unprivileged bridge (no live socket server here).
+//! - **[`ipc`] / [`ipc_dev_tcp`]** — versioned F-IPC messages; **provisional** dev TCP server (not final transport).
 //! - **[`self_silence`]** — suppress Glass-owned processes **before** any normalization input.
 //!
 //! See `docs/PRIVILEGE_SEPARATION.md`, `docs/REPO_BOUNDARIES.md`.
@@ -13,6 +13,7 @@ pub mod adapters;
 pub mod capability;
 pub mod config;
 pub mod ipc;
+pub mod ipc_dev_tcp;
 pub mod pipeline;
 pub mod privilege;
 pub mod procfs_session;
@@ -29,8 +30,13 @@ pub use capability::{
 };
 pub use config::CollectorConfig;
 pub use ipc::{
-    validate_ipc_auth_version, CollectorIpcError, CollectorIpcMessage, IpcAuthHandshake,
-    IpcMessageKind, IpcPayload, PROVISIONAL_IPC_AUTH_TOKEN_VERSION,
+    validate_ipc_auth_version, CollectorIpcError, CollectorIpcMessage, FipcBridgeToCollector,
+    FipcCollectorToBridge, IpcAuthHandshake, IpcMessageKind, IpcPayload,
+    PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS, PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION,
+    PROVISIONAL_IPC_AUTH_TOKEN_VERSION,
+};
+pub use ipc_dev_tcp::{
+    handle_ipc_dev_tcp_connection, run_ipc_dev_tcp_listener, IpcDevTcpListenConfig, SnapshotStore,
 };
 pub use pipeline::{filter_for_normalization_input, PipelineStats};
 pub use privilege::{CollectorProcessRole, PrivilegeContext, PrivilegeMode};

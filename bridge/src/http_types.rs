@@ -17,8 +17,16 @@ pub struct CapabilitiesResponse {
     pub bridge_api_version: u32,
     pub resync: ResyncCapabilities,
     pub websocket: WebSocketCapability,
-    /// False until collector IPC + live ingest is wired (honest; not a product claim).
+    /// False until a live WS delta stream exists (honest; not a product claim).
     pub live_session_ingest: bool,
+    pub collector_fipc: CollectorFipcCapability,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct CollectorFipcCapability {
+    pub transport: &'static str,
+    pub configured: bool,
+    pub wire_protocol_version: u32,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -35,26 +43,40 @@ pub struct WebSocketCapability {
     pub delta_stream_status: &'static str,
 }
 
+/// Status of collector F-IPC for this snapshot (omitted when HTTP route did not use F-IPC).
+#[derive(Debug, Clone, Serialize)]
+pub struct CollectorIpcSnapshotMeta {
+    pub transport: &'static str,
+    pub status: &'static str,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub detail: Option<String>,
+}
+
 /// Bounded snapshot (spec §18A.3: stale viewer fetches snapshot + new cursor; no session restart).
 #[derive(Debug, Clone, Serialize)]
 pub struct SessionSnapshotResponse {
     pub session_id: String,
     /// Cursor the client supplied, if any (`?cursor=`).
     pub cursor_requested: Option<String>,
-    /// Opaque cursor covering the returned `events` slice (skeleton: stable placeholder when empty).
+    /// Opaque cursor covering the returned `events` slice.
     pub snapshot_cursor: String,
-    /// Normalized event envelopes as JSON values (empty until live ingest exists).
+    /// Normalized event envelopes as JSON values (from collector F-IPC when configured).
     pub events: Vec<serde_json::Value>,
     pub live_session_ingest: bool,
-    /// When ingest exists, bridge may attach a hint; always `None` in skeleton.
+    /// When ingest + hint semantics exist; `None` in skeleton.
     pub resync_hint: Option<ResyncHint>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub collector_ipc: Option<CollectorIpcSnapshotMeta>,
 }
 
 /// Initial cursor for an empty session timeline (opaque string; format TBD when F-04 closes).
 pub const SNAPSHOT_CURSOR_EMPTY: &str = "v0:empty";
 
 impl CapabilitiesResponse {
-    pub fn skeleton() -> Self {
+    pub fn for_bridge_state(
+        collector_fipc_configured: bool,
+        fipc_wire_protocol_version: u32,
+    ) -> Self {
         Self {
             bridge_api_version: 1,
             resync: ResyncCapabilities {
@@ -66,6 +88,11 @@ impl CapabilitiesResponse {
                 delta_stream_status: "handshake_only_no_live_deltas",
             },
             live_session_ingest: false,
+            collector_fipc: CollectorFipcCapability {
+                transport: "provisional_tcp_loopback",
+                configured: collector_fipc_configured,
+                wire_protocol_version: fipc_wire_protocol_version,
+            },
         }
     }
 }

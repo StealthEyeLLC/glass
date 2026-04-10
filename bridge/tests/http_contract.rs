@@ -9,7 +9,9 @@ use axum::http::{Request, StatusCode};
 use futures_util::StreamExt;
 use glass_bridge::http_types::SNAPSHOT_CURSOR_EMPTY;
 use glass_bridge::resync::PROVISIONAL_BACKLOG_EVENT_THRESHOLD;
-use glass_bridge::{app_router, serve_listener, BridgeConfig, BridgeConfigError};
+use glass_bridge::{
+    app_router, serve_listener, BridgeConfig, BridgeConfigError, CollectorIpcClientConfig,
+};
 use http_body_util::BodyExt;
 use tokio::net::TcpListener;
 use tokio_tungstenite::connect_async;
@@ -20,6 +22,7 @@ fn test_config() -> BridgeConfig {
         bind: "127.0.0.1:0".parse().unwrap(),
         bearer_token: Arc::from("test-secret-token"),
         allow_non_loopback: false,
+        collector_ipc: None,
     }
 }
 
@@ -84,6 +87,26 @@ async fn capabilities_accepts_valid_bearer() {
         v["websocket"]["delta_stream_status"],
         "handshake_only_no_live_deltas"
     );
+    assert_eq!(v["collector_fipc"]["configured"], false);
+    assert_eq!(v["collector_fipc"]["transport"], "provisional_tcp_loopback");
+}
+
+#[test]
+fn bridge_config_rejects_non_loopback_collector_ipc_endpoint() {
+    let cfg = BridgeConfig {
+        bind: "127.0.0.1:0".parse().unwrap(),
+        bearer_token: Arc::from("t"),
+        allow_non_loopback: false,
+        collector_ipc: Some(CollectorIpcClientConfig {
+            addr: SocketAddr::from(([8, 8, 8, 8], 9876)),
+            shared_secret: Arc::from("x"),
+            timeout: Duration::from_secs(1),
+        }),
+    };
+    assert_eq!(
+        cfg.validate(),
+        Err(BridgeConfigError::CollectorIpcLoopbackOnly)
+    );
 }
 
 #[tokio::test]
@@ -108,6 +131,36 @@ async fn snapshot_requires_bearer_and_returns_bounded_shape() {
     assert_eq!(v["events"], serde_json::json!([]));
     assert_eq!(v["live_session_ingest"], false);
     assert!(v["resync_hint"].is_null());
+    assert!(v["collector_ipc"].is_null());
+}
+
+#[tokio::test]
+async fn snapshot_returns_503_when_fipc_configured_but_collector_unreachable() {
+    let cfg = BridgeConfig {
+        bind: "127.0.0.1:0".parse().unwrap(),
+        bearer_token: Arc::from("test-secret-token"),
+        allow_non_loopback: false,
+        collector_ipc: Some(CollectorIpcClientConfig {
+            addr: "127.0.0.1:1".parse().unwrap(),
+            shared_secret: Arc::from("unused"),
+            timeout: Duration::from_millis(200),
+        }),
+    };
+    let app = app_router(&cfg);
+    let res = app
+        .oneshot(
+            Request::builder()
+                .uri("/sessions/ses_x/snapshot")
+                .header("Authorization", "Bearer test-secret-token")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::SERVICE_UNAVAILABLE);
+    let b = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&b).unwrap();
+    assert_eq!(v["error"], "collector_ipc_unavailable");
 }
 
 #[tokio::test]
@@ -116,6 +169,7 @@ async fn config_rejects_non_loopback_without_opt_in() {
         bind: SocketAddr::from(([0, 0, 0, 0], 9781)),
         bearer_token: Arc::from("t"),
         allow_non_loopback: false,
+        collector_ipc: None,
     };
     let e = cfg.validate().unwrap_err();
     assert!(matches!(e, BridgeConfigError::LoopbackOnly));
@@ -127,6 +181,7 @@ async fn config_allows_non_loopback_when_flag_set() {
         bind: SocketAddr::from(([0, 0, 0, 0], 9781)),
         bearer_token: Arc::from("t"),
         allow_non_loopback: true,
+        collector_ipc: None,
     };
     assert!(cfg.validate().is_ok());
 }
@@ -148,6 +203,7 @@ async fn spawn_test_server() -> SocketAddr {
         bind: addr,
         bearer_token: Arc::from("test-secret-token"),
         allow_non_loopback: false,
+        collector_ipc: None,
     };
     tokio::spawn({
         let cfg = cfg.clone();

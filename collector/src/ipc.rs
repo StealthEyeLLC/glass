@@ -1,5 +1,8 @@
-//! Skeleton **authenticated local IPC** contract (privileged collector → unprivileged bridge).
-//! **No** socket implementation here — types only until Phase 0 transport freeze (see `docs/PRIVILEGE_SEPARATION.md`).
+//! Authenticated local IPC contract (privileged collector → unprivileged bridge).
+//!
+//! **Transport:** a **provisional** dev TCP listener is implemented in [`crate::ipc_dev_tcp`]; Unix
+//! socket / peer-cred auth remain human-owned (F-IPC). Wire messages below are **versioned** and
+//! **fail closed** on mismatch.
 
 use serde::{Deserialize, Serialize};
 
@@ -78,4 +81,55 @@ pub fn validate_ipc_auth_version(version: u32) -> Result<(), CollectorIpcError> 
         });
     }
     Ok(())
+}
+
+// --- F-IPC provisional wire (NDJSON lines over TCP in `ipc_dev_tcp`) -----------------------------
+
+/// Wire protocol version for [`FipcBridgeToCollector`] / [`FipcCollectorToBridge`] (distinct from [`PROVISIONAL_IPC_AUTH_TOKEN_VERSION`]).
+pub const PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION: u32 = 1;
+
+/// Upper bound on events returned per [`FipcBridgeToCollector::BoundedSnapshotRequest`].
+pub const PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS: usize = 256;
+
+fn default_fipc_max_events() -> u32 {
+    64
+}
+
+/// One NDJSON line from bridge → collector on the provisional TCP link.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "msg", rename_all = "snake_case")]
+pub enum FipcBridgeToCollector {
+    Hello {
+        wire_protocol_version: u32,
+        auth_token_version: u32,
+        /// Shared secret agreed out-of-band for this dev transport (not the bridge HTTP bearer).
+        shared_secret: String,
+    },
+    BoundedSnapshotRequest {
+        session_id: String,
+        #[serde(default)]
+        cursor: Option<String>,
+        #[serde(default = "default_fipc_max_events")]
+        max_events: u32,
+    },
+}
+
+/// One NDJSON line from collector → bridge.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "msg", rename_all = "snake_case")]
+pub enum FipcCollectorToBridge {
+    HelloAck {
+        auth_token_version: u32,
+    },
+    HelloReject {
+        code: String,
+        message: String,
+    },
+    BoundedSnapshotReply {
+        session_id: String,
+        snapshot_cursor: String,
+        events: Vec<serde_json::Value>,
+        /// Still **false** in this skeleton (no live WS delta stream).
+        live_session_ingest: bool,
+    },
 }

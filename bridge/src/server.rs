@@ -9,20 +9,24 @@ use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::{Json, Router};
+use glass_collector::ipc::{FipcCollectorToBridge, PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION};
 use serde::Deserialize;
 use serde_json::json;
 
 use crate::http_types::{
-    CapabilitiesResponse, HealthResponse, SessionSnapshotResponse, SNAPSHOT_CURSOR_EMPTY,
+    CapabilitiesResponse, CollectorIpcSnapshotMeta, HealthResponse, SessionSnapshotResponse,
+    SNAPSHOT_CURSOR_EMPTY,
 };
+use crate::ipc_client;
 use crate::resync::PROVISIONAL_BACKLOG_EVENT_THRESHOLD;
-use crate::{BridgeConfig, BridgeConfigError};
+use crate::{BridgeConfig, BridgeConfigError, CollectorIpcClientConfig};
 use thiserror::Error;
 
 /// Shared router state (bearer token for HTTP; WS may use query on loopback).
 #[derive(Clone)]
 pub struct AppState {
     pub bearer_token: Arc<str>,
+    pub collector_ipc: Option<CollectorIpcClientConfig>,
 }
 
 #[derive(Debug, Error)]
@@ -37,6 +41,7 @@ pub enum ServeError {
 pub fn app_router(config: &BridgeConfig) -> Router {
     let state = AppState {
         bearer_token: config.bearer_token.clone(),
+        collector_ipc: config.collector_ipc.clone(),
     };
 
     let protected = Router::new()
@@ -85,8 +90,11 @@ async fn health() -> Json<HealthResponse> {
     })
 }
 
-async fn capabilities(State(_state): State<AppState>) -> Json<CapabilitiesResponse> {
-    Json(CapabilitiesResponse::skeleton())
+async fn capabilities(State(state): State<AppState>) -> Json<CapabilitiesResponse> {
+    Json(CapabilitiesResponse::for_bridge_state(
+        state.collector_ipc.is_some(),
+        PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION,
+    ))
 }
 
 #[derive(Debug, Deserialize)]
@@ -97,16 +105,68 @@ pub struct SnapshotQuery {
 async fn session_snapshot(
     Path(session_id): Path<String>,
     Query(query): Query<SnapshotQuery>,
-    State(_state): State<AppState>,
-) -> Json<SessionSnapshotResponse> {
-    Json(SessionSnapshotResponse {
-        session_id,
-        cursor_requested: query.cursor.clone(),
-        snapshot_cursor: SNAPSHOT_CURSOR_EMPTY.to_string(),
-        events: Vec::new(),
-        live_session_ingest: false,
-        resync_hint: None,
-    })
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    let cursor_requested = query.cursor.clone();
+    match &state.collector_ipc {
+        None => Json(SessionSnapshotResponse {
+            session_id,
+            cursor_requested,
+            snapshot_cursor: SNAPSHOT_CURSOR_EMPTY.to_string(),
+            events: Vec::new(),
+            live_session_ingest: false,
+            resync_hint: None,
+            collector_ipc: None,
+        })
+        .into_response(),
+        Some(cfg) => {
+            match ipc_client::fetch_bounded_snapshot(
+                cfg.addr,
+                cfg.shared_secret.as_ref(),
+                &session_id,
+                query.cursor.as_deref(),
+                cfg.timeout,
+            )
+            .await
+            {
+                Ok(FipcCollectorToBridge::BoundedSnapshotReply {
+                    session_id: sid,
+                    snapshot_cursor,
+                    events,
+                    live_session_ingest,
+                }) => Json(SessionSnapshotResponse {
+                    session_id: sid,
+                    cursor_requested,
+                    snapshot_cursor,
+                    events,
+                    live_session_ingest,
+                    resync_hint: None,
+                    collector_ipc: Some(CollectorIpcSnapshotMeta {
+                        transport: "provisional_tcp_loopback",
+                        status: "ok",
+                        detail: None,
+                    }),
+                })
+                .into_response(),
+                Ok(other) => (
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    Json(json!({
+                        "error": "collector_ipc_unavailable",
+                        "detail": format!("unexpected F-IPC reply: {other:?}"),
+                    })),
+                )
+                    .into_response(),
+                Err(e) => (
+                    StatusCode::SERVICE_UNAVAILABLE,
+                    Json(json!({
+                        "error": "collector_ipc_unavailable",
+                        "detail": e.to_string(),
+                    })),
+                )
+                    .into_response(),
+            }
+        }
+    }
 }
 
 fn bearer_from_header(headers: &HeaderMap) -> Option<&str> {

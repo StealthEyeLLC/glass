@@ -23,7 +23,8 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `session_engine::tests::envelope_validation` | Procfs normalized kinds accepted in strict set |
 | `graph_engine::tests::smoke` | Graph crate consumes session facts |
 | `bridge::tests::resync_contract` | Resync constants + recovery enum |
-| `bridge::tests::http_contract` | Loopback-only config; `/health` unauthenticated; bearer gate on `/capabilities` + snapshot; bounded `SessionSnapshotResponse`; WS bad-request without upgrade; real WS handshake + hello JSON (no fabricated deltas); `serve_listener` + `tokio-tungstenite` client |
+| `bridge::tests::http_contract` | Loopback-only config; `/health` unauthenticated; bearer gate on `/capabilities` + snapshot; `collector_fipc` capability flags; bounded `SessionSnapshotResponse` without F-IPC; **503** when F-IPC configured but collector unreachable; non-loopback F-IPC rejected; WS bad-request without upgrade; real WS handshake + hello JSON; `serve_listener` + `tokio-tungstenite` client |
+| `bridge::tests::snapshot_fipc` | HTTP snapshot populated from collector `SnapshotStore` over F-IPC; empty unknown session; capabilities `collector_fipc.configured` |
 | `integration_tests::repo_layout` | Monorepo shape |
 | `integration_tests::hvt_policy` | HVT count ≤ cap |
 | `integration_tests::golden_scaffold` | Golden harness files exist |
@@ -31,6 +32,7 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `glass_collector::tests::raw_and_capability` | Raw JSON round-trip; `ProcessSample` kind serde; default fidelity **Linux:** `FallbackReducedVisibility` + active procfs manifest; **non-Linux:** `NoSensorsActive`; privileged never `HighFidelityPrimary` without eBPF; missing class `atomic_kernel_process_spawn_exit_truth` |
 | `glass_collector::tests::raw_vs_normalized_boundary` | `RawObservation` vs `NormalizedEventEnvelope` type separation (`session_engine` dev-dep) |
 | `glass_collector::tests::ipc_and_privilege` | IPC auth version, envelope JSON round-trip, privilege context |
+| `glass_collector::tests::ipc_fipc_tcp` | Provisional F-IPC TCP: handshake OK, wire/auth/secret mismatch rejections, bounded snapshot, listener smoke |
 | `glass_collector::tests::self_silence_pipeline` | Suppression before normalization input; counters |
 | `glass_collector::tests::adapter_poll_honesty` | eBPF poll `Unsupported`; **Linux:** procfs poll non-empty with `ProcessSample`; **non-Linux:** procfs empty |
 | `glass_collector::tests::self_silence_procfs` | Self-silence matches `pid` on `ProcessSample` payloads |
