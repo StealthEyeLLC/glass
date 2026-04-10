@@ -20,6 +20,30 @@ Checked-in fixture (stable session id `demo_retained_sess`):
 
 `scripts/retained_snapshot_demo/raw_observations_demo.json`
 
+## CI coverage
+
+GitHub Actions runs this smoke as its **own job** (easy to spot in the workflow summary):
+
+- **Job name:** `Retained snapshot demo smoke (collector ↔ bridge F-IPC)`
+- **Workflow:** `.github/workflows/ci.yml` (job id `retained_snapshot_demo_smoke`)
+- **Command:** `cargo test -p integration_tests --test retained_snapshot_demo_smoke`
+
+The full `rust` job still runs `cargo test --workspace`, which includes the same test; the dedicated job exists so failures on this path are **labeled** in the Actions UI.
+
+## Environment preflight
+
+### Unix (`demo.sh`)
+
+- **Shell:** `bash` (script uses `set -euo pipefail`).
+- **On PATH:** `cargo`, `curl`, `python3` (ports via `socket`; JSON validation at end).
+- **Optional:** set `IPC_PORT` and `BRIDGE_PORT` if you cannot use ephemeral ports (e.g. locked-down environment).
+
+### Windows (`demo.ps1`)
+
+- **PowerShell** 5.1+ (`#Requires -Version 5.1`).
+- **On PATH:** `cargo` (Rust toolchain).
+- Ports are chosen with .NET `TcpListener` (no Python).
+
 ## One-command demo (preferred)
 
 From the **repository root**, after a normal Rust build:
@@ -38,9 +62,7 @@ cd /path/to/glass
 bash scripts/retained_snapshot_demo/demo.sh
 ```
 
-The scripts pick free loopback ports, start collector + bridge as background processes, `GET` the snapshot URL, assert JSON shape, then exit and stop children.
-
-Requirements for `demo.sh`: `bash`, `curl`, `python3` (for ephemeral port selection). Override ports with `IPC_PORT` / `BRIDGE_PORT` if needed.
+The scripts pick free loopback ports, start collector + bridge as background processes, `GET` the snapshot URL, assert JSON shape, then exit and stop children. Missing commands or fixture produce **exit code 2** with a short message (see preflight above).
 
 ## Manual two-terminal recipe
 

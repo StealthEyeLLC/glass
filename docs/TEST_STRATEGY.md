@@ -28,7 +28,7 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `integration_tests::repo_layout` | Monorepo shape |
 | `integration_tests::hvt_policy` | HVT count ≤ cap |
 | `integration_tests::golden_scaffold` | Golden harness files exist |
-| `integration_tests::tests::retained_snapshot_demo_smoke` | Subprocess: build `glass-collector` + `glass_bridge`, retained `ipc-serve` + fixture, bridge F-IPC client; HTTP GET snapshot asserts `live_session_ingest: false`, `retained_snapshot_unix_ms`, bounded cursors/events; empty raw `[]` honest zero events; retained max-events tail clamp |
+| `integration_tests::tests::retained_snapshot_demo_smoke` | Subprocess: build `glass-collector` + `glass_bridge`, retained `ipc-serve` + fixture, bridge F-IPC client; HTTP GET snapshot asserts `live_session_ingest: false`, `retained_snapshot_unix_ms`, bounded cursors/events; empty raw `[]` honest zero events; retained max-events tail clamp. **CI:** also run as standalone job `Retained snapshot demo smoke (collector ↔ bridge F-IPC)` (`.github/workflows/ci.yml`) for visibility |
 | `integration_tests::resync_scaffold` | Bridge dependency from integration layer |
 | `glass_collector::tests::raw_and_capability` | Raw JSON round-trip; `ProcessSample` kind serde; default fidelity **Linux:** `FallbackReducedVisibility` + active procfs manifest; **non-Linux:** `NoSensorsActive`; privileged never `HighFidelityPrimary` without eBPF; missing class `atomic_kernel_process_spawn_exit_truth` |
 | `glass_collector::tests::raw_vs_normalized_boundary` | `RawObservation` vs `NormalizedEventEnvelope` type separation (`session_engine` dev-dep) |

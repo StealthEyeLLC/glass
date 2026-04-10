@@ -69,7 +69,7 @@ cargo run -p glass_bridge -- --token dev-http-bearer --collector-ipc-endpoint 12
 
 Default bridge listen: `127.0.0.1:9781`. **No** live WS delta stream — see `docs/IMPLEMENTATION_STATUS.md` and `docs/PRIVILEGE_SEPARATION.md`.
 
-**Retained snapshot demo** (collector background poll + fixture + bridge + `GET /sessions/…/snapshot`): see [`docs/DEMO_RETAINED_SNAPSHOT.md`](docs/DEMO_RETAINED_SNAPSHOT.md) and `scripts/retained_snapshot_demo/` (`demo.ps1` / `demo.sh`).
+**Retained snapshot demo** (collector background poll + fixture + bridge + `GET /sessions/…/snapshot`): see [`docs/DEMO_RETAINED_SNAPSHOT.md`](docs/DEMO_RETAINED_SNAPSHOT.md) and `scripts/retained_snapshot_demo/` (`demo.ps1` / `demo.sh`). CI runs `cargo test -p integration_tests --test retained_snapshot_demo_smoke` as a **named** Actions job (`Retained snapshot demo smoke (collector ↔ bridge F-IPC)`).
 
 ## Status
 

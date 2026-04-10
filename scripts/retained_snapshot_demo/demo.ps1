@@ -9,6 +9,10 @@ $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Resolve-Path (Join-Path $ScriptDir '..\..')
 Set-Location $RepoRoot
 
+if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
+    throw 'demo.ps1: cargo not on PATH (install Rust from https://rustup.rs). See docs/DEMO_RETAINED_SNAPSHOT.md.'
+}
+
 $Fixture = Join-Path $ScriptDir 'raw_observations_demo.json'
 if (-not (Test-Path $Fixture)) { throw "Missing fixture: $Fixture" }
 

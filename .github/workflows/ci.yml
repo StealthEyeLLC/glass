@@ -37,6 +37,16 @@ jobs:
       - name: job alias — bootstrap layout + resync + golden files
         run: cargo test -p integration_tests --test repo_layout --test resync_scaffold --test golden_scaffold
 
+  # Standalone job so the retained snapshot seam stays visible in the GitHub Actions summary (not buried in workspace output).
+  retained_snapshot_demo_smoke:
+    name: Retained snapshot demo smoke (collector ↔ bridge F-IPC)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: cargo test — integration_tests retained_snapshot_demo_smoke
+        run: cargo test -p integration_tests --test retained_snapshot_demo_smoke
+
   viewer:
     name: Viewer (build, test, lint)
     runs-on: ubuntu-latest

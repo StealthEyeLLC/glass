@@ -11,6 +11,22 @@ FIXTURE="$SCRIPT_DIR/raw_observations_demo.json"
 IPC_SECRET="${IPC_SECRET:-retained-demo-fipc}"
 HTTP_TOKEN="${HTTP_TOKEN:-retained-demo-http}"
 
+require_cmd() {
+  command -v "$1" >/dev/null 2>&1 || {
+    echo "demo.sh: required command not on PATH: $1" >&2
+    echo "See docs/DEMO_RETAINED_SNAPSHOT.md (Environment preflight — Unix)." >&2
+    exit 2
+  }
+}
+require_cmd cargo
+require_cmd curl
+require_cmd python3
+
+if [[ ! -f "$FIXTURE" ]]; then
+  echo "demo.sh: missing fixture file: $FIXTURE" >&2
+  exit 2
+fi
+
 pick_port() {
   python3 -c "import socket; s=socket.socket(); s.bind(('127.0.0.1',0)); print(s.getsockname()[1]); s.close()"
 }
