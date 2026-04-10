@@ -9,9 +9,11 @@ use std::sync::{Arc, Mutex};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::ipc::{
-    validate_ipc_auth_version, FipcBridgeToCollector, FipcCollectorToBridge,
-    PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS, PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION,
-    PROVISIONAL_IPC_AUTH_TOKEN_VERSION,
+    validate_ipc_auth_version, FipcBoundedSnapshotMeta, FipcBridgeToCollector,
+    FipcCollectorToBridge, FIPC_SNAPSHOT_ORIGIN_COLLECTOR_STORE,
+    FIPC_SNAPSHOT_ORIGIN_PER_RPC_FILE_LANE, FIPC_SNAPSHOT_ORIGIN_PER_RPC_PROCFS,
+    FIPC_SNAPSHOT_ORIGIN_UNKNOWN_OR_EMPTY, PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS,
+    PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION, PROVISIONAL_IPC_AUTH_TOKEN_VERSION,
 };
 
 /// Matches `session_engine` / viewer F-07-style bound per line (honest cap for one NDJSON line).
@@ -82,19 +84,27 @@ impl SnapshotStore {
         g.insert(session_id.into(), events);
     }
 
+    /// Returns `(events, cursor, total_in_store, session_known)`.
+    /// - Unknown session → `v0:empty`, total `0`, `session_known == false`.
+    /// - Known session with events → `v0:off:N` prefix, total `ev.len()`, `true`.
+    /// - Known session with empty vec → `v0:off:0`, total `0`, `true`.
     pub(crate) fn get_bounded(
         &self,
         session_id: &str,
         max: usize,
-    ) -> (Vec<serde_json::Value>, String) {
+    ) -> (Vec<serde_json::Value>, String, usize, bool) {
         let g = self.inner.lock().expect("snapshot store poisoned");
         let Some(ev) = g.get(session_id) else {
-            return (Vec::new(), "v0:empty".to_string());
+            return (Vec::new(), "v0:empty".to_string(), 0, false);
         };
-        let n = max.min(ev.len());
+        let total = ev.len();
+        if total == 0 {
+            return (Vec::new(), "v0:off:0".to_string(), 0, true);
+        }
+        let n = max.min(total);
         let slice: Vec<serde_json::Value> = ev.iter().take(n).cloned().collect();
         let cursor = format!("v0:off:{n}");
-        (slice, cursor)
+        (slice, cursor, total, true)
     }
 }
 
@@ -241,7 +251,7 @@ pub fn handle_ipc_dev_tcp_connection(
                 max_events,
             } => {
                 let cap = (max_events as usize).min(PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS);
-                let (events, snapshot_cursor, retained_snapshot_unix_ms) =
+                let (events, snapshot_cursor, retained_snapshot_unix_ms, snapshot_meta) =
                     bounded_snapshot_events(runtime, &session_id, cap);
                 write_ndjson_line(
                     &mut writer,
@@ -251,6 +261,7 @@ pub fn handle_ipc_dev_tcp_connection(
                         events,
                         live_session_ingest: false,
                         retained_snapshot_unix_ms,
+                        snapshot_meta: Some(snapshot_meta),
                     },
                 )?;
             }
@@ -283,22 +294,58 @@ fn bounded_snapshot_events(
     runtime: &IpcDevTcpRuntime,
     session_id: &str,
     cap: usize,
-) -> (Vec<serde_json::Value>, String, Option<u64>) {
+) -> (
+    Vec<serde_json::Value>,
+    String,
+    Option<u64>,
+    FipcBoundedSnapshotMeta,
+) {
     if let Some(ref feed) = runtime.procfs_feed {
         if session_id == feed.session_id {
             return match feed.poll_normalized_json() {
                 Ok(full) => {
-                    if full.is_empty() {
-                        (Vec::new(), "v0:empty".to_string(), None)
+                    let total = full.len();
+                    if total == 0 {
+                        (
+                            Vec::new(),
+                            "v0:empty".to_string(),
+                            None,
+                            FipcBoundedSnapshotMeta {
+                                snapshot_origin: FIPC_SNAPSHOT_ORIGIN_PER_RPC_PROCFS.to_string(),
+                                returned_events: 0,
+                                available_in_view: 0,
+                                truncated_by_max_events: false,
+                            },
+                        )
                     } else {
-                        let n = cap.min(full.len());
+                        let n = cap.min(total);
                         let slice: Vec<serde_json::Value> = full.iter().take(n).cloned().collect();
-                        (slice, format!("v0:off:{n}"), None)
+                        (
+                            slice,
+                            format!("v0:off:{n}"),
+                            None,
+                            FipcBoundedSnapshotMeta {
+                                snapshot_origin: FIPC_SNAPSHOT_ORIGIN_PER_RPC_PROCFS.to_string(),
+                                returned_events: n as u32,
+                                available_in_view: total as u32,
+                                truncated_by_max_events: total > n,
+                            },
+                        )
                     }
                 }
                 Err(e) => {
                     eprintln!("ipc-serve: procfs snapshot poll/ingest failed: {e}");
-                    (Vec::new(), "v0:empty".to_string(), None)
+                    (
+                        Vec::new(),
+                        "v0:empty".to_string(),
+                        None,
+                        FipcBoundedSnapshotMeta {
+                            snapshot_origin: FIPC_SNAPSHOT_ORIGIN_PER_RPC_PROCFS.to_string(),
+                            returned_events: 0,
+                            available_in_view: 0,
+                            truncated_by_max_events: false,
+                        },
+                    )
                 }
             };
         }
@@ -307,24 +354,71 @@ fn bounded_snapshot_events(
         if session_id == feed.session_id {
             return match feed.poll_normalized_json() {
                 Ok(full) => {
-                    if full.is_empty() {
-                        (Vec::new(), "v0:empty".to_string(), None)
+                    let total = full.len();
+                    if total == 0 {
+                        (
+                            Vec::new(),
+                            "v0:empty".to_string(),
+                            None,
+                            FipcBoundedSnapshotMeta {
+                                snapshot_origin: FIPC_SNAPSHOT_ORIGIN_PER_RPC_FILE_LANE.to_string(),
+                                returned_events: 0,
+                                available_in_view: 0,
+                                truncated_by_max_events: false,
+                            },
+                        )
                     } else {
-                        let n = cap.min(full.len());
+                        let n = cap.min(total);
                         let slice: Vec<serde_json::Value> = full.iter().take(n).cloned().collect();
-                        (slice, format!("v0:off:{n}"), None)
+                        (
+                            slice,
+                            format!("v0:off:{n}"),
+                            None,
+                            FipcBoundedSnapshotMeta {
+                                snapshot_origin: FIPC_SNAPSHOT_ORIGIN_PER_RPC_FILE_LANE.to_string(),
+                                returned_events: n as u32,
+                                available_in_view: total as u32,
+                                truncated_by_max_events: total > n,
+                            },
+                        )
                     }
                 }
                 Err(e) => {
                     eprintln!("ipc-serve: file-lane snapshot poll/ingest failed: {e}");
-                    (Vec::new(), "v0:empty".to_string(), None)
+                    (
+                        Vec::new(),
+                        "v0:empty".to_string(),
+                        None,
+                        FipcBoundedSnapshotMeta {
+                            snapshot_origin: FIPC_SNAPSHOT_ORIGIN_PER_RPC_FILE_LANE.to_string(),
+                            returned_events: 0,
+                            available_in_view: 0,
+                            truncated_by_max_events: false,
+                        },
+                    )
                 }
             };
         }
     }
-    let (events, cursor) = runtime.store.get_bounded(session_id, cap);
+    let (events, cursor, total, session_known) = runtime.store.get_bounded(session_id, cap);
     let retained = retained_timestamp_for_session(runtime, session_id);
-    (events, cursor, retained)
+    let n = events.len();
+    let meta = if !session_known {
+        FipcBoundedSnapshotMeta {
+            snapshot_origin: FIPC_SNAPSHOT_ORIGIN_UNKNOWN_OR_EMPTY.to_string(),
+            returned_events: 0,
+            available_in_view: 0,
+            truncated_by_max_events: false,
+        }
+    } else {
+        FipcBoundedSnapshotMeta {
+            snapshot_origin: FIPC_SNAPSHOT_ORIGIN_COLLECTOR_STORE.to_string(),
+            returned_events: n as u32,
+            available_in_view: total as u32,
+            truncated_by_max_events: total > n,
+        }
+    };
+    (events, cursor, retained, meta)
 }
 
 /// Bind `config.bind` and accept connections until error. Each connection is handled on a new thread.

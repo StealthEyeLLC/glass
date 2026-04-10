@@ -9,7 +9,10 @@ use axum::middleware::{self, Next};
 use axum::response::{IntoResponse, Response};
 use axum::routing::get;
 use axum::{Json, Router};
-use glass_collector::ipc::{FipcCollectorToBridge, PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION};
+use glass_collector::ipc::{
+    FipcCollectorToBridge, PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS,
+    PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION,
+};
 use serde::Deserialize;
 use serde_json::json;
 
@@ -19,6 +22,7 @@ use crate::http_types::{
 };
 use crate::ipc_client;
 use crate::resync::PROVISIONAL_BACKLOG_EVENT_THRESHOLD;
+use crate::snapshot_contract;
 use crate::{BridgeConfig, BridgeConfigError, CollectorIpcClientConfig};
 use thiserror::Error;
 
@@ -100,6 +104,8 @@ async fn capabilities(State(state): State<AppState>) -> Json<CapabilitiesRespons
 #[derive(Debug, Deserialize)]
 pub struct SnapshotQuery {
     pub cursor: Option<String>,
+    /// Upper bound forwarded to F-IPC `BoundedSnapshotRequest.max_events` (default 64; clamped to collector cap).
+    pub max_events: Option<u32>,
 }
 
 async fn session_snapshot(
@@ -118,14 +124,22 @@ async fn session_snapshot(
             resync_hint: None,
             collector_ipc: None,
             retained_snapshot_unix_ms: None,
+            bounded_snapshot: None,
+            max_events_requested: None,
         })
         .into_response(),
         Some(cfg) => {
+            let max_events_req = query
+                .max_events
+                .unwrap_or(64)
+                .max(1)
+                .min(PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS as u32);
             match ipc_client::fetch_bounded_snapshot(
                 cfg.addr,
                 cfg.shared_secret.as_ref(),
                 &session_id,
                 query.cursor.as_deref(),
+                max_events_req,
                 cfg.timeout,
             )
             .await
@@ -136,21 +150,37 @@ async fn session_snapshot(
                     events,
                     live_session_ingest,
                     retained_snapshot_unix_ms,
-                }) => Json(SessionSnapshotResponse {
-                    session_id: sid,
-                    cursor_requested,
-                    snapshot_cursor,
-                    events,
-                    live_session_ingest,
-                    resync_hint: None,
-                    collector_ipc: Some(CollectorIpcSnapshotMeta {
-                        transport: "provisional_tcp_loopback",
-                        status: "ok",
-                        detail: None,
-                    }),
-                    retained_snapshot_unix_ms,
-                })
-                .into_response(),
+                    snapshot_meta,
+                }) => {
+                    let (bounded_snapshot, resync_hint) = match snapshot_meta.as_ref() {
+                        Some(m) => {
+                            let (b, h) = snapshot_contract::bounded_http_from_fipc_meta(
+                                m,
+                                &snapshot_cursor,
+                                retained_snapshot_unix_ms,
+                            );
+                            (Some(b), h)
+                        }
+                        None => (None, None),
+                    };
+                    Json(SessionSnapshotResponse {
+                        session_id: sid,
+                        cursor_requested,
+                        snapshot_cursor,
+                        events,
+                        live_session_ingest,
+                        resync_hint,
+                        collector_ipc: Some(CollectorIpcSnapshotMeta {
+                            transport: "provisional_tcp_loopback",
+                            status: "ok",
+                            detail: None,
+                        }),
+                        retained_snapshot_unix_ms,
+                        bounded_snapshot,
+                        max_events_requested: Some(max_events_req),
+                    })
+                    .into_response()
+                }
                 Ok(other) => (
                     StatusCode::SERVICE_UNAVAILABLE,
                     Json(json!({

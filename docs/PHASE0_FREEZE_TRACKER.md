@@ -120,13 +120,13 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 
 | Field | Content |
 |-------|---------|
-| **Status** | Open |
-| **Decision-ready options** | Extend `ResyncHint` with `reason` enum + `snapshot_cursor` opaque string vs structured `{ seq, byte_offset }` |
-| **Proposed default** | Opaque cursor string + `reason: "backlog" \| "ipc_gap"` |
-| **Rationale** | Bridge + viewer must agree before Phase 5 |
-| **Code / tests** | `glass_bridge::resync::ResyncHint` (stub); `SessionSnapshotResponse.resync_hint` field present (always `null` until ingest + hint semantics freeze) |
-| **Bounded snapshot cursor (related, not resync_hint)** | F-IPC `BoundedSnapshotReply.snapshot_cursor` remains **`v0:off:{n}`** (events returned after caps) or **`v0:empty`**. **`--procfs-session`**: re-poll each RPC. **`--file-lane-session`**: re-poll file-lane tree or fixture each RPC (same RPC shape; **distinct** session id from other modes). **`--procfs-retained-session`** / **`--file-lane-retained-session`**: F-IPC reads `SnapshotStore` for that session id; each loop tick **replaces** the session row with a bounded **tail** of the latest normalized poll (polling-derived; not live syscall truth; not append-only deltas). Optional **`retained_snapshot_unix_ms`** (also on bridge HTTP JSON) when the snapshot session matches that retained loop’s meta — last successful retained tick wall time — **telemetry hint**, not a freshness SLA. Human still owns incremental cursor / resync for live ingest. |
-| **Provisional OK?** | **Yes** — WS delta + hint payloads not wired |
+| **Status** | Open — **bounded / non-live hints landed** on `GET /sessions/:id/snapshot` |
+| **Decision-ready options** | Freeze `reason` enum vs free strings; optional structured `{ seq, byte_offset }` when live ingest exists |
+| **Proposed default** | Opaque `snapshot_cursor` + string `reason` (current bounded reasons: `bounded_truncation`, `per_rpc_poll_snapshot_not_incremental`, `retained_snapshot_tail_replaces_not_append_only`) + optional `detail` |
+| **Rationale** | Bridge + viewer must agree before live WS deltas; bounded phase uses **honest** hints only |
+| **Code / tests** | `glass_bridge::resync::ResyncHint` (`reason`, `snapshot_cursor`, optional `detail`); `glass_bridge::snapshot_contract`, `SessionSnapshotResponse.bounded_snapshot`; collector `FipcBoundedSnapshotMeta` on `BoundedSnapshotReply` |
+| **Bounded snapshot cursor (related, not live resync)** | F-IPC + HTTP: **`v0:empty`** = no session / no rows in view; **`v0:off:0`** = known session row with zero events; **`v0:off:N`** = prefix of **N** events returned under cap (**not** a resumable live-stream cursor). Per-RPC feeds replace view each poll; retained loops **replace** bounded tail. **`retained_snapshot_unix_ms`**: telemetry hint. **Human still owns** live-ingest backlog / `ipc_gap` style reasons when deltas exist. |
+| **Provisional OK?** | **Yes** — WS delta stream still not wired; hints describe boundedness only |
 
 ### F-05 — Sanitization socket / path policy
 

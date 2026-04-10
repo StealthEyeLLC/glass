@@ -52,24 +52,45 @@ pub struct CollectorIpcSnapshotMeta {
     pub detail: Option<String>,
 }
 
+/// Concrete bounded-snapshot contract (v0) when F-IPC returned metadata — **not** a live delta cursor.
+#[derive(Debug, Clone, Serialize)]
+pub struct BoundedSnapshotContractV0 {
+    /// Mirrors collector `FipcBoundedSnapshotMeta.snapshot_origin`.
+    pub snapshot_origin: String,
+    pub returned_events: u32,
+    pub available_in_view: u32,
+    pub truncated_by_max_events: bool,
+    /// Short label; see `CURSOR_SEMANTICS_BOUNDED_PREFIX_V0` for meaning.
+    pub cursor_semantics: &'static str,
+}
+
+/// Explains `snapshot_cursor` strings for v0 (`v0:empty`, `v0:off:N`): bounded prefix / empty view, not resumable live log offsets.
+pub const CURSOR_SEMANTICS_BOUNDED_PREFIX_V0: &str = "bounded_prefix_v0";
+
 /// Bounded snapshot (spec §18A.3: stale viewer fetches snapshot + new cursor; no session restart).
 #[derive(Debug, Clone, Serialize)]
 pub struct SessionSnapshotResponse {
     pub session_id: String,
     /// Cursor the client supplied, if any (`?cursor=`).
     pub cursor_requested: Option<String>,
-    /// Opaque cursor covering the returned `events` slice.
+    /// Bounded snapshot cursor (`v0:empty` | `v0:off:N`) — prefix length / empty view for **this** response, not a live-stream offset.
     pub snapshot_cursor: String,
     /// Normalized event envelopes as JSON values (from collector F-IPC when configured).
     pub events: Vec<serde_json::Value>,
     pub live_session_ingest: bool,
-    /// When ingest + hint semantics exist; `None` in skeleton.
+    /// When boundedness or feed semantics imply the client must not assume delta continuity.
     pub resync_hint: Option<ResyncHint>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub collector_ipc: Option<CollectorIpcSnapshotMeta>,
     /// Unix **ms** when collector last successfully refreshed retained snapshot data for this session; **provisional**; omitted when not applicable.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub retained_snapshot_unix_ms: Option<u64>,
+    /// Populated when the snapshot came from F-IPC with `snapshot_meta` (omitted when no F-IPC).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub bounded_snapshot: Option<BoundedSnapshotContractV0>,
+    /// Upper bound used for this HTTP request (mirrors F-IPC `max_events`; default 64).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_events_requested: Option<u32>,
 }
 
 /// Initial cursor for an empty session timeline (opaque string; format TBD when F-04 closes).

@@ -73,6 +73,12 @@ async fn snapshot_populated_via_collector_fipc() {
     assert_eq!(v["events"].as_array().unwrap().len(), 1);
     assert_eq!(v["collector_ipc"]["status"], "ok");
     assert_eq!(v["collector_ipc"]["transport"], "provisional_tcp_loopback");
+    assert_eq!(v["bounded_snapshot"]["snapshot_origin"], "collector_store");
+    assert_eq!(
+        v["bounded_snapshot"]["cursor_semantics"],
+        "bounded_prefix_v0"
+    );
+    assert!(v["resync_hint"].is_null());
 }
 
 #[tokio::test]
@@ -158,6 +164,8 @@ async fn empty_session_snapshot_cursor_via_fipc() {
     let v: serde_json::Value = serde_json::from_slice(&b).unwrap();
     assert_eq!(v["snapshot_cursor"], SNAPSHOT_CURSOR_EMPTY);
     assert_eq!(v["events"].as_array().unwrap().len(), 0);
+    assert_eq!(v["bounded_snapshot"]["snapshot_origin"], "unknown_or_empty");
+    assert!(v["resync_hint"].is_null());
 }
 
 #[tokio::test]
@@ -233,6 +241,11 @@ async fn snapshot_via_procfs_fixture_normalized_envelope() {
     assert_eq!(events[0]["kind"], "process_poll_sample");
     assert_eq!(v["snapshot_cursor"], "v0:off:1");
     assert_eq!(v["collector_ipc"]["status"], "ok");
+    assert_eq!(
+        v["resync_hint"]["reason"],
+        "per_rpc_poll_snapshot_not_incremental"
+    );
+    assert_eq!(v["bounded_snapshot"]["snapshot_origin"], "per_rpc_procfs");
 }
 
 #[tokio::test]
@@ -315,6 +328,14 @@ async fn snapshot_via_file_lane_fixture_normalized_envelope() {
     assert_eq!(v["snapshot_cursor"], "v0:off:1");
     assert_eq!(v["live_session_ingest"], false);
     assert_eq!(v["collector_ipc"]["status"], "ok");
+    assert_eq!(
+        v["resync_hint"]["reason"],
+        "per_rpc_poll_snapshot_not_incremental"
+    );
+    assert_eq!(
+        v["bounded_snapshot"]["snapshot_origin"],
+        "per_rpc_file_lane"
+    );
 }
 
 #[tokio::test]
@@ -399,6 +420,10 @@ async fn snapshot_file_lane_retained_includes_retained_unix_ms() {
     assert_eq!(v["events"][0]["kind"], "file_poll_snapshot");
     assert!(v["retained_snapshot_unix_ms"].as_u64().is_some());
     assert_eq!(v["live_session_ingest"], false);
+    assert_eq!(
+        v["resync_hint"]["reason"],
+        "retained_snapshot_tail_replaces_not_append_only"
+    );
 }
 
 #[tokio::test]
@@ -476,4 +501,66 @@ async fn snapshot_retained_store_includes_retained_unix_ms() {
     assert_eq!(v["events"].as_array().unwrap().len(), 1);
     assert!(v["retained_snapshot_unix_ms"].as_u64().is_some());
     assert_eq!(v["live_session_ingest"], false);
+    assert_eq!(
+        v["resync_hint"]["reason"],
+        "retained_snapshot_tail_replaces_not_append_only"
+    );
+}
+
+#[tokio::test]
+async fn snapshot_truncation_emits_bounded_resync_hint() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let store = Arc::new(SnapshotStore::new());
+    let evs: Vec<_> = (0..5)
+        .map(|i| serde_json::json!({"kind": "demo", "seq": i}))
+        .collect();
+    store.set_session_events("ses_trunc", evs);
+    let runtime = Arc::new(IpcDevTcpRuntime {
+        store,
+        procfs_feed: None,
+        file_lane_feed: None,
+        retained_poll_meta: None,
+        file_lane_retained_poll_meta: None,
+    });
+    let secret = Arc::<str>::from("trunc-secret");
+    let rt = runtime.clone();
+    let sec = secret.clone();
+    thread::spawn(move || {
+        let (stream, _) = listener.accept().expect("accept");
+        handle_ipc_dev_tcp_connection(stream, sec.as_ref(), rt.as_ref()).expect("handle");
+    });
+    thread::sleep(Duration::from_millis(40));
+
+    let cfg = BridgeConfig {
+        bind: "127.0.0.1:0".parse().unwrap(),
+        bearer_token: Arc::from("bridge-http-token"),
+        allow_non_loopback: false,
+        collector_ipc: Some(CollectorIpcClientConfig {
+            addr,
+            shared_secret: secret,
+            timeout: Duration::from_secs(2),
+        }),
+    };
+    let app = app_router(&cfg);
+    let res = app
+        .oneshot(
+            Request::builder()
+                .uri("/sessions/ses_trunc/snapshot?max_events=2")
+                .header("Authorization", "Bearer bridge-http-token")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let b = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&b).unwrap();
+    assert_eq!(v["events"].as_array().unwrap().len(), 2);
+    assert_eq!(v["snapshot_cursor"], "v0:off:2");
+    assert_eq!(v["max_events_requested"], 2);
+    assert_eq!(v["resync_hint"]["reason"], "bounded_truncation");
+    assert_eq!(v["bounded_snapshot"]["truncated_by_max_events"], true);
+    assert_eq!(v["bounded_snapshot"]["available_in_view"], 5);
+    assert_eq!(v["bounded_snapshot"]["returned_events"], 2);
 }

@@ -132,6 +132,8 @@ async fn snapshot_requires_bearer_and_returns_bounded_shape() {
     assert_eq!(v["live_session_ingest"], false);
     assert!(v["resync_hint"].is_null());
     assert!(v["collector_ipc"].is_null());
+    assert!(v.get("bounded_snapshot").is_none());
+    assert!(v.get("max_events_requested").is_none());
 }
 
 #[tokio::test]

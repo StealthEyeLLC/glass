@@ -21,6 +21,7 @@ pub mod http_types;
 mod ipc_client;
 pub mod resync;
 mod server;
+mod snapshot_contract;
 
 pub use server::{app_router, serve, serve_listener, ServeError};
 

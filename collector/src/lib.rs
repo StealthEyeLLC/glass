@@ -43,8 +43,10 @@ pub use file_lane_retained_loop::{
     retained_file_lane_poll_tick, spawn_retained_file_lane_loop, RetainedFileLaneLoopConfig,
 };
 pub use ipc::{
-    validate_ipc_auth_version, CollectorIpcError, CollectorIpcMessage, FipcBridgeToCollector,
-    FipcCollectorToBridge, IpcAuthHandshake, IpcMessageKind, IpcPayload,
+    validate_ipc_auth_version, CollectorIpcError, CollectorIpcMessage, FipcBoundedSnapshotMeta,
+    FipcBridgeToCollector, FipcCollectorToBridge, IpcAuthHandshake, IpcMessageKind, IpcPayload,
+    FIPC_SNAPSHOT_ORIGIN_COLLECTOR_STORE, FIPC_SNAPSHOT_ORIGIN_PER_RPC_FILE_LANE,
+    FIPC_SNAPSHOT_ORIGIN_PER_RPC_PROCFS, FIPC_SNAPSHOT_ORIGIN_UNKNOWN_OR_EMPTY,
     PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS, PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION,
     PROVISIONAL_IPC_AUTH_TOKEN_VERSION,
 };

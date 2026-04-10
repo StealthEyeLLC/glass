@@ -25,8 +25,8 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `session_engine::tests::envelope_validation` | Procfs + **file-lane** normalized kinds accepted in strict set |
 | `graph_engine::tests::smoke` | Graph crate consumes session facts |
 | `bridge::tests::resync_contract` | Resync constants + recovery enum |
-| `bridge::tests::http_contract` | Loopback-only config; `/health` unauthenticated; bearer gate on `/capabilities` + snapshot; `collector_fipc` capability flags; bounded `SessionSnapshotResponse` without F-IPC; **503** when F-IPC configured but collector unreachable; non-loopback F-IPC rejected; WS bad-request without upgrade; real WS handshake + hello JSON; `serve_listener` + `tokio-tungstenite` client |
-| `bridge::tests::snapshot_fipc` | HTTP snapshot from collector over F-IPC: seeded `SnapshotStore`; **procfs fixture** per-RPC → `process_poll_sample`; **file-lane fixture** per-RPC → `file_poll_snapshot`; **retained procfs** or **retained file-lane** tick + `retained_snapshot_unix_ms` on HTTP JSON (matched session id); empty unknown session; capabilities `collector_fipc.configured` |
+| `bridge::tests::http_contract` | Loopback-only config; `/health` unauthenticated; bearer gate on `/capabilities` + snapshot; `collector_fipc` capability flags; bounded `SessionSnapshotResponse` without F-IPC (no `bounded_snapshot` / `max_events_requested`); **503** when F-IPC configured but collector unreachable; non-loopback F-IPC rejected; WS bad-request without upgrade; real WS handshake + hello JSON; `serve_listener` + `tokio-tungstenite` client |
+| `bridge::tests::snapshot_fipc` | HTTP snapshot over F-IPC: `bounded_snapshot.snapshot_origin` + **`resync_hint`** for truncation / per-RPC / retained tail; `?max_events=` clamp; unknown session `unknown_or_empty`; seeded store without retained **no** hint; **503** / auth unchanged |
 | `integration_tests::repo_layout` | Monorepo shape |
 | `integration_tests::hvt_policy` | HVT count ≤ cap |
 | `integration_tests::golden_scaffold` | Golden harness files exist |

@@ -91,6 +91,26 @@ pub const PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION: u32 = 1;
 /// Upper bound on events returned per [`FipcBridgeToCollector::BoundedSnapshotRequest`].
 pub const PROVISIONAL_FIPC_MAX_SNAPSHOT_EVENTS: usize = 256;
 
+/// [`FipcBoundedSnapshotMeta::snapshot_origin`] — unknown session / empty collector view.
+pub const FIPC_SNAPSHOT_ORIGIN_UNKNOWN_OR_EMPTY: &str = "unknown_or_empty";
+/// In-memory [`crate::ipc_dev_tcp::SnapshotStore`] (seeded sessions or retained tail).
+pub const FIPC_SNAPSHOT_ORIGIN_COLLECTOR_STORE: &str = "collector_store";
+/// Per-request procfs poll on `ipc-serve` (`--procfs-session`).
+pub const FIPC_SNAPSHOT_ORIGIN_PER_RPC_PROCFS: &str = "per_rpc_procfs";
+/// Per-request file-lane poll (`--file-lane-session`).
+pub const FIPC_SNAPSHOT_ORIGIN_PER_RPC_FILE_LANE: &str = "per_rpc_file_lane";
+
+/// Honest bounded-snapshot metadata for bridge / operator (not a live-stream cursor contract).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct FipcBoundedSnapshotMeta {
+    /// One of the `FIPC_SNAPSHOT_ORIGIN_*` constants.
+    pub snapshot_origin: String,
+    pub returned_events: u32,
+    /// Events available in the collector view before applying `max_events` cap.
+    pub available_in_view: u32,
+    pub truncated_by_max_events: bool,
+}
+
 fn default_fipc_max_events() -> u32 {
     64
 }
@@ -136,5 +156,9 @@ pub enum FipcCollectorToBridge {
         #[serde(default)]
         #[serde(skip_serializing_if = "Option::is_none")]
         retained_snapshot_unix_ms: Option<u64>,
+        /// Bounded-view semantics (cursor honesty, truncation, feed path). Omitted only for wire-compat tests.
+        #[serde(default)]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        snapshot_meta: Option<FipcBoundedSnapshotMeta>,
     },
 }
