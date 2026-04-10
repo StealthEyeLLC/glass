@@ -23,7 +23,10 @@ pub use events_seg::{
     write_segment_file, SegError, EVENT_SEG_FORMAT_VERSION, EVENT_SEG_MAGIC,
     PROVISIONAL_MAX_SEG_RECORD_BYTES,
 };
-pub use export::{apply_sanitization_to_manifest, materialize_share_safe_procfs_pack_bytes};
+pub use export::{
+    apply_sanitization_to_manifest, materialize_share_safe_file_lane_pack_bytes,
+    materialize_share_safe_procfs_pack_bytes,
+};
 pub use file_lane_normalize::{
     normalize_file_lane_batch, normalize_file_lane_observation, FileLaneNormalizeError,
     FileLaneRawObservationDto, FS_POLL_FILE_ENTITY_PREFIX, RESOLUTION_FS_POLL_REL_PATH,

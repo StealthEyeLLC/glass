@@ -3,14 +3,19 @@
 //! Profile `sanitize_default` is **provisional** until Phase 0 freeze (`docs/PHASE0_FREEZE_TRACKER.md`).
 //!
 //! **Socket path redaction (F-05):** heuristic on `.sock`, `/run/user/`, `/var/run/` — not exhaustive; see tracker.
+//!
+//! **File-lane path redaction (F-05, provisional):** directory-poll `relative_path`, `watch_root`, and the
+//! `fs_poll_rel:` entity id suffix are replaced with fixed tokens on the **export lane only** — not a final policy;
+//! see `docs/PHASE0_FREEZE_TRACKER.md` / `docs/SANITIZATION_TRUST_CRITERIA.md`.
 
 use regex::Regex;
 use serde_json::Value;
 
 use crate::event::NormalizedEventEnvelope;
+use crate::file_lane_normalize::FS_POLL_FILE_ENTITY_PREFIX;
 
 /// Active sanitization profile version string (bump when rules change).
-pub const SANITIZE_PROFILE_VERSION: &str = "sanitize_default.0.provisional";
+pub const SANITIZE_PROFILE_VERSION: &str = "sanitize_default.1.provisional";
 
 #[derive(Debug, Clone, Copy)]
 pub struct SanitizationProfile {
@@ -68,6 +73,7 @@ pub fn sanitize_events_for_share(
         redact_argv(&mut e2.attrs);
         redact_socket_paths(&mut e2.attrs);
         redact_procfs_exe_in_attrs(&mut e2.attrs);
+        redact_file_lane_path_attrs_provisional(&mut e2);
         out.push(e2);
     }
 
@@ -81,6 +87,16 @@ pub fn sanitize_events_for_share(
     summary.push("rule:argv_tail -> [ARG_REDACTED]".to_string());
     summary.push("rule:sensitive_socket_path -> [REDACTED_SOCK]".to_string());
     summary.push("rule:procfs_exe_field -> [REDACTED_ABS_PATH]".to_string());
+    summary.push(
+        "rule:file_lane_relative_path_provisional (F-05 open) -> [REDACTED_REL_PATH]".to_string(),
+    );
+    summary.push(
+        "rule:file_lane_watch_root_provisional (F-05 open) -> [REDACTED_ABS_PATH]".to_string(),
+    );
+    summary.push(
+        "rule:file_lane_entity_id_suffix_provisional (F-05 open) -> fs_poll_rel:[REDACTED]"
+            .to_string(),
+    );
 
     SanitizationResult {
         events: out,
@@ -116,6 +132,47 @@ fn redact_procfs_exe_in_attrs(attrs: &mut Value) {
         if !s.is_empty() && !s.starts_with('[') {
             obj.insert(
                 "exe".to_string(),
+                Value::String("[REDACTED_ABS_PATH]".to_string()),
+            );
+        }
+    }
+}
+
+const FILE_LANE_KINDS: &[&str] = &[
+    "file_poll_snapshot",
+    "file_changed_between_polls",
+    "file_absent_in_poll_gap",
+    "file_seen_in_poll_gap",
+];
+
+fn file_lane_event_needs_path_redaction(e: &NormalizedEventEnvelope) -> bool {
+    FILE_LANE_KINDS.iter().any(|k| k == &e.kind)
+        || e.actor.entity_id.starts_with(FS_POLL_FILE_ENTITY_PREFIX)
+}
+
+/// Narrow, **provisional** export-lane redaction for directory-poll file lane path-bearing fields (F-05 not frozen).
+fn redact_file_lane_path_attrs_provisional(e: &mut NormalizedEventEnvelope) {
+    if !file_lane_event_needs_path_redaction(e) {
+        return;
+    }
+    if e.actor.entity_id.starts_with(FS_POLL_FILE_ENTITY_PREFIX) {
+        e.actor.entity_id = format!("{FS_POLL_FILE_ENTITY_PREFIX}[REDACTED]");
+    }
+    let Some(obj) = e.attrs.as_object_mut() else {
+        return;
+    };
+    if let Some(Value::String(s)) = obj.get("relative_path") {
+        if !s.is_empty() && !s.starts_with('[') {
+            obj.insert(
+                "relative_path".to_string(),
+                Value::String("[REDACTED_REL_PATH]".to_string()),
+            );
+        }
+    }
+    if let Some(Value::String(s)) = obj.get("watch_root") {
+        if !s.is_empty() && !s.starts_with('[') {
+            obj.insert(
+                "watch_root".to_string(),
                 Value::String("[REDACTED_ABS_PATH]".to_string()),
             );
         }
@@ -244,5 +301,39 @@ mod tests {
             .human_readable_redaction_summary
             .iter()
             .any(|l| l.contains("procfs_exe")));
+    }
+
+    #[test]
+    fn redacts_file_lane_path_fields_provisional() {
+        let mut e = NormalizedEventEnvelope::minimal_stub(1, "ses", "file_poll_snapshot");
+        e.actor.entity_id = "fs_poll_rel:secret/nested/file.txt".to_string();
+        e.actor.entity_type = "file".to_string();
+        e.attrs = serde_json::json!({
+            "relative_path": "secret/nested/file.txt",
+            "watch_root": "/home/alice/projects",
+            "semantics": "bounded_directory_poll_snapshot",
+            "not_syscall_file_access": true,
+        });
+        let before = causality_fingerprint(std::slice::from_ref(&e));
+        let r = sanitize_events_for_share(
+            &[e],
+            SanitizationProfile {
+                home_dir_prefix: None,
+            },
+        );
+        assert_ne!(before, causality_fingerprint(&r.events));
+        assert_eq!(r.events[0].actor.entity_id, "fs_poll_rel:[REDACTED]");
+        assert_eq!(
+            r.events[0].attrs["relative_path"].as_str().unwrap(),
+            "[REDACTED_REL_PATH]"
+        );
+        assert_eq!(
+            r.events[0].attrs["watch_root"].as_str().unwrap(),
+            "[REDACTED_ABS_PATH]"
+        );
+        assert!(r
+            .human_readable_redaction_summary
+            .iter()
+            .any(|l| l.contains("file_lane_relative_path")));
     }
 }

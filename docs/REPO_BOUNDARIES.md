@@ -31,8 +31,8 @@
 - **`glass_collector::raw::RawObservation`** — pre-normalization host facts; may contain secrets.
 - **`session_engine::NormalizedEventEnvelope`** — canonical normalized shape for session/pack/graph.
 - **Procfs path (v0):** `session_engine::procfs_normalize` maps procfs-shaped DTOs into envelopes (`process_poll_sample`, `process_seen_in_poll_gap`, `process_absent_in_poll_gap`). The collector exposes `procfs_session::ingest_procfs_raw_to_session_log` (self-silence → DTO → `SessionLog::append_procfs_dtos`).
-- **File-lane path (v0):** `session_engine::file_lane_normalize` maps directory-poll DTOs into **`file_poll_snapshot`**, **`file_changed_between_polls`**, **`file_absent_in_poll_gap`**, **`file_seen_in_poll_gap`** (distinct from spec `file_read` / `file_write` / `file_create` syscall-class kinds). Collector: `file_session::ingest_file_lane_raw_to_session_log` → `SessionLog::append_file_lane_dtos`. **No** dedicated share-safe export helper in this pass (paths may still need F-05 review before export).
-- **Share-safe export (procfs-oriented):** `materialize_share_safe_procfs_pack_bytes` + `glass-collector export-procfs-pack` — not applied on raw ingest. Type separation is still tested in `collector/tests/raw_vs_normalized_boundary.rs`.
+- **File-lane path (v0):** `session_engine::file_lane_normalize` maps directory-poll DTOs into **`file_poll_snapshot`**, **`file_changed_between_polls`**, **`file_absent_in_poll_gap`**, **`file_seen_in_poll_gap`** (distinct from spec `file_read` / `file_write` / `file_create` syscall-class kinds). Collector: `file_session::ingest_file_lane_raw_to_session_log` → `SessionLog::append_file_lane_dtos`.
+- **Share-safe export:** `materialize_share_safe_procfs_pack_bytes` + **`materialize_share_safe_file_lane_pack_bytes`** + `glass-collector` **`export-procfs-pack`** / **`export-file-lane-pack`** — **export lane only** (`sanitize_events_for_share`); not applied on raw ingest. File-lane path tokens are **provisional** (F-05 open). Type separation is still tested in `collector/tests/raw_vs_normalized_boundary.rs`.
 
 ## Static vs live
 

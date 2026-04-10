@@ -1,0 +1,31 @@
+[
+  {
+    "schema_version": "glass.event.v0",
+    "event_id": "evt_fs_lane_matrix",
+    "session_id": "ses_matrix",
+    "ts_ns": 1,
+    "seq": 1,
+    "kind": "file_poll_snapshot",
+    "actor": {
+      "entity_type": "file",
+      "entity_id": "fs_poll_rel:secret_vendor/lib.rs",
+      "resolution_quality": "declared_root_relative_path_directory_poll_not_kernel_inode_identity"
+    },
+    "attrs": {
+      "semantics": "bounded_directory_poll_snapshot",
+      "not_syscall_file_access": true,
+      "relative_path": "secret_vendor/lib.rs",
+      "watch_root": "/home/matrix_operator/projects/acme",
+      "size_bytes": 1,
+      "modified_unix_secs": 1,
+      "poll_monotonic_ns": 1,
+      "first_poll_baseline": true,
+      "inference_level": "poll_snapshot"
+    },
+    "source": {
+      "adapter": "fs_file_lane",
+      "quality": "directory_poll_derived",
+      "time_domain": "collector_monotonic_ns"
+    }
+  }
+]

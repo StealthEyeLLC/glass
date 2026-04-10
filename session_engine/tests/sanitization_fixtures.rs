@@ -125,6 +125,24 @@ fn matrix_procfs_exe_path_redacted() {
 }
 
 #[test]
+fn matrix_file_lane_poll_paths_redacted_provisional() {
+    let evs = load_case("file_lane_poll_paths");
+    let out = sanitize_events_for_share(
+        &evs,
+        SanitizationProfile {
+            home_dir_prefix: None,
+        },
+    );
+    let s = serde_json::to_string(&out.events).unwrap();
+    assert!(!s.contains("secret_vendor"));
+    assert!(!s.contains("acme"));
+    assert!(!s.contains("/home/matrix_operator"));
+    assert!(s.contains("[REDACTED_REL_PATH]"));
+    assert!(s.contains("fs_poll_rel:[REDACTED]"));
+    assert!(s.contains("[REDACTED_ABS_PATH]"));
+}
+
+#[test]
 fn matrix_causality_preserves_subject_edges() {
     let mut evs = load_case("causality_negative");
     evs[0].subject = Some(EntityRef {

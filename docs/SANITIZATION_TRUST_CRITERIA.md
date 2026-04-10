@@ -18,9 +18,9 @@ Record in release notes who ran the manual spot-check (role + date).
 
 ## Implementation reference
 
-- Code: `session_engine::sanitization` (recursive string rules + argv + socket keys + **`attrs.exe`** → `[REDACTED_ABS_PATH]` for share export)
-- Export wiring: `session_engine::export::materialize_share_safe_procfs_pack_bytes` (procfs lane); CLI `glass-collector export-procfs-pack`
+- Code: `session_engine::sanitization` (`SANITIZE_PROFILE_VERSION` = **`sanitize_default.1.provisional`**) — recursive string rules + argv + socket keys + **`attrs.exe`** → `[REDACTED_ABS_PATH]`; **file-lane kinds** (provisional, F-05 not frozen): **`attrs.relative_path`**, **`attrs.watch_root`**, **`fs_poll_rel:`…** entity suffix redacted as documented in summary lines.
+- Export wiring: `materialize_share_safe_procfs_pack_bytes` (procfs manifest); **`materialize_share_safe_file_lane_pack_bytes`** (file-lane manifest); CLI **`export-procfs-pack`** / **`export-file-lane-pack`**
 - **Artifact check:** `glass-pack validate … --expect-share-safe` confirms export-lane **manifest fields** only — not a substitute for manual review (§28.4).
-- Fixtures: `tests/fixtures/sanitization/`
+- Fixtures: `tests/fixtures/sanitization/` (includes **`file_lane_poll_paths.json`** matrix case)
 
-**Does not claim:** complete secret scanning, stable identity after redaction, or that `comm` / numeric PIDs are safe for every audience — operators still follow §28.4 before recommending share.
+**Does not claim:** complete secret scanning, stable identity after redaction (file-lane **entity_id** changes on export), or that `comm` / numeric PIDs are safe for every audience — operators still follow §28.4 before recommending share. **File-lane path redaction is explicitly provisional** until F-05 human sign-off.

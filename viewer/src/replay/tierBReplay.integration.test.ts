@@ -93,7 +93,7 @@ describe("Tier B replay integration (zip → load → state)", () => {
         "rule:procfs_exe_field -> [REDACTED_ABS_PATH]",
       ],
       export_sanitization_profile: "sanitize_default",
-      sanitization_profile_version: "sanitize_default.0.provisional",
+      sanitization_profile_version: "sanitize_default.1.provisional",
       events_blob: "events.jsonl",
     };
     const row = {
@@ -198,7 +198,7 @@ describe("Tier B replay integration (zip → load → state)", () => {
         "rule:procfs_exe_field -> [REDACTED_ABS_PATH]",
       ],
       export_sanitization_profile: "sanitize_default",
-      sanitization_profile_version: "sanitize_default.0.provisional",
+      sanitization_profile_version: "sanitize_default.1.provisional",
       events_blob: "events.seg",
     };
     const row = {

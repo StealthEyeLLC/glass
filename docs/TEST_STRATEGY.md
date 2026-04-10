@@ -13,14 +13,15 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `session_engine::validate::validate_pack_manifest` | `glass.pack.v0.scaffold` vs `glass.pack.v0.scaffold_seg` rules |
 | `session_engine::tests::session_append` | Append ordering |
 | `session_engine::tests::schema_roundtrip` | JSON ↔ `NormalizedEventEnvelope` |
-| `session_engine::tests::sanitization_fixtures` | Fixture matrix + causality |
 | `session_engine::tests::export_manifest` | Sanitization → manifest fields (`share_safe_recommended` stays false until human review) |
 | `session_engine::tests::procfs_normalize` | DTO → envelope mapping; strict kinds; `SessionLog::append_procfs_dtos` + strict pack roundtrip |
 | `session_engine::tests::file_lane_normalize` | File-lane DTO → `file_poll_snapshot` / poll-gap kinds; rejects bogus raw kinds |
 | `session_engine::tests::procfs_share_safe_export` | `materialize_share_safe_procfs_pack_bytes` → strict validate + exe redacted |
-| `session_engine::tests::sanitization_fixtures` | Includes `procfs_exe_path.json` matrix |
-| `session_engine::sanitization` (unit) | `redacts_procfs_exe_field` |
+| `session_engine::tests::file_lane_share_safe_export` | `materialize_share_safe_file_lane_pack_bytes` → strict validate + provisional path / entity redaction |
+| `session_engine::tests::sanitization_fixtures` | Matrix: `procfs_exe_path.json`, **`file_lane_poll_paths.json`**, argv, IP, socket, causality |
+| `session_engine::sanitization` (unit) | `redacts_procfs_exe_field`, **`redacts_file_lane_path_fields_provisional`** |
 | `glass_collector::tests::export_procfs_share_safe` | Ingest → share-safe bytes → strict reload |
+| `glass_collector::tests::export_file_lane_share_safe` | File-lane ingest → **`materialize_share_safe_file_lane_pack_bytes`** → strict reload + no path leaks |
 | `session_engine::tests::envelope_validation` | Procfs + **file-lane** normalized kinds accepted in strict set |
 | `graph_engine::tests::smoke` | Graph crate consumes session facts |
 | `bridge::tests::resync_contract` | Resync constants + recovery enum |
@@ -69,6 +70,7 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `glass-collector normalize-procfs` | **Unsanitized** dev pack: `--output out.glass_pack` and/or `--events-json-stdout`; Linux poll or `--from-raw-json` |
 | `glass-collector normalize-file-lane` | Same as normalize-procfs for **file-lane** events (`--watch-root` + optional `--from-raw-json`) |
 | `glass-collector export-procfs-pack` | **Share-safe** pack: `--output share.glass_pack` (required); same poll / `--from-raw-json` as normalize; Tier B–compatible after sanitize |
+| `glass-collector export-file-lane-pack` | **Provisional share-safe** file-lane pack: `--output` + `--watch-root` (or `--from-raw-json`); **`sanitize_default.1.provisional`**; F-05 path rules **not** final — operator review |
 | `glass-collector ipc-serve` | Loopback TCP F-IPC (provisional); optional seed session; **`--procfs-session`** = per-RPC procfs repoll; **`--file-lane-session`** + **`--file-lane-watch-root`** or **`--file-lane-from-raw-json`** = per-RPC file-lane (directory-poll semantics); **`--procfs-retained-session`** + interval / max-events = bounded retained procfs `SnapshotStore`; **`--file-lane-retained-session`** + **`--file-lane-retained-interval-ms`** / **`--file-lane-retained-max-events`** + same file-lane root/fixture inputs as per-RPC = bounded retained file-lane store; **pairwise distinct** session ids across all four modes (reject on collision); **`live_session_ingest` stays false** — no WS deltas |
 | `scripts/retained_snapshot_demo/*` | Operator demo: fixture-backed retained collector + bridge + curl/IRM snapshot (`docs/DEMO_RETAINED_SNAPSHOT.md`) |
 | `viewer` `KNOWN_EVENT_KINDS_V0` | Must match Rust strict set (procfs + **file-lane** poll kinds for Tier B `strict_kinds` loads) |

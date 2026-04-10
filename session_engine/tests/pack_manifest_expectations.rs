@@ -7,7 +7,7 @@ fn minimal_share_safe_manifest() -> SessionManifest {
     let mut m = SessionManifest::scaffold_new("s");
     m.sanitized = true;
     m.export_sanitization_profile = Some("sanitize_default".to_string());
-    m.sanitization_profile_version = Some("sanitize_default.0.provisional".to_string());
+    m.sanitization_profile_version = Some("sanitize_default.1.provisional".to_string());
     m.human_readable_redaction_summary = vec!["rule:test -> x".to_string()];
     m
 }

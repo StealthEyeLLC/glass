@@ -15,7 +15,10 @@ use glass_collector::{
     ProcfsSnapshotFeedConfig, RetainedFileLaneLoopConfig, RetainedPollMeta,
     RetainedProcfsLoopConfig, SelfSilencePolicy, SnapshotStore,
 };
-use session_engine::{materialize_share_safe_procfs_pack_bytes, write_glass_pack, SessionManifest};
+use session_engine::{
+    materialize_share_safe_file_lane_pack_bytes, materialize_share_safe_procfs_pack_bytes,
+    write_glass_pack, SessionManifest,
+};
 
 fn exit_on_procfs_load_err(cmd: &str, err: String) -> ! {
     eprintln!("{cmd}: {err}");
@@ -113,6 +116,23 @@ enum Command {
         #[arg(long, default_value_t = false)]
         twice: bool,
         /// Output `.glass_pack` with `sanitized: true` and redaction summary (Tier B–compatible).
+        #[arg(long)]
+        output: PathBuf,
+        #[arg(long)]
+        from_raw_json: Option<PathBuf>,
+    },
+    /// File-lane (directory poll) → normalize → **provisional share-safe** pack (`sanitize_events_for_share`; F-05 for paths **not** final).
+    ExportFileLanePack {
+        #[arg(long)]
+        watch_root: PathBuf,
+        #[arg(long, default_value = "glass-collector-fs-export")]
+        session: String,
+        #[arg(long, default_value_t = 512)]
+        max_samples: usize,
+        #[arg(long, default_value_t = 8)]
+        max_depth: usize,
+        #[arg(long, default_value_t = false)]
+        twice: bool,
         #[arg(long)]
         output: PathBuf,
         #[arg(long)]
@@ -269,7 +289,7 @@ fn main() {
                 .first()
                 .map(|e| e.session_id.as_str())
                 .unwrap_or(session.as_str());
-            let manifest = SessionManifest::procfs_poll_dev_scaffold(session_manifest);
+            let manifest = SessionManifest::file_lane_poll_dev_scaffold(session_manifest);
             if let Err(e) = write_glass_pack(&out, &manifest, log.events()) {
                 eprintln!("normalize-file-lane: write pack: {e}");
                 std::process::exit(1);
@@ -663,9 +683,65 @@ fn main() {
                 output.display()
             );
         }
+        Some(Command::ExportFileLanePack {
+            watch_root,
+            session,
+            max_samples,
+            max_depth,
+            twice,
+            output,
+            from_raw_json,
+        }) => {
+            let observations = match load_file_lane_observations_for_cli(
+                session.clone(),
+                watch_root,
+                max_samples,
+                max_depth,
+                twice,
+                from_raw_json,
+            ) {
+                Ok(v) => v,
+                Err(e) => {
+                    eprintln!("export-file-lane-pack: {e}");
+                    std::process::exit(1);
+                }
+            };
+            let log = match ingest_file_lane_raw_to_session_log(
+                observations,
+                &SelfSilencePolicy::default(),
+            ) {
+                Ok(l) => l,
+                Err(e) => {
+                    eprintln!("export-file-lane-pack: session: {e}");
+                    std::process::exit(1);
+                }
+            };
+            let session_id = log
+                .events()
+                .first()
+                .map(|e| e.session_id.as_str())
+                .unwrap_or(session.as_str());
+            let bytes = match materialize_share_safe_file_lane_pack_bytes(log.events(), session_id)
+            {
+                Ok(b) => b,
+                Err(e) => {
+                    eprintln!("export-file-lane-pack: materialize: {e}");
+                    std::process::exit(1);
+                }
+            };
+            if let Err(e) = std::fs::write(&output, bytes) {
+                eprintln!("export-file-lane-pack: write {}: {e}", output.display());
+                std::process::exit(1);
+            }
+            eprintln!(
+                "export-file-lane-pack: wrote {} provisional share-safe sanitized event(s) to {} (F-05 path policy not final; operator review)",
+                log.len(),
+                output.display()
+            );
+        }
         None => {
             eprintln!(
-                "glass-collector {}: no live capture loop. Subcommands: `capabilities`, `sample-procfs`, `sample-file-lane`, `normalize-procfs`, `normalize-file-lane`, `export-procfs-pack`, `ipc-serve`.",
+                "glass-collector {}: no live capture loop. Subcommands: `capabilities`, `sample-procfs`, `sample-file-lane`, `normalize-procfs`, `normalize-file-lane`, `export-procfs-pack`, `export-file-lane-pack`, `ipc-serve`.",
                 env!("CARGO_PKG_VERSION")
             );
             eprintln!("Default invocation exits without emitting a long-running stream.");

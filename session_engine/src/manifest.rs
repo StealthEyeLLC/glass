@@ -91,6 +91,15 @@ impl SessionManifest {
         m
     }
 
+    /// Dev / tooling manifest for one-shot **directory-poll file lane** → pack (unsanitized normalize path).
+    pub fn file_lane_poll_dev_scaffold(session_id: &str) -> Self {
+        let mut m = Self::scaffold_new(session_id);
+        m.capture_mode = "directory_poll_dev".to_string();
+        m.active_adapter_id = Some("fs_file_lane".to_string());
+        m.fidelity_tier = Some("fallback_reduced".to_string());
+        m
+    }
+
     pub fn scaffold_seg_new(session_id: &str) -> Self {
         Self {
             pack_format_version: PACK_FORMAT_SCAFFOLD_SEG_V0.to_string(),

@@ -34,7 +34,7 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 
 | Symbol | Value | Location | Until |
 |--------|-------|----------|-------|
-| `SANITIZE_PROFILE_VERSION` | `sanitize_default.0.provisional` | `session_engine::sanitization` | Human signs off default share-safe rules (F-05) |
+| `SANITIZE_PROFILE_VERSION` | `sanitize_default.1.provisional` | `session_engine::sanitization` | Human signs off default share-safe rules (F-05); **.1** adds provisional file-lane path redaction on export lane |
 | `PROVISIONAL_BACKLOG_EVENT_THRESHOLD` | `10_000` | `glass_bridge::resync` | F-03 |
 | `PROVISIONAL_MAX_JSONL_LINE_BYTES` | `4 * 1024 * 1024` | `session_engine::validate` | F-07 |
 | `PROVISIONAL_MAX_SEG_RECORD_BYTES` | same as JSONL line (alias) | `session_engine::events_seg` | F-07 |
@@ -132,12 +132,12 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 
 | Field | Content |
 |-------|---------|
-| **Status** | Open — rules are **heuristic** |
-| **Decision-ready options** | Freeze explicit suffix list vs path-prefix list; document **non-coverage** |
+| **Status** | Open — rules are **heuristic**; **file-lane** path-bearing fields (`relative_path`, `watch_root`, `fs_poll_rel:` entity suffix) have a **narrow provisional** export-lane mapping (`[REDACTED_REL_PATH]`, `[REDACTED_ABS_PATH]`, `fs_poll_rel:[REDACTED]`) — **not** final product policy |
+| **Decision-ready options** | Freeze explicit suffix list vs path-prefix list; document **non-coverage**; decide whether relative path should preserve basename vs full token replace |
 | **Proposed default** | Keep current heuristic; publish “not a complete secret scanner” in pack README |
 | **Rationale** | Spec §30.2 honesty — must not over-claim |
-| **Code / tests** | `session_engine::sanitization`, `tests/fixtures/sanitization/` |
-| **Provisional OK?** | **Yes** — profile id remains `.provisional` |
+| **Code / tests** | `session_engine::sanitization`, `session_engine::export` (`materialize_share_safe_*`), `glass-collector export-procfs-pack` / **`export-file-lane-pack`**, `tests/fixtures/sanitization/` (incl. **`file_lane_poll_paths.json`**) |
+| **Provisional OK?** | **Yes** — profile id remains `.provisional`; next step: human review + possible profile version bump when F-05 tightens |
 
 ### F-06 — Golden CI runners
 

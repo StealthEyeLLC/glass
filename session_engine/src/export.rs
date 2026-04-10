@@ -31,3 +31,21 @@ pub fn materialize_share_safe_procfs_pack_bytes(
     apply_sanitization_to_manifest(&mut manifest, &result);
     write_glass_pack_to_vec(&manifest, &result.events)
 }
+
+/// Build a **share-safe** `glass.pack.v0.scaffold` ZIP from **file-lane** normalized events (directory-poll kinds).
+/// Uses the same [`sanitize_events_for_share`] pipeline as procfs export; manifest base labels the fs file lane adapter.
+/// **Provisional** — F-05 path policy for file-lane attrs is not frozen (`SANITIZE_PROFILE_VERSION`).
+pub fn materialize_share_safe_file_lane_pack_bytes(
+    events: &[NormalizedEventEnvelope],
+    session_id: &str,
+) -> Result<Vec<u8>, PackError> {
+    let result = sanitize_events_for_share(
+        events,
+        SanitizationProfile {
+            home_dir_prefix: None,
+        },
+    );
+    let mut manifest = SessionManifest::file_lane_poll_dev_scaffold(session_id);
+    apply_sanitization_to_manifest(&mut manifest, &result);
+    write_glass_pack_to_vec(&manifest, &result.events)
+}
