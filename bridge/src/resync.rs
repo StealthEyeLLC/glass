@@ -3,7 +3,8 @@
 //! **Bounded-era F-04 is frozen:** [`RESYNC_HINT_REASON_*`] are the single source of truth for JSON
 //! `resync_hint.reason` on `GET /sessions/:id/snapshot` — see `docs/PHASE0_FREEZE_TRACKER.md` (Closed F-04).
 //! [`PROVISIONAL_BACKLOG_EVENT_THRESHOLD`] and live backlog / `ipc_gap` reasons remain **deferred** until live
-//! ingest exists. Mapping logic: [`crate::snapshot_contract`].
+//! ingest exists. **F-03 decision package (queue ownership, overflow, escalation):**
+//! `docs/F03_LIVE_BACKLOG_FREEZE_PROPOSAL.md`. Mapping logic: [`crate::snapshot_contract`].
 
 use serde::{Deserialize, Serialize};
 

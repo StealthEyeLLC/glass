@@ -125,12 +125,12 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 
 | Field | Content |
 |-------|---------|
-| **Status** | Open |
-| **Decision-ready options** | Event count ceiling, byte ceiling of queued deltas, or both (AND) |
-| **Proposed default** | Keep `10_000` events **or** add `4 MiB` bytes — **human picks** |
-| **Rationale** | Viewer recovery contract (spec §18A.3) needs numeric tests |
-| **Code / tests** | `glass_bridge::resync::PROVISIONAL_BACKLOG_EVENT_THRESHOLD`; also exposed in `GET /capabilities` JSON (`bridge_api_version` 1 skeleton) — **byte ceiling** still unset |
-| **Provisional OK?** | **Yes** — threshold numeric is still human-owned (F-03); server skeleton does not implement queued deltas |
+| **Status** | Open — **decision package:** `docs/F03_LIVE_BACKLOG_FREEZE_PROPOSAL.md` (queue model, overflow, escalation, thresholds, client inference — **Option A/B + recommended + impact** per §5–§7). |
+| **Decision-ready options** | Event count ceiling, byte ceiling of queued deltas, or both (AND); plus per-connection vs per-session queue ownership; drop vs coalesce vs force-resync on overflow (see memo). |
+| **Proposed default** | Keep `10_000` events **or** add `4 MiB` bytes — **human picks**; **per-connection** queue likely for v0 (memo §5). |
+| **Rationale** | Viewer recovery contract (spec §18A.3) needs numeric tests; **do not** let implementation silently pick backlog semantics. |
+| **Code / tests** | `glass_bridge::resync::PROVISIONAL_BACKLOG_EVENT_THRESHOLD`; `live_session_ws` provisional queue caps + `LIVE_WS_REASON_*`; also exposed in `GET /capabilities` JSON (`bridge_api_version` 1 skeleton) — **byte ceiling** still unset |
+| **Provisional OK?** | **Yes** — threshold numeric is still human-owned (F-03); real multi-producer outbound queue **not** implemented yet |
 
 ### F-IPC — Collector ↔ bridge local IPC (credentials + path)
 
@@ -193,6 +193,7 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 - [x] F-02 v1 format documented **in this tracker** (ADR-equivalent for bootstrap)
 - [x] Bounded-era F-04: `docs/contracts/bridge_session_snapshot_bounded_v0.schema.json` + **Closed — bounded-era F-04** section above
 - [x] Live-session WS skeleton: `docs/contracts/live_session_ws_skeleton_v1.md` + tracker subsection (**provisional**; not F-03/F-04 live-era closure)
+- [ ] **F-03 live backlog / outbound queue** — human freeze using `docs/F03_LIVE_BACKLOG_FREEZE_PROPOSAL.md` (this checklist item completes when tracker F-03 row moves from Open to Closed with chosen options)
 
 ---
 

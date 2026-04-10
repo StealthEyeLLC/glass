@@ -36,11 +36,11 @@
 
 See `docs/PHASE0_FREEZE_TRACKER.md` — Open freeze decisions.
 
-**Bounded-era F-04** (snapshot cursor + `resync_hint` on `GET /sessions/:id/snapshot`) is **closed**. **Still open:** F-03 **live** backlog / byte ceiling when a real delta queue exists; **F-04 live-era** extra reasons/fields; F-IPC transport; F-05 sanitization; etc.
+**Bounded-era F-04** (snapshot cursor + `resync_hint` on `GET /sessions/:id/snapshot`) is **closed**. **Still open:** F-03 **live** backlog / outbound queue policy — **decision-ready package** in `docs/F03_LIVE_BACKLOG_FREEZE_PROPOSAL.md` (per-connection vs per-session queue, overflow + `session_resync_required` rules, event vs byte thresholds); implementation of the real queue remains **after** human freeze. **F-04 live-era** extra HTTP reasons/fields; F-IPC transport; F-05 sanitization; etc.
 
 ## Next engineering steps
 
-1. Close remaining Phase 0 items (golden method F-01, **F-03 live backlog** policy, sanitization F-05). Evolve **live-session** path: real outbound queue + **additive** live-era `resync_hint` / WS reasons — **do not** break frozen bounded HTTP tokens or opaque cursor contract without a version bump.
+1. **Human:** freeze F-03 using `docs/F03_LIVE_BACKLOG_FREEZE_PROPOSAL.md`, then implement the chosen outbound queue + escalation path. Close remaining Phase 0 items (golden method F-01, sanitization F-05). Evolve **live-session** path: real outbound queue + **additive** live-era `resync_hint` / WS reasons — **do not** break frozen bounded HTTP tokens or opaque cursor contract without a version bump.
 2. **Optional:** tighten browser-side pack/ZIP size caps and streaming decode if large packs become a product requirement (F-07 line/record bound already enforced per event).
 3. **Optional next file-lane step:** `notify`/`fanotify` substrate (still honest capability gating), F-IPC bounded snapshots for file-lane sessions, and/or **share-safe export** rules for file paths in `attrs` (F-05). Extend normalization + share-safe export for **eBPF / network** when those adapters land; IPC socket when F-IPC closes; tighten F-05 / path heuristics with human review; optional **`glass-pack`** checks for additional pack lanes when they land.
 4. Replace **provisional TCP** F-IPC with human-frozen transport (Unix socket / peer creds); honest WS deltas + resync harness (drops/dupes/reorder); live viewer client (Phase 5–6); WebGPU scene replay (Phase 6) — separate track.

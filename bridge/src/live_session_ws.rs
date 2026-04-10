@@ -6,6 +6,9 @@
 //!
 //! Live-era WS-only reasons ([`LIVE_WS_REASON_*`]) are **separate** from frozen bounded HTTP
 //! [`crate::resync::RESYNC_HINT_REASON_*`] tokens.
+//!
+//! **F-03 (live backlog / outbound queue)** is **not** frozen here — human decision package:
+//! `docs/F03_LIVE_BACKLOG_FREEZE_PROPOSAL.md`. Provisional queue caps are placeholders, not the final contract.
 
 use std::collections::VecDeque;
 use std::time::Duration;
@@ -26,7 +29,9 @@ pub const LIVE_SESSION_WS_PROTOCOL_V1: u32 = 1;
 /// Default poll interval when `GLASS_BRIDGE_LIVE_WS_POLL_MS` is unset (**provisional**).
 pub const PROVISIONAL_LIVE_WS_POLL_INTERVAL_MS: u64 = 200;
 
-/// Max outbound JSON lines queued per connection before **`session_resync_required`** (**provisional**).
+/// Max outbound JSON lines queued **per WebSocket connection** before overflow handling (**provisional**).
+/// **Not** a frozen F-03 policy — see `docs/F03_LIVE_BACKLOG_FREEZE_PROPOSAL.md`; current behavior escalates
+/// with [`LIVE_WS_REASON_QUEUE_OVERFLOW`].
 pub const PROVISIONAL_LIVE_WS_OUTBOUND_QUEUE_MAX: usize = 64;
 
 /// Max events embedded in a `session_snapshot_replaced` payload (**provisional**; full view via HTTP snapshot).
@@ -394,5 +399,41 @@ mod tests {
     fn live_ws_reasons_distinct_from_bounded_http_tokens() {
         assert!(!LIVE_WS_REASON_QUEUE_OVERFLOW.contains("bounded_truncation"));
         assert!(!crate::resync::RESYNC_HINT_REASON_BOUNDED_TRUNCATION.is_empty());
+    }
+
+    #[test]
+    fn live_ws_reason_strings_never_equal_bounded_resync_hint_tokens() {
+        let bounded = [
+            crate::resync::RESYNC_HINT_REASON_BOUNDED_TRUNCATION,
+            crate::resync::RESYNC_HINT_REASON_PER_RPC_POLL_NOT_INCREMENTAL,
+            crate::resync::RESYNC_HINT_REASON_RETAINED_TAIL_REPLACES,
+        ];
+        let live = [
+            LIVE_WS_REASON_QUEUE_OVERFLOW,
+            LIVE_WS_REASON_POLL_FAILED,
+            LIVE_WS_REASON_RESYNC_AFTER_WS_OVERLOAD,
+        ];
+        for b in bounded {
+            for l in live {
+                assert_ne!(
+                    b, l,
+                    "LIVE_WS_REASON must never collide with frozen HTTP resync_hint.reason token"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn live_ws_reason_strings_are_pairwise_distinct() {
+        let live = [
+            LIVE_WS_REASON_QUEUE_OVERFLOW,
+            LIVE_WS_REASON_POLL_FAILED,
+            LIVE_WS_REASON_RESYNC_AFTER_WS_OVERLOAD,
+        ];
+        for i in 0..live.len() {
+            for j in i + 1..live.len() {
+                assert_ne!(live[i], live[j]);
+            }
+        }
     }
 }
