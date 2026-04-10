@@ -52,7 +52,12 @@ import {
 } from "./liveWebGpuProbe.js";
 import { formatLiveVisualLegendBlock } from "./liveVisualMarkers.js";
 import { buildLiveVisualSpec } from "./liveVisualModel.js";
-import { paintLiveVisualSurface } from "./liveVisualRenderer.js";
+import {
+  buildLiveVisualProvenanceStrip,
+  formatLiveVisualProvenanceStripText,
+  LIVE_VISUAL_PROVENANCE_STRIP_HONESTY,
+} from "./liveVisualProvenance.js";
+import { paintLiveVisualSurface, type PaintLiveVisualSurfaceResult } from "./liveVisualRenderer.js";
 import type { LiveVisualWebGpuBundle } from "./liveVisualWebGpu.js";
 import { tryInitWebGpuCanvas } from "./liveVisualWebGpu.js";
 import "./liveSessionShell.css";
@@ -318,6 +323,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const visualSurface = el("section", "glass-live-visual-surface");
   visualSurface.setAttribute("data-testid", "live-visual-surface");
   visualSurface.setAttribute("aria-labelledby", "live-visual-surface-title");
+  visualSurface.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
   const visualIntro = el(
     "div",
     "glass-live-field",
@@ -347,19 +353,47 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   visualFallback.textContent =
     "Canvas 2D context unavailable — textual panels above remain authoritative for this session.";
   visualFallback.hidden = true;
+  const visualProvenanceStrip = el("pre", "glass-live-visual-provenance");
+  visualProvenanceStrip.setAttribute("data-testid", "live-visual-provenance-strip");
+  visualProvenanceStrip.setAttribute("id", "live-visual-provenance-strip");
+  visualProvenanceStrip.setAttribute("title", LIVE_VISUAL_PROVENANCE_STRIP_HONESTY);
   const visualLegend = el("p", "glass-live-visual-legend");
   visualLegend.setAttribute("data-testid", "live-visual-legend");
   visualLegend.setAttribute("id", "live-visual-legend");
   visualLegend.textContent = formatLiveVisualLegendBlock();
-  visualCanvas.setAttribute("aria-describedby", "live-visual-legend");
-  visualCanvasWebGpu.setAttribute("aria-describedby", "live-visual-legend");
-  visualCanvasTextOverlay.setAttribute("aria-describedby", "live-visual-legend");
-  visualSurface.append(visualIntro, visualGpuStatus, visualCanvasStack, visualFallback, visualLegend);
+  visualCanvas.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
+  visualCanvasWebGpu.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
+  visualCanvasTextOverlay.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
+  visualSurface.append(
+    visualIntro,
+    visualGpuStatus,
+    visualCanvasStack,
+    visualFallback,
+    visualProvenanceStrip,
+    visualLegend,
+  );
 
   let webGpuBundle: LiveVisualWebGpuBundle | null = null;
+  let lastPaintResult: PaintLiveVisualSurfaceResult | null = null;
+
+  function refreshVisualProvenanceStrip(): void {
+    const spec = buildLiveVisualSpec(model, lastReconcile);
+    const strip = buildLiveVisualProvenanceStrip({
+      webGpuProbeStatus: webGpuStatus,
+      webGpuBundlePresent: webGpuBundle !== null,
+      lastPaint: lastPaintResult,
+      visualSpec: spec,
+      lastHttp,
+      lastReconcile,
+      deltaWireCheckbox: deltaWire.checked,
+      sessionDeltaWireV0FromCaps: lastCaps?.websocket.session_delta_wire_v0,
+    });
+    visualProvenanceStrip.textContent = formatLiveVisualProvenanceStripText(strip);
+  }
 
   function updateWebGpuStatusDisplay(): void {
     visualGpuStatus.textContent = formatWebGpuLiveStatusLine(webGpuStatus);
+    refreshVisualProvenanceStrip();
   }
 
   void (async () => {
@@ -492,8 +526,10 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       undefined,
       webGpuBundle,
     );
+    lastPaintResult = result;
     visualFallback.hidden = result.fallbackTextShouldHide;
     visualLegend.textContent = formatLiveVisualLegendBlock();
+    refreshVisualProvenanceStrip();
   }
 
   function renderCaps(): void {
@@ -516,12 +552,14 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
             2,
           )
         : "(not fetched — use Preflight with URL + token)";
+    refreshVisualProvenanceStrip();
   }
 
   function renderReconcile(): void {
     reconcilePre.textContent = lastReconcile
       ? JSON.stringify(lastReconcile, null, 2)
       : "(no HTTP snapshot refresh yet)";
+    refreshVisualProvenanceStrip();
   }
 
   function renderMeta(): void {
@@ -869,6 +907,11 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
 
   btnSnapshot.addEventListener("click", () => {
     void runHttpSnapshot("operator");
+  });
+
+  deltaWire.addEventListener("change", () => {
+    persistFormSafe();
+    refreshVisualProvenanceStrip();
   });
 
   setEphemeralStatus("");

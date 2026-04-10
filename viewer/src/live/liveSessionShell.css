@@ -233,6 +233,20 @@
   margin: 0.35rem 0 0;
 }
 
+.glass-live-visual-provenance {
+  font-size: 0.65rem;
+  line-height: 1.4;
+  font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", monospace;
+  color: #334155;
+  margin: 0.4rem 0 0;
+  padding: 0.25rem 0.35rem;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 2px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .glass-live-visual-legend {
   font-size: 0.68rem;
   line-height: 1.35;
