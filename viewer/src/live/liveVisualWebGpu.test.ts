@@ -3,6 +3,7 @@ import { createInitialLiveSessionModelState } from "./applyLiveSessionMessage.js
 import { buildLiveVisualSpec } from "./liveVisualModel.js";
 import { compileLiveToGlassSceneV0 } from "../scene/compileLiveScene.js";
 import { sceneToDrawablePrimitives } from "../scene/sceneToDrawablePrimitives.js";
+import { expandStrokeRectToFillRects } from "../scene/drawablePrimitivesV0.js";
 import {
   buildDrawablePrimitivesWebGpuVertexData,
   buildLiveVisualWebGpuVertexData,
@@ -61,5 +62,24 @@ describe("buildDrawablePrimitivesWebGpuVertexData", () => {
     );
     expect(fromScene.length).toBe(fromSpec.length);
     expect([...fromScene]).toEqual([...fromSpec]);
+  });
+
+  it("expands tagged strokes to edge-tagged fills without changing float count vs untagged geometry", () => {
+    const layout = { widthCss: 200, heightCss: 100 };
+    const spec = buildLiveVisualSpec(createInitialLiveSessionModelState("sid"), null);
+    const buf = buildLiveVisualWebGpuVertexData(spec, layout);
+    const primitives = sceneToDrawablePrimitives(
+      compileLiveToGlassSceneV0({ model: createInitialLiveSessionModelState("sid"), lastReconcile: null }),
+      layout,
+    );
+    let manualFloats = 0;
+    for (const pr of primitives) {
+      if (pr.kind === "fill_rect") {
+        manualFloats += 36;
+      } else {
+        manualFloats += expandStrokeRectToFillRects(pr).length * 36;
+      }
+    }
+    expect(buf.length).toBe(manualFloats);
   });
 });

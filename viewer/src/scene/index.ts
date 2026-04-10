@@ -16,9 +16,11 @@ export { liveVisualSpecFromScene } from "./sceneToLiveVisualSpec.js";
 export {
   DRAWABLE_PRIMITIVES_V0,
   buildBoundedVisualGeometryPrimitives,
+  edgeFrameTagsForStroke,
   expandStrokeRectToFillRects,
   type DrawablePrimitive,
   type DrawablePrimitiveFillRect,
+  type DrawablePrimitiveSemanticTag,
   type DrawablePrimitiveStrokeRect,
 } from "./drawablePrimitivesV0.js";
 export { sceneToDrawablePrimitives } from "./sceneToDrawablePrimitives.js";

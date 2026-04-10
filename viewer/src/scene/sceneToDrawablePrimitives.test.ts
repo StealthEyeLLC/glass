@@ -83,5 +83,30 @@ describe("sceneToDrawablePrimitives", () => {
     const p = sceneToDrawablePrimitives(scene);
     expect(p.length).toBeGreaterThan(3);
     expect(p[0]?.kind).toBe("fill_rect");
+    expect(p[0]?.semanticTag).toBe("band_background");
+    expect(p.map((x) => x.semanticTag)).toContain("density_band");
+    expect(p.map((x) => x.semanticTag)).toContain("band_frame");
+  });
+
+  it("live and replay share the same semantic tag prefix for the strip", () => {
+    const liveScene = compileLiveToGlassSceneV0({
+      model: createInitialLiveSessionModelState("sid"),
+      lastReconcile: null,
+    });
+    let st = initialReplayState();
+    st = reduceReplay(st, {
+      type: "load_ok",
+      fileName: "x.glass_pack",
+      manifest: replayManifest(),
+      events: [replayEv(1)],
+    });
+    st = reduceReplay(st, { type: "seek_index", index: 0 });
+    const replayScene = compileReplayToGlassSceneV0(st);
+    const a = sceneToDrawablePrimitives(liveScene).map((x) => x.semanticTag).slice(0, 6);
+    const b = sceneToDrawablePrimitives(replayScene).map((x) => x.semanticTag).slice(0, 6);
+    expect(a.slice(0, 5)).toEqual(b.slice(0, 5));
+    expect(a[0]).toBe("band_background");
+    expect(a[1]).toBe("density_band");
+    expect(a[2]).toBe("tick_slot_replace");
   });
 });
