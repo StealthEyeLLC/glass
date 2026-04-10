@@ -82,6 +82,16 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 
 ## Open — human-owned vs decision-ready
 
+### F-03 / F-04 — bounded snapshot cursor + `resync_hint` (decision package)
+
+| Field | Content |
+|-------|---------|
+| **Status** | **Decision-ready** — implementation-grounded options in `docs/F03_F04_FREEZE_PROPOSAL.md` (not closed in this tracker until a human records the chosen options here). |
+| **Covers** | `snapshot_cursor` grammar (`v0:empty`, `v0:off:0`, `v0:off:N`), opaque vs structured cursor, `resync_hint` reason tokens + optional `detail`, bounded continuity (truncation / per-RPC / retained tail), client inference rules, what stays deferred until live ingest. |
+| **Code / tests** | `glass_bridge::resync` (`RESYNC_HINT_REASON_*`), `glass_bridge::snapshot_contract`, `glass_collector::ipc_dev_tcp::SnapshotStore::get_bounded` tests, `bridge/tests/snapshot_fipc.rs`. |
+| **Still human-owned (unchanged)** | `PROVISIONAL_BACKLOG_EVENT_THRESHOLD` numeric / byte ceiling for **live** queued deltas (F-03 backlog) — separate from bounded snapshot hints. |
+| **After freeze** | Record closed choices in this file; then extend OpenAPI/JSON Schema for bounded snapshot responses; live delta reasons (`ipc_gap`, etc.) **add** new tokens without breaking bounded-era strings. |
+
 ### F-01 — Visual regression method
 
 | Field | Content |
@@ -94,7 +104,7 @@ For each item: **status**, **proposed default** (when applicable), **rationale**
 | **Code / tests** | `tools/golden_scenes/` (placeholder only) |
 | **Provisional OK?** | **Yes** — no Phase 1 blocker |
 
-### F-03 — Resync backlog threshold
+### F-03 — Resync backlog threshold (live delta queue — distinct from bounded snapshot hints)
 
 | Field | Content |
 |-------|---------|

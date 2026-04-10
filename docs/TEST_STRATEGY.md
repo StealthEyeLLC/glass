@@ -26,7 +26,9 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | `graph_engine::tests::smoke` | Graph crate consumes session facts |
 | `bridge::tests::resync_contract` | Resync constants + recovery enum |
 | `bridge::tests::http_contract` | Loopback-only config; `/health` unauthenticated; bearer gate on `/capabilities` + snapshot; `collector_fipc` capability flags; bounded `SessionSnapshotResponse` without F-IPC (no `bounded_snapshot` / `max_events_requested`); **503** when F-IPC configured but collector unreachable; non-loopback F-IPC rejected; WS bad-request without upgrade; real WS handshake + hello JSON; `serve_listener` + `tokio-tungstenite` client |
-| `bridge::tests::snapshot_fipc` | HTTP snapshot over F-IPC: `bounded_snapshot.snapshot_origin` + **`resync_hint`** for truncation / per-RPC / retained tail; `?max_events=` clamp; unknown session `unknown_or_empty`; seeded store without retained **no** hint; **503** / auth unchanged |
+| `bridge::tests::snapshot_fipc` | HTTP snapshot over F-IPC: `bounded_snapshot.snapshot_origin` + **`resync_hint`** for truncation / per-RPC / retained tail; `?max_events=` clamp; unknown session `unknown_or_empty` vs **known-empty** store row `v0:off:0`; seeded store without retained **no** hint; **503** / auth unchanged |
+| `glass_bridge::snapshot_contract` (unit) | `bounded_http_from_fipc_meta`: no hint for `unknown_or_empty` or full single-page store; truncation / per-RPC / retained + `retained_snapshot_unix_ms` reasons |
+| `glass_collector::ipc_dev_tcp` (`snapshot_store_contract_tests`) | `SnapshotStore::get_bounded`: `v0:empty` + `session_known == false` vs `v0:off:0` for known empty vec; prefix cursor |
 | `integration_tests::repo_layout` | Monorepo shape |
 | `integration_tests::hvt_policy` | HVT count ≤ cap |
 | `integration_tests::golden_scaffold` | Golden harness files exist |

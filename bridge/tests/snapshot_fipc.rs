@@ -9,6 +9,10 @@ use std::time::Duration;
 use axum::body::Body;
 use axum::http::{Request, StatusCode};
 use glass_bridge::http_types::SNAPSHOT_CURSOR_EMPTY;
+use glass_bridge::resync::{
+    RESYNC_HINT_REASON_BOUNDED_TRUNCATION, RESYNC_HINT_REASON_PER_RPC_POLL_NOT_INCREMENTAL,
+    RESYNC_HINT_REASON_RETAINED_TAIL_REPLACES,
+};
 use glass_bridge::{app_router, BridgeConfig, CollectorIpcClientConfig};
 use glass_collector::ipc::PROVISIONAL_FIPC_WIRE_PROTOCOL_VERSION;
 use glass_collector::{
@@ -169,6 +173,59 @@ async fn empty_session_snapshot_cursor_via_fipc() {
 }
 
 #[tokio::test]
+async fn known_empty_session_snapshot_cursor_v0_off_zero_no_resync_hint() {
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let addr = listener.local_addr().unwrap();
+    let store = Arc::new(SnapshotStore::new());
+    store.set_session_events("known_empty_sess", Vec::new());
+    let runtime = Arc::new(IpcDevTcpRuntime {
+        store,
+        procfs_feed: None,
+        file_lane_feed: None,
+        retained_poll_meta: None,
+        file_lane_retained_poll_meta: None,
+    });
+    let secret = Arc::<str>::from("sec-ke");
+    let rt = runtime.clone();
+    let sec = secret.clone();
+    thread::spawn(move || {
+        let (stream, _) = listener.accept().expect("accept");
+        let _ = handle_ipc_dev_tcp_connection(stream, sec.as_ref(), rt.as_ref());
+    });
+    thread::sleep(Duration::from_millis(40));
+
+    let cfg = BridgeConfig {
+        bind: "127.0.0.1:0".parse().unwrap(),
+        bearer_token: Arc::from("t"),
+        allow_non_loopback: false,
+        collector_ipc: Some(CollectorIpcClientConfig {
+            addr,
+            shared_secret: secret,
+            timeout: Duration::from_secs(2),
+        }),
+    };
+    let app = app_router(&cfg);
+    let res = app
+        .oneshot(
+            Request::builder()
+                .uri("/sessions/known_empty_sess/snapshot")
+                .header("Authorization", "Bearer t")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(res.status(), StatusCode::OK);
+    let b = res.into_body().collect().await.unwrap().to_bytes();
+    let v: serde_json::Value = serde_json::from_slice(&b).unwrap();
+    assert_eq!(v["snapshot_cursor"], "v0:off:0");
+    assert_eq!(v["bounded_snapshot"]["snapshot_origin"], "collector_store");
+    assert_eq!(v["bounded_snapshot"]["returned_events"], 0);
+    assert_eq!(v["bounded_snapshot"]["available_in_view"], 0);
+    assert!(v["resync_hint"].is_null());
+}
+
+#[tokio::test]
 async fn snapshot_via_procfs_fixture_normalized_envelope() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("raw.json");
@@ -243,7 +300,7 @@ async fn snapshot_via_procfs_fixture_normalized_envelope() {
     assert_eq!(v["collector_ipc"]["status"], "ok");
     assert_eq!(
         v["resync_hint"]["reason"],
-        "per_rpc_poll_snapshot_not_incremental"
+        RESYNC_HINT_REASON_PER_RPC_POLL_NOT_INCREMENTAL
     );
     assert_eq!(v["bounded_snapshot"]["snapshot_origin"], "per_rpc_procfs");
 }
@@ -330,7 +387,7 @@ async fn snapshot_via_file_lane_fixture_normalized_envelope() {
     assert_eq!(v["collector_ipc"]["status"], "ok");
     assert_eq!(
         v["resync_hint"]["reason"],
-        "per_rpc_poll_snapshot_not_incremental"
+        RESYNC_HINT_REASON_PER_RPC_POLL_NOT_INCREMENTAL
     );
     assert_eq!(
         v["bounded_snapshot"]["snapshot_origin"],
@@ -422,7 +479,7 @@ async fn snapshot_file_lane_retained_includes_retained_unix_ms() {
     assert_eq!(v["live_session_ingest"], false);
     assert_eq!(
         v["resync_hint"]["reason"],
-        "retained_snapshot_tail_replaces_not_append_only"
+        RESYNC_HINT_REASON_RETAINED_TAIL_REPLACES
     );
 }
 
@@ -503,7 +560,7 @@ async fn snapshot_retained_store_includes_retained_unix_ms() {
     assert_eq!(v["live_session_ingest"], false);
     assert_eq!(
         v["resync_hint"]["reason"],
-        "retained_snapshot_tail_replaces_not_append_only"
+        RESYNC_HINT_REASON_RETAINED_TAIL_REPLACES
     );
 }
 
@@ -559,7 +616,10 @@ async fn snapshot_truncation_emits_bounded_resync_hint() {
     assert_eq!(v["events"].as_array().unwrap().len(), 2);
     assert_eq!(v["snapshot_cursor"], "v0:off:2");
     assert_eq!(v["max_events_requested"], 2);
-    assert_eq!(v["resync_hint"]["reason"], "bounded_truncation");
+    assert_eq!(
+        v["resync_hint"]["reason"],
+        RESYNC_HINT_REASON_BOUNDED_TRUNCATION
+    );
     assert_eq!(v["bounded_snapshot"]["truncated_by_max_events"], true);
     assert_eq!(v["bounded_snapshot"]["available_in_view"], 5);
     assert_eq!(v["bounded_snapshot"]["returned_events"], 2);

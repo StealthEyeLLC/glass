@@ -108,6 +108,46 @@ impl SnapshotStore {
     }
 }
 
+#[cfg(test)]
+mod snapshot_store_contract_tests {
+    use super::SnapshotStore;
+
+    #[test]
+    fn unknown_session_uses_v0_empty_and_not_known() {
+        let s = SnapshotStore::new();
+        let (ev, cur, total, known) = s.get_bounded("missing", 10);
+        assert!(ev.is_empty());
+        assert_eq!(cur, "v0:empty");
+        assert_eq!(total, 0);
+        assert!(!known);
+    }
+
+    #[test]
+    fn known_empty_session_uses_v0_off_zero() {
+        let s = SnapshotStore::new();
+        s.set_session_events("empty_sess", Vec::new());
+        let (ev, cur, total, known) = s.get_bounded("empty_sess", 10);
+        assert!(ev.is_empty());
+        assert_eq!(cur, "v0:off:0");
+        assert_eq!(total, 0);
+        assert!(known);
+    }
+
+    #[test]
+    fn known_populated_prefix_cursor_and_totals() {
+        let s = SnapshotStore::new();
+        s.set_session_events(
+            "pop",
+            vec![serde_json::json!({"k": 1}), serde_json::json!({"k": 2})],
+        );
+        let (ev, cur, total, known) = s.get_bounded("pop", 1);
+        assert_eq!(ev.len(), 1);
+        assert_eq!(cur, "v0:off:1");
+        assert_eq!(total, 2);
+        assert!(known);
+    }
+}
+
 /// Configuration for [`run_ipc_dev_tcp_listener`].
 #[derive(Debug, Clone)]
 pub struct IpcDevTcpListenConfig {

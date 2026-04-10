@@ -36,6 +36,8 @@
 
 See `docs/PHASE0_FREEZE_TRACKER.md` — Open freeze decisions.
 
+**Bounded snapshot / `resync_hint` (F-03/F-04 adjacent):** `docs/F03_F04_FREEZE_PROPOSAL.md` is the decision package for freezing cursor grammar, bounded-era `resync_hint` reason tokens, and continuity rules — **not** normative until the tracker records sign-off. Live backlog threshold (`PROVISIONAL_BACKLOG_EVENT_THRESHOLD`) remains a separate human decision.
+
 ## Next engineering steps
 
 1. Close remaining Phase 0 items (golden method F-01, resync numbers F-03/F-04, sanitization policy F-05).

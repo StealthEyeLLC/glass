@@ -93,7 +93,7 @@ pub struct SessionSnapshotResponse {
     pub max_events_requested: Option<u32>,
 }
 
-/// Initial cursor for an empty session timeline (opaque string; format TBD when F-04 closes).
+/// Unknown session or empty per-RPC poll — same literal; disambiguate with `bounded_snapshot.snapshot_origin` (`docs/F03_F04_FREEZE_PROPOSAL.md`).
 pub const SNAPSHOT_CURSOR_EMPTY: &str = "v0:empty";
 
 impl CapabilitiesResponse {
