@@ -3,7 +3,10 @@ import {
   buildLiveVisualProvenanceStrip,
   deriveRendererMode,
   formatLiveVisualProvenanceStripText,
+  GLASS_LIVE_VISUAL_PROVENANCE_V0,
   LIVE_VISUAL_PROVENANCE_STRIP_HONESTY,
+  serializeLiveVisualProvenanceStrip,
+  toLiveVisualProvenanceExportV0,
 } from "./liveVisualProvenance.js";
 
 const baseInput = {
@@ -175,5 +178,50 @@ describe("formatLiveVisualProvenanceStripText", () => {
   it("exports honesty constant for UI copy", () => {
     expect(LIVE_VISUAL_PROVENANCE_STRIP_HONESTY.length).toBeGreaterThan(20);
     expect(LIVE_VISUAL_PROVENANCE_STRIP_HONESTY.toLowerCase()).toContain("not topology");
+  });
+});
+
+describe("serializeLiveVisualProvenanceStrip / toLiveVisualProvenanceExportV0", () => {
+  it("produces deterministic JSON for the same strip", () => {
+    const strip = buildLiveVisualProvenanceStrip(baseInput);
+    const a = serializeLiveVisualProvenanceStrip(strip).jsonPretty;
+    const b = serializeLiveVisualProvenanceStrip(strip).jsonPretty;
+    expect(a).toBe(b);
+    const parsed = JSON.parse(a) as { kind: string };
+    expect(parsed.kind).toBe(GLASS_LIVE_VISUAL_PROVENANCE_V0);
+  });
+
+  it("embeds plainText matching formatLiveVisualProvenanceStripText", () => {
+    const strip = buildLiveVisualProvenanceStrip(baseInput);
+    const ser = serializeLiveVisualProvenanceStrip(strip);
+    expect(ser.plainText).toBe(formatLiveVisualProvenanceStripText(strip));
+    expect(ser.export.plainText).toBe(ser.plainText);
+  });
+
+  it("toLiveVisualProvenanceExportV0 maps reconcile without extra fields", () => {
+    const exp = toLiveVisualProvenanceExportV0(
+      buildLiveVisualProvenanceStrip({
+        ...baseInput,
+        lastReconcile: {
+          atIso: "2020-01-02T00:00:00.000Z",
+          trigger: "operator",
+          status: "ok",
+          eventsCount: 1,
+        },
+      }),
+    );
+    expect(exp.lastReconcile).toEqual({
+      atIso: "2020-01-02T00:00:00.000Z",
+      trigger: "operator",
+      status: "ok",
+      eventsCount: 1,
+    });
+  });
+
+  it("JSON export does not include token-like credential fields", () => {
+    const json = serializeLiveVisualProvenanceStrip(buildLiveVisualProvenanceStrip(baseInput)).jsonPretty;
+    expect(json.toLowerCase()).not.toContain("access_token");
+    expect(json.toLowerCase()).not.toContain("authorization:");
+    expect(json).not.toMatch(/eyJ[a-z0-9_-]{10,}/i);
   });
 });

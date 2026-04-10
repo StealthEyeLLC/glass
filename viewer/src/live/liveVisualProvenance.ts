@@ -157,6 +157,90 @@ export function formatLiveVisualProvenanceStripText(strip: LiveVisualProvenanceS
   return `${line1}\n${line2}`;
 }
 
+/** JSON export kind — stable for clipboard / tests. */
+export const GLASS_LIVE_VISUAL_PROVENANCE_V0 = "glass_live_visual_provenance_v0" as const;
+
+export const LIVE_VISUAL_PROVENANCE_EXPORT_NOTE =
+  "Bounded current-state viewer snapshot only — not authoritative history, not topology, not continuity; no auth secrets or session tokens." as const;
+
+export interface LiveVisualProvenanceExportV0 {
+  kind: typeof GLASS_LIVE_VISUAL_PROVENANCE_V0;
+  note: typeof LIVE_VISUAL_PROVENANCE_EXPORT_NOTE;
+  /** Same as `formatLiveVisualProvenanceStripText` — single source for plain copy. */
+  plainText: string;
+  rendererMode: LiveVisualRendererModeLabel;
+  canvasOnlyGpuSubdetail: CanvasOnlyGpuSubdetail;
+  wireUpdateMode: LiveVisualMode;
+  snapshotOrigin: string;
+  deltaWire: {
+    checkbox: boolean;
+    serverSessionDeltaWireV0: boolean | undefined;
+  };
+  lastReconcile: null | {
+    atIso: string;
+    trigger: string;
+    status: string;
+    eventsCount?: number;
+    errorMessage?: string;
+  };
+}
+
+function reconcileToExport(r: HttpReconcileRecord | null): LiveVisualProvenanceExportV0["lastReconcile"] {
+  if (!r) {
+    return null;
+  }
+  const o: NonNullable<LiveVisualProvenanceExportV0["lastReconcile"]> = {
+    atIso: r.atIso,
+    trigger: r.trigger,
+    status: r.status,
+  };
+  if (r.eventsCount !== undefined) {
+    o.eventsCount = r.eventsCount;
+  }
+  if (r.errorMessage) {
+    o.errorMessage = r.errorMessage;
+  }
+  return o;
+}
+
+/**
+ * Pure bounded export object — same semantic facts as the on-screen strip.
+ */
+export function toLiveVisualProvenanceExportV0(strip: LiveVisualProvenanceStrip): LiveVisualProvenanceExportV0 {
+  return {
+    kind: GLASS_LIVE_VISUAL_PROVENANCE_V0,
+    note: LIVE_VISUAL_PROVENANCE_EXPORT_NOTE,
+    plainText: formatLiveVisualProvenanceStripText(strip),
+    rendererMode: strip.rendererMode,
+    canvasOnlyGpuSubdetail: strip.canvasOnlyGpuSubdetail,
+    wireUpdateMode: strip.wireUpdateMode,
+    snapshotOrigin: strip.snapshotOrigin,
+    deltaWire: {
+      checkbox: strip.deltaWire.checkbox,
+      serverSessionDeltaWireV0: strip.deltaWire.serverSessionDeltaWireV0,
+    },
+    lastReconcile: reconcileToExport(strip.lastReconcile),
+  };
+}
+
+export interface LiveVisualProvenanceSerialized {
+  plainText: string;
+  jsonPretty: string;
+  export: LiveVisualProvenanceExportV0;
+}
+
+/**
+ * Deterministic serialization for clipboard — no DOM, no secrets (reconcile carries only HTTP status fields).
+ */
+export function serializeLiveVisualProvenanceStrip(strip: LiveVisualProvenanceStrip): LiveVisualProvenanceSerialized {
+  const exportV0 = toLiveVisualProvenanceExportV0(strip);
+  return {
+    plainText: exportV0.plainText,
+    jsonPretty: JSON.stringify(exportV0, null, 2),
+    export: exportV0,
+  };
+}
+
 /** Honesty line for docs / screen-reader — does not claim full history or topology. */
 export const LIVE_VISUAL_PROVENANCE_STRIP_HONESTY =
   "Provenance reflects current bounded session + last HTTP snapshot fields only — not a timeline, not full history, not topology.";

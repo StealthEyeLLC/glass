@@ -31,6 +31,48 @@ describe("mountLiveSessionShell", () => {
   });
 });
 
+describe("live visual provenance copy", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("logs success when JSON copy succeeds", async () => {
+    const writeText = vi.fn(() => Promise.resolve(undefined));
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      clipboard: { writeText },
+    });
+    const root = document.createElement("div");
+    mountLiveSessionShell(root);
+    expect(root.querySelector('[data-testid="live-visual-provenance-copy-json"]')).not.toBeNull();
+    (root.querySelector('[data-testid="live-visual-provenance-copy-json"]') as HTMLButtonElement).click();
+    await vi.waitFor(() => {
+      expect(writeText).toHaveBeenCalled();
+    });
+    const log = root.querySelector('[data-testid="live-session-log"]') as HTMLElement;
+    await vi.waitFor(() => {
+      expect(log.textContent).toContain("provenance copied to clipboard (JSON v0)");
+    });
+    const written = writeText.mock.calls[0][0] as string;
+    expect(written).toContain("glass_live_visual_provenance_v0");
+  });
+
+  it("logs failure when clipboard rejects", async () => {
+    const writeText = vi.fn(() => Promise.reject(new Error("clipboard denied")));
+    vi.stubGlobal("navigator", {
+      ...navigator,
+      clipboard: { writeText },
+    });
+    const root = document.createElement("div");
+    mountLiveSessionShell(root);
+    (root.querySelector('[data-testid="live-visual-provenance-copy-json"]') as HTMLButtonElement).click();
+    await vi.waitFor(() => {
+      const log = root.querySelector('[data-testid="live-session-log"]') as HTMLElement;
+      expect(log.textContent).toContain("provenance copy failed");
+    });
+  });
+});
+
 describe("live shell WebSocket lifecycle (deterministic mock)", () => {
   afterEach(() => {
     vi.unstubAllGlobals();

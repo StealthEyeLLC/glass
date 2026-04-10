@@ -55,7 +55,9 @@ import { buildLiveVisualSpec } from "./liveVisualModel.js";
 import {
   buildLiveVisualProvenanceStrip,
   formatLiveVisualProvenanceStripText,
+  GLASS_LIVE_VISUAL_PROVENANCE_V0,
   LIVE_VISUAL_PROVENANCE_STRIP_HONESTY,
+  serializeLiveVisualProvenanceStrip,
 } from "./liveVisualProvenance.js";
 import { paintLiveVisualSurface, type PaintLiveVisualSurfaceResult } from "./liveVisualRenderer.js";
 import type { LiveVisualWebGpuBundle } from "./liveVisualWebGpu.js";
@@ -353,6 +355,18 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   visualFallback.textContent =
     "Canvas 2D context unavailable — textual panels above remain authoritative for this session.";
   visualFallback.hidden = true;
+  const visualProvenanceHeader = el("div", "glass-live-panel-header glass-live-visual-provenance-header");
+  const visualProvenanceCopyJson = el("button", "glass-live-copy", "Copy JSON");
+  visualProvenanceCopyJson.type = "button";
+  visualProvenanceCopyJson.setAttribute("data-testid", "live-visual-provenance-copy-json");
+  const visualProvenanceCopyText = el("button", "glass-live-copy", "Copy text");
+  visualProvenanceCopyText.type = "button";
+  visualProvenanceCopyText.setAttribute("data-testid", "live-visual-provenance-copy-text");
+  visualProvenanceHeader.append(
+    el("span", "glass-live-field", "Live visual provenance (bounded)"),
+    visualProvenanceCopyJson,
+    visualProvenanceCopyText,
+  );
   const visualProvenanceStrip = el("pre", "glass-live-visual-provenance");
   visualProvenanceStrip.setAttribute("data-testid", "live-visual-provenance-strip");
   visualProvenanceStrip.setAttribute("id", "live-visual-provenance-strip");
@@ -369,6 +383,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     visualGpuStatus,
     visualCanvasStack,
     visualFallback,
+    visualProvenanceHeader,
     visualProvenanceStrip,
     visualLegend,
   );
@@ -376,9 +391,9 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   let webGpuBundle: LiveVisualWebGpuBundle | null = null;
   let lastPaintResult: PaintLiveVisualSurfaceResult | null = null;
 
-  function refreshVisualProvenanceStrip(): void {
+  function buildCurrentProvenanceStrip() {
     const spec = buildLiveVisualSpec(model, lastReconcile);
-    const strip = buildLiveVisualProvenanceStrip({
+    return buildLiveVisualProvenanceStrip({
       webGpuProbeStatus: webGpuStatus,
       webGpuBundlePresent: webGpuBundle !== null,
       lastPaint: lastPaintResult,
@@ -388,7 +403,10 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       deltaWireCheckbox: deltaWire.checked,
       sessionDeltaWireV0FromCaps: lastCaps?.websocket.session_delta_wire_v0,
     });
-    visualProvenanceStrip.textContent = formatLiveVisualProvenanceStripText(strip);
+  }
+
+  function refreshVisualProvenanceStrip(): void {
+    visualProvenanceStrip.textContent = formatLiveVisualProvenanceStripText(buildCurrentProvenanceStrip());
   }
 
   function updateWebGpuStatusDisplay(): void {
@@ -912,6 +930,52 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   deltaWire.addEventListener("change", () => {
     persistFormSafe();
     refreshVisualProvenanceStrip();
+  });
+
+  visualProvenanceCopyJson.addEventListener("click", () => {
+    void (async () => {
+      const { jsonPretty } = serializeLiveVisualProvenanceStrip(buildCurrentProvenanceStrip());
+      try {
+        await navigator.clipboard.writeText(jsonPretty);
+        pushLiveLog("operator", "provenance copied to clipboard (JSON v0)", {
+          action: "provenance_copy",
+          format: "json",
+          kind: GLASS_LIVE_VISUAL_PROVENANCE_V0,
+        });
+        setEphemeralStatus("copied live visual provenance JSON");
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        pushLiveLog("operator", `provenance copy failed: ${truncateForLog(msg, 120)}`, {
+          action: "provenance_copy",
+          outcome: "error",
+          format: "json",
+        });
+        setEphemeralStatus(`provenance copy failed (${msg})`);
+      }
+    })();
+  });
+
+  visualProvenanceCopyText.addEventListener("click", () => {
+    void (async () => {
+      const { plainText } = serializeLiveVisualProvenanceStrip(buildCurrentProvenanceStrip());
+      try {
+        await navigator.clipboard.writeText(plainText);
+        pushLiveLog("operator", "provenance copied to clipboard (plain text)", {
+          action: "provenance_copy",
+          format: "plainText",
+          kind: GLASS_LIVE_VISUAL_PROVENANCE_V0,
+        });
+        setEphemeralStatus("copied live visual provenance (text)");
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        pushLiveLog("operator", `provenance copy failed: ${truncateForLog(msg, 120)}`, {
+          action: "provenance_copy",
+          outcome: "error",
+          format: "plainText",
+        });
+        setEphemeralStatus(`provenance copy failed (${msg})`);
+      }
+    })();
   });
 
   setEphemeralStatus("");

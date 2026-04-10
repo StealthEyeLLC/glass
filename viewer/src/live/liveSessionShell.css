@@ -233,6 +233,10 @@
   margin: 0.35rem 0 0;
 }
 
+.glass-live-visual-provenance-header {
+  margin-top: 0.35rem;
+}
+
 .glass-live-visual-provenance {
   font-size: 0.65rem;
   line-height: 1.4;
