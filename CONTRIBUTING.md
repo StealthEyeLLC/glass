@@ -10,6 +10,7 @@
 - `docs/IMPLEMENTATION_STATUS.md`
 - `docs/TEST_STRATEGY.md`
 - `docs/REPO_BOUNDARIES.md`
+- `SECURITY.md`
 
 **Milestone history:** `docs/VERTICAL_SLICE_V0.md`
 

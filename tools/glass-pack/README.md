@@ -2,6 +2,15 @@
 
 CLI for **validating and inspecting** `glass.pack.v0.scaffold` ZIPs (`manifest.json` + `events.jsonl`). Uses `session_engine` parsers and parity checks with Tier B `strict_kinds` when requested.
 
+## Committed proof packs
+
+Use `glass-pack` against the committed bounded-showcase fixtures as part of the repo's proof surface:
+
+- `tests/fixtures/vertical_slice_v0/glass_vertical_slice_v0_tier_b.glass_pack`
+- `tests/fixtures/canonical_scenarios_v15/*.glass_pack`
+
+These are the same packs validated by the viewer `verify:*` scripts and described in `README.md` and `docs/TEST_STRATEGY.md`.
+
 ## Commands
 
 ```bash

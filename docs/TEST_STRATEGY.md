@@ -4,6 +4,8 @@
 
 Maps the current bounded showcase to concrete verification. Use this file as the proof surface for what the repo actually ships today; long-horizon topology work is separate.
 
+**Parity rule:** `scripts/bootstrap_check.sh`, `scripts/bootstrap_check.ps1`, and the CI jobs in `.github/workflows/ci.yml` should describe the same bounded-showcase proof path. If one surface changes, update the others in the same patch.
+
 ## Rust (`cargo test --workspace`)
 
 | Test / crate | Obligation |

@@ -2,6 +2,8 @@
 
 **Vertical Slice v18:** the **flagship product demo** uses **`canonical_v15_append_heavy.glass_pack`** under **`tests/fixtures/canonical_scenarios_v15/`** (14 events, append semantics). This folder remains the **minimal** strict smoke path for **`npm run verify:vertical-slice-fixture`** and fast CI.
 
+This fixture is part of the bounded-showcase proof surface used by bootstrap, CI, `glass-pack`, and the docs.
+
 ## Contents
 
 | File | Role |

@@ -10,6 +10,7 @@ Start at [`README.md`](../README.md). Use this page to choose between the curren
 - [`TEST_STRATEGY.md`](TEST_STRATEGY.md) — verification map and CI proof
 - [`REPO_BOUNDARIES.md`](REPO_BOUNDARIES.md) — ownership and layering rules
 - [`CONTRIBUTING.md`](../CONTRIBUTING.md) — contribution expectations for the shipped surface
+- [`SECURITY.md`](../SECURITY.md) — security reporting path for the shipped surface
 
 ## Proof / reference
 
