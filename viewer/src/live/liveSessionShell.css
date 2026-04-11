@@ -348,3 +348,75 @@
   border-color: #b45309;
   background: #fffbeb;
 }
+
+/* Vertical Slice v9 — bounded evidence drilldown (shared with replay shell) */
+.glass-bounded-evidence-heading {
+  font-size: 0.85rem;
+  margin: 0.75rem 0 0.25rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.glass-bounded-evidence-root {
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: #334155;
+  margin: 0 0 0.75rem;
+  padding: 0.4rem 0.35rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+}
+
+.glass-bounded-evidence-scope,
+.glass-bounded-evidence-honesty,
+.glass-bounded-evidence-selected,
+.glass-bounded-evidence-compare,
+.glass-bounded-evidence-compare-note {
+  margin: 0 0 0.35rem;
+}
+
+.glass-bounded-evidence-honesty {
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.glass-bounded-evidence-facts {
+  margin: 0.25rem 0 0.5rem;
+  padding-left: 1.1rem;
+}
+
+.glass-bounded-evidence-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.glass-bounded-evidence-card {
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+  padding: 0.35rem 0.4rem;
+  background: #fff;
+}
+
+.glass-bounded-evidence-card-label {
+  display: inline-block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #b45309;
+  margin-right: 0.35rem;
+}
+
+.glass-bounded-evidence-card-title {
+  font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", monospace;
+  font-size: 0.72rem;
+  word-break: break-word;
+}
+
+.glass-bounded-evidence-card-detail {
+  font-size: 0.68rem;
+  color: #64748b;
+  margin-top: 0.15rem;
+}

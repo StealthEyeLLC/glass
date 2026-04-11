@@ -51,6 +51,9 @@ import {
 } from "./liveWebGpuProbe.js";
 import { formatLiveVisualLegendBlock } from "./liveVisualMarkers.js";
 import type { BoundedSceneEmphasisV0 } from "../scene/boundedSceneEmphasis.js";
+import { computeBoundedSceneCompare } from "../scene/boundedSceneCompare.js";
+import { computeBoundedEvidenceDrilldown } from "../scene/boundedEvidenceDrilldown.js";
+import { renderBoundedEvidenceInto } from "../scene/boundedEvidencePanel.js";
 import { compileLiveToGlassSceneV0 } from "../scene/compileLiveScene.js";
 import { computeBoundedSceneFocus } from "../scene/boundedSceneFocus.js";
 import {
@@ -412,6 +415,13 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   );
   const boundedInspectorPre = el("pre", "glass-bounded-inspector");
   boundedInspectorPre.setAttribute("data-testid", "live-bounded-inspector");
+  const boundedEvidenceTitle = el(
+    "h4",
+    "glass-bounded-evidence-heading",
+    "Bounded evidence (Vertical Slice v9)",
+  );
+  const boundedEvidenceRoot = el("div", "glass-bounded-evidence-root");
+  boundedEvidenceRoot.setAttribute("data-testid", "live-bounded-evidence");
   visualCanvas.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
   visualCanvasWebGpu.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
   visualCanvasTextOverlay.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
@@ -422,6 +432,8 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     visualFallback,
     boundedInspectorTitle,
     boundedInspectorPre,
+    boundedEvidenceTitle,
+    boundedEvidenceRoot,
     visualProvenanceHeader,
     visualProvenanceStrip,
     visualLegend,
@@ -439,6 +451,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     if (!lastPaintedLiveScene) {
       boundedInspectorPre.textContent = "";
       boundedInspectorPre.removeAttribute("data-selected");
+      boundedEvidenceRoot.replaceChildren();
       return;
     }
     const spec = liveVisualSpecFromScene(lastPaintedLiveScene, selectedBoundedSelectionId, {
@@ -454,6 +467,19 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     } else {
       boundedInspectorPre.removeAttribute("data-selected");
     }
+    const cmp = computeBoundedSceneCompare(previousPaintedLiveScene, lastPaintedLiveScene, {
+      selectedId: selectedBoundedSelectionId,
+    });
+    const drill = computeBoundedEvidenceDrilldown({
+      scene: lastPaintedLiveScene,
+      spec,
+      compare: cmp,
+      selectedSelectionId: selectedBoundedSelectionId,
+      previousBoundedSampleCount: previousPaintedLiveScene?.boundedSampleCount ?? null,
+      liveEventTail: model.eventTail,
+      replay: null,
+    });
+    renderBoundedEvidenceInto(boundedEvidenceRoot, drill);
   }
 
   function buildCurrentLiveVisualSpec(): LiveVisualSpec {

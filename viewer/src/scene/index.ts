@@ -43,6 +43,12 @@ export {
   applyBoundedCompareOverlaysToPrimitives,
   type BoundedSceneCompareV0,
 } from "./boundedSceneCompare.js";
+export {
+  computeBoundedEvidenceDrilldown,
+  type BoundedEvidenceDrilldownV0,
+  type BoundedEvidenceRowV0,
+} from "./boundedEvidenceDrilldown.js";
+export { renderBoundedEvidenceInto } from "./boundedEvidencePanel.js";
 export { liveVisualSpecFromScene } from "./sceneToLiveVisualSpec.js";
 export {
   DRAWABLE_PRIMITIVES_V0,

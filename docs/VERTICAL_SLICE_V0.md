@@ -1,6 +1,18 @@
-# Glass Vertical Slice v0 / v1 / v2 / v3 / v4 / v5 / v6 / v7 / v8
+# Glass Vertical Slice v0 / v1 / v2 / v3 / v4 / v5 / v6 / v7 / v8 / v9
 
-**Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier). **Vertical Slice v1** added a richer bounded scene; **v2** adds **bounded actor/sample clusters** from real event kinds only; **v3** adds **bounded regions** (membership + compositional drawable layers); **v4** adds **bounded scene emphasis** and **pulse/flash overlays** driven only by real basis changes between compiles; **v5** adds **bounded scene selection** and **inspector coupling** (same ids + hit map for replay and live); **v6** adds **bounded focus mode** — selection reshapes **dim/emphasis** and overlay/provenance copy from **grouping-only** scene facts; **v7** adds **bounded focus reflow** — the same selection **re-allocates vertical space** and (when applicable) **lane width fractions** for the primary band, state rail, and actor cluster strip; **v8** adds **bounded compare mode** — honest **current vs immediately prior** bounded frame (replay step / live paint / selection-scoped cluster facts) — still **no** wire contract changes.
+**Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier). **Vertical Slice v1** added a richer bounded scene; **v2** adds **bounded actor/sample clusters** from real event kinds only; **v3** adds **bounded regions** (membership + compositional drawable layers); **v4** adds **bounded scene emphasis** and **pulse/flash overlays** driven only by real basis changes between compiles; **v5** adds **bounded scene selection** and **inspector coupling** (same ids + hit map for replay and live); **v6** adds **bounded focus mode** — selection reshapes **dim/emphasis** and overlay/provenance copy from **grouping-only** scene facts; **v7** adds **bounded focus reflow** — the same selection **re-allocates vertical space** and (when applicable) **lane width fractions** for the primary band, state rail, and actor cluster strip; **v8** adds **bounded compare mode** — honest **current vs immediately prior** bounded frame; **v9** adds **bounded evidence drilldown** — a small, inspectable list of **real** tail/prefix rows and facts behind the current selection and compare — still **no** wire contract changes.
+
+## Vertical Slice v9 (bounded evidence drilldown)
+
+**What it adds (viewer-only):**
+
+- **`boundedEvidenceDrilldown.ts`:** **`computeBoundedEvidenceDrilldown({ scene, spec, compare, selectedSelectionId, previousBoundedSampleCount, liveEventTail, replay })`** → **`BoundedEvidenceDrilldownV0`** (`glass.evidence.v0`) — pure, deterministic; **live** uses the bounded WS **`eventTail`** (oldest→newest); **replay** uses the **index-ordered pack prefix** through the scrub cursor. Rows carry labels such as **`live_tail`**, **`replay_prefix`**, **`current_step`**, **`changed`** (when compare + append-style growth are honestly known), **`sampled`** (cluster kind filter). **No** causality chain, **no** graph edges, **no** hidden authority beyond Scene v0 + the same tail/prefix the compilers already use.
+- **`boundedEvidencePanel.ts`:** **`renderBoundedEvidenceInto`** — product-style cards + facts list (not a JSON wall); debug JSON for the current replay event remains separate.
+- **Shells:** **`replayOnlyShell`** / **`liveSessionShell`** — **Bounded evidence (Vertical Slice v9)** block under the bounded inspector; **`data-testid`:** `replay-bounded-evidence` / `live-bounded-evidence`.
+
+**What it does *not* imply:** complete traces, full history, syscall-complete coverage, or topology between events. **F-IPC transport** remains **provisional**. This is still **not** the Phase-6 full runtime topology scene.
+
+**Next major step:** durable push ingest and/or additive live-era HTTP/WS fields **without** breaking frozen bounded-era HTTP — see `docs/IMPLEMENTATION_STATUS.md`.
 
 ## Vertical Slice v8 (bounded compare)
 

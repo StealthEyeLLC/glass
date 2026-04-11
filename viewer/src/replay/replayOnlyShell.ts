@@ -20,6 +20,9 @@ import {
 } from "../scene/boundedSceneSelection.js";
 import { GLASS_SCENE_V0, type GlassSceneV0 } from "../scene/glassSceneV0.js";
 import type { BoundedSceneEmphasisV0 } from "../scene/boundedSceneEmphasis.js";
+import { computeBoundedSceneCompare } from "../scene/boundedSceneCompare.js";
+import { computeBoundedEvidenceDrilldown } from "../scene/boundedEvidenceDrilldown.js";
+import { renderBoundedEvidenceInto } from "../scene/boundedEvidencePanel.js";
 import { compileReplayToGlassSceneV0 } from "../scene/compileReplayScene.js";
 import {
   currentEvent,
@@ -223,9 +226,23 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   );
   const boundedInspectorPre = el("pre", "glass-bounded-inspector");
   boundedInspectorPre.setAttribute("data-testid", "replay-bounded-inspector");
+  const boundedEvidenceTitle = el(
+    "h4",
+    "glass-bounded-evidence-heading",
+    "Bounded evidence (Vertical Slice v9)",
+  );
+  const boundedEvidenceRoot = el("div", "glass-bounded-evidence-root");
+  boundedEvidenceRoot.setAttribute("data-testid", "replay-bounded-evidence");
   const eventInspectorTitle = el("h4", "glass-event-inspector-title", "Current event (debug)");
   const inspectorPre = el("pre");
-  inspector.append(boundedInspectorTitle, boundedInspectorPre, eventInspectorTitle, inspectorPre);
+  inspector.append(
+    boundedInspectorTitle,
+    boundedInspectorPre,
+    boundedEvidenceTitle,
+    boundedEvidenceRoot,
+    eventInspectorTitle,
+    inspectorPre,
+  );
 
   const chipsRow = el("div");
   chipsRow.setAttribute("data-testid", "replay-entity-chips");
@@ -272,6 +289,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     if (!lastReplayScene) {
       boundedInspectorPre.textContent = "";
       boundedInspectorPre.removeAttribute("data-selected");
+      boundedEvidenceRoot.replaceChildren();
       return;
     }
     const spec = liveVisualSpecFromScene(lastReplayScene, selectedBoundedSelectionId, {
@@ -287,6 +305,19 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     } else {
       boundedInspectorPre.removeAttribute("data-selected");
     }
+    const cmp = computeBoundedSceneCompare(previousReplayScene, lastReplayScene, {
+      selectedId: selectedBoundedSelectionId,
+    });
+    const drill = computeBoundedEvidenceDrilldown({
+      scene: lastReplayScene,
+      spec,
+      compare: cmp,
+      selectedSelectionId: selectedBoundedSelectionId,
+      previousBoundedSampleCount: previousReplayScene?.boundedSampleCount ?? null,
+      liveEventTail: null,
+      replay: { events: state.events, cursorIndex: state.cursorIndex },
+    });
+    renderBoundedEvidenceInto(boundedEvidenceRoot, drill);
   }
 
   function paintReplayScene(): void {
