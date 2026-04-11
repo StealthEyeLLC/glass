@@ -2,7 +2,11 @@
  * DOM rendering for Vertical Slice v9–v16 bounded evidence drilldown — thin view over pure model output.
  */
 
-import { VERTICAL_SLICE_V28_EVIDENCE_LEAD } from "../app/verticalSliceV0.js";
+import {
+  VERTICAL_SLICE_V28_EVIDENCE_LEAD,
+  VERTICAL_SLICE_V31_EVIDENCE_EMPTY_OVERVIEW,
+  VERTICAL_SLICE_V31_EVIDENCE_LEAD_OVERVIEW,
+} from "../app/verticalSliceV0.js";
 import type { GlassSceneV0 } from "./glassSceneV0.js";
 import type { GlassEvent } from "../pack/types.js";
 import type { LiveVisualSpec } from "../live/liveVisualModel.js";
@@ -33,6 +37,8 @@ export interface RenderBoundedEvidenceOptions {
   /** Replace-selection on row; toggle off when activating the same mapped id as current. */
   onActivateRow?: (rowIndex: number, resolution: BoundedCrosslinkResolutionV0) => void;
   onActivateCompare?: (resolution: BoundedCrosslinkResolutionV0) => void;
+  /** Vertical Slice v31 — Overview trims compare/scope language; Technical stays full. */
+  surface?: "overview" | "technical";
 }
 
 /** Calm display caption for row label tokens — bounded vocabulary only. */
@@ -80,6 +86,8 @@ export function renderBoundedEvidenceInto(
 ): void {
   container.replaceChildren();
 
+  const surface = options?.surface ?? "technical";
+
   const trust = document.createElement("div");
   trust.className = "glass-bounded-evidence-trust";
   trust.setAttribute("data-testid", "glass-bounded-evidence-trust");
@@ -87,7 +95,8 @@ export function renderBoundedEvidenceInto(
   const lead = document.createElement("p");
   lead.className = "glass-bounded-evidence-lead";
   lead.setAttribute("data-testid", "glass-bounded-evidence-lead");
-  lead.textContent = VERTICAL_SLICE_V28_EVIDENCE_LEAD;
+  lead.textContent =
+    surface === "overview" ? VERTICAL_SLICE_V31_EVIDENCE_LEAD_OVERVIEW : VERTICAL_SLICE_V28_EVIDENCE_LEAD;
   trust.appendChild(lead);
 
   const authorityDetails = document.createElement("details");
@@ -124,41 +133,46 @@ export function renderBoundedEvidenceInto(
   const context = document.createElement("div");
   context.className = "glass-bounded-evidence-context";
 
-  if (drilldown.selectedTargetSummary) {
-    const p = document.createElement("p");
-    p.className = "glass-bounded-evidence-selected";
-    p.textContent = `Selection: ${drilldown.selectedTargetSummary}`;
-    context.appendChild(p);
-  }
-
-  if (drilldown.compareSummaryLine) {
-    const p = document.createElement("p");
-    p.className = "glass-bounded-evidence-compare";
-    p.textContent = drilldown.compareSummaryLine;
-    if (options?.onActivateCompare && options.liveVisualSpec) {
-      const cmpRes = resolveCompareEvidenceCrosslink(options.liveVisualSpec);
-      if (cmpRes.targetSelectionId) {
-        p.classList.add("glass-bounded-evidence-compare--linked");
-        attachCrosslinkActivate(p, () => {
-          options.onActivateCompare?.(cmpRes);
-        });
-      }
+  if (surface === "technical") {
+    if (drilldown.selectedTargetSummary) {
+      const p = document.createElement("p");
+      p.className = "glass-bounded-evidence-selected";
+      p.textContent = `Selection: ${drilldown.selectedTargetSummary}`;
+      context.appendChild(p);
     }
-    context.appendChild(p);
-  }
 
-  if (drilldown.compareEvidenceNote) {
-    const p = document.createElement("p");
-    p.className = "glass-bounded-evidence-compare-note";
-    p.textContent = drilldown.compareEvidenceNote;
-    context.appendChild(p);
+    if (drilldown.compareSummaryLine) {
+      const p = document.createElement("p");
+      p.className = "glass-bounded-evidence-compare";
+      p.textContent = drilldown.compareSummaryLine;
+      if (options?.onActivateCompare && options.liveVisualSpec) {
+        const cmpRes = resolveCompareEvidenceCrosslink(options.liveVisualSpec);
+        if (cmpRes.targetSelectionId) {
+          p.classList.add("glass-bounded-evidence-compare--linked");
+          attachCrosslinkActivate(p, () => {
+            options.onActivateCompare?.(cmpRes);
+          });
+        }
+      }
+      context.appendChild(p);
+    }
+
+    if (drilldown.compareEvidenceNote) {
+      const p = document.createElement("p");
+      p.className = "glass-bounded-evidence-compare-note";
+      p.textContent = drilldown.compareEvidenceNote;
+      context.appendChild(p);
+    }
   }
 
   if (context.childNodes.length > 0) {
     trust.appendChild(context);
   }
 
-  if (options?.episodeContextLine || options?.episodeHonestyNote || options?.claimContextLine || options?.claimDoesNotImplyLine) {
+  if (
+    surface === "technical" &&
+    (options?.episodeContextLine || options?.episodeHonestyNote || options?.claimContextLine || options?.claimDoesNotImplyLine)
+  ) {
     const align = document.createElement("div");
     align.className = "glass-bounded-evidence-alignment";
     if (options?.episodeContextLine) {
@@ -199,6 +213,18 @@ export function renderBoundedEvidenceInto(
       align.appendChild(fine);
     }
     trust.appendChild(align);
+  }
+
+  if (
+    surface === "overview" &&
+    drilldown.facts.length === 0 &&
+    drilldown.rows.length === 0
+  ) {
+    const empty = document.createElement("p");
+    empty.className = "glass-bounded-evidence-empty-overview";
+    empty.setAttribute("data-testid", "glass-bounded-evidence-empty-overview");
+    empty.textContent = VERTICAL_SLICE_V31_EVIDENCE_EMPTY_OVERVIEW;
+    trust.appendChild(empty);
   }
 
   if (drilldown.facts.length > 0) {

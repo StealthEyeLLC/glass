@@ -1,6 +1,18 @@
-# Glass Vertical Slice v0 / v1 / v2 / v3 / v4 / v5 / v6 / v7 / v8 / v9 / v10 / v11 / v12 / v13 / v14 / v15 / v16 / v17 / v18 / v19 / v20 / v21 / v22 / v23 / v24 / v25 / v26 / v27 / v28 / v29 / v30
+# Glass Vertical Slice v0 / v1 / v2 / v3 / v4 / v5 / v6 / v7 / v8 / v9 / v10 / v11 / v12 / v13 / v14 / v15 / v16 / v17 / v18 / v19 / v20 / v21 / v22 / v23 / v24 / v25 / v26 / v27 / v28 / v29 / v30 / v31
 
 **Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier).
+
+## Vertical Slice v31 (Overview default-surface reduction)
+
+**Goal:** **Overview** (default) feels like **premium product chrome** — very little text, one obvious flagship path (**Load flagship demo** + **Open file**), one calm helper line, optional **Live session** link — **no** verbose empty trust panels before a session loads. **Technical** remains the **full instrument** (About this view, flagship pack detail, How to read, manifest/sanitized/meta, receipt ids/schema/keys, compare-baseline supplement, event debug, timeline entity chips, selection JSON) with **unchanged** bounded truth. **`data-overview-phase="idle|loaded"`** + **`glass-overview-loaded-only`** panels: idle Overview hides Scene → Evidence → Claim → Time → Episodes and playback controls until a pack is ready.
+
+**What v31 removes from Overview (moved to Technical-only DOM or Technical surface):** Hero long subtitle; **Try the flagship** title/lead; drop zone; duplicate **Open file** row; **About this view**, flagship **full detail**, **How to read**; manifest / sanitized blocks; timeline **seq/kind/event_id** strip; **Selection details** + **Current event (debug)**; compare-baseline **empty-receipt supplement** copy (still in **Technical**); trust-panel **technical** phrasing on evidence/claims/episodes (Overview uses short leads + empty lines: **No evidence to show yet.**, **Glass cannot make a strong claim yet.**, **Nothing notable yet.**).
+
+**What remains on Overview after load:** **Scene** (one short line), **Evidence**, **Claim**, **Time** (temporal lens controls), **Episodes** (cards or empty line) — then playback. Section order: Scene → Evidence → Claim → Time → Episodes → controls/scrub/short **Step * of *** position (full event line in Technical).
+
+**Does not claim:** New engine features, wire changes, or weaker receipts — **same** compilers and models; **still** the bounded showcase path.
+
+**Next major step:** durable push ingest and/or additive live-era HTTP/WS fields **without** breaking frozen bounded-era HTTP — see `docs/IMPLEMENTATION_STATUS.md`.
 
 ## Vertical Slice v30 (Overview vs Technical — hard surface split)
 

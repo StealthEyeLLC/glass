@@ -2,7 +2,10 @@
  * DOM for Vertical Slice v13–v16 bounded claims + receipt — thin view over pure model output.
  */
 
-import { VERTICAL_SLICE_V28_RECEIPT_EMPTY } from "../app/verticalSliceV0.js";
+import {
+  VERTICAL_SLICE_V28_RECEIPT_EMPTY,
+  VERTICAL_SLICE_V31_CLAIM_LEAD_OVERVIEW,
+} from "../app/verticalSliceV0.js";
 import {
   formatBoundedClaimChipStatusShort,
   type BoundedClaimReceiptV0,
@@ -15,6 +18,7 @@ export interface RenderBoundedClaimsOptions {
   /** Resolved highlight: explicit selection or primary. */
   highlightClaimId: string | null;
   onSelectClaim: (nextSelectedId: string | null, claim: BoundedClaimV0) => void;
+  surface?: "overview" | "technical";
 }
 
 function claimChipStatusClass(status: BoundedClaimV0["status"]): string | null {
@@ -44,10 +48,13 @@ export function renderBoundedClaimsInto(
 ): void {
   container.replaceChildren();
 
+  const surface = options.surface ?? "technical";
+
   const lead = document.createElement("p");
   lead.className = "glass-bounded-claims-lead";
   lead.setAttribute("data-testid", `${options.testIdPrefix}-bounded-claims-lead`);
-  lead.textContent = pack.honestyLineSimple;
+  lead.textContent =
+    surface === "overview" ? VERTICAL_SLICE_V31_CLAIM_LEAD_OVERVIEW : pack.honestyLineSimple;
 
   const tech = document.createElement("details");
   tech.className = "glass-trust-technical glass-surface-technical-only";
@@ -104,6 +111,8 @@ export interface RenderBoundedClaimReceiptIntoOptions {
   testIdPrefix: "replay" | "live";
   /** v20 — second empty-state line (e.g. temporal baseline just changed; primary highlight paused). */
   emptySupplementLine?: string | null;
+  /** v31 — overrides default empty receipt line (Overview). */
+  emptyPrimaryLine?: string | null;
 }
 
 export function renderBoundedClaimReceiptInto(
@@ -116,7 +125,7 @@ export function renderBoundedClaimReceiptInto(
     const empty = document.createElement("p");
     empty.className = "glass-bounded-claim-receipt-empty";
     empty.setAttribute("data-testid", `${options.testIdPrefix}-bounded-claim-receipt-empty`);
-    empty.textContent = VERTICAL_SLICE_V28_RECEIPT_EMPTY;
+    empty.textContent = options.emptyPrimaryLine ?? VERTICAL_SLICE_V28_RECEIPT_EMPTY;
     container.appendChild(empty);
     if (options.emptySupplementLine) {
       const sup = document.createElement("p");
@@ -139,7 +148,8 @@ export function renderBoundedClaimReceiptInto(
   wrap.dataset.claimId = receipt.claimId;
 
   const idDetails = document.createElement("details");
-  idDetails.className = "glass-trust-technical glass-bounded-claim-receipt-ids";
+  idDetails.className =
+    "glass-trust-technical glass-bounded-claim-receipt-ids glass-surface-technical-only";
   idDetails.setAttribute("data-testid", `${options.testIdPrefix}-bounded-claim-receipt-ids`);
   const idSum = document.createElement("summary");
   idSum.className = "glass-trust-technical-summary";
@@ -163,7 +173,7 @@ export function renderBoundedClaimReceiptInto(
   wrap.appendChild(primary);
 
   const metaDetails = document.createElement("details");
-  metaDetails.className = "glass-trust-technical";
+  metaDetails.className = "glass-trust-technical glass-surface-technical-only";
   metaDetails.setAttribute("data-testid", `${options.testIdPrefix}-bounded-claim-receipt-meta-wrap`);
   const metaSum = document.createElement("summary");
   metaSum.className = "glass-trust-technical-summary";
@@ -185,7 +195,7 @@ export function renderBoundedClaimReceiptInto(
 
   if (receipt.focusContextLine) {
     const sec = document.createElement("section");
-    sec.className = "glass-bounded-claim-receipt-section";
+    sec.className = "glass-bounded-claim-receipt-section glass-surface-technical-only";
     sec.setAttribute("data-section", "focus");
     const sh = document.createElement("span");
     sh.className = "glass-bounded-claim-receipt-section-heading";
@@ -199,7 +209,7 @@ export function renderBoundedClaimReceiptInto(
   }
 
   const scopeDetails = document.createElement("details");
-  scopeDetails.className = "glass-trust-technical";
+  scopeDetails.className = "glass-trust-technical glass-surface-technical-only";
   scopeDetails.setAttribute("data-testid", `${options.testIdPrefix}-bounded-claim-receipt-scope-wrap`);
   const scopeSum = document.createElement("summary");
   scopeSum.className = "glass-trust-technical-summary";
@@ -234,7 +244,7 @@ export function renderBoundedClaimReceiptInto(
   wrap.appendChild(scopeDetails);
 
   const supportDetails = document.createElement("details");
-  supportDetails.className = "glass-trust-technical";
+  supportDetails.className = "glass-trust-technical glass-surface-technical-only";
   supportDetails.setAttribute("data-testid", `${options.testIdPrefix}-bounded-claim-receipt-support-wrap`);
   const supSum = document.createElement("summary");
   supSum.className = "glass-trust-technical-summary";
@@ -274,7 +284,7 @@ export function renderBoundedClaimReceiptInto(
   limSec.className = "glass-bounded-claim-receipt-section";
   limSec.setAttribute("data-section", "limits");
   const limWrap = document.createElement("details");
-  limWrap.className = "glass-trust-technical";
+  limWrap.className = "glass-trust-technical glass-surface-technical-only";
   limWrap.setAttribute("data-testid", `${options.testIdPrefix}-bounded-claim-receipt-limits-wrap`);
   const limSum = document.createElement("summary");
   limSum.className = "glass-trust-technical-summary";
@@ -291,7 +301,7 @@ export function renderBoundedClaimReceiptInto(
 
   if (receipt.weaknessOrUnavailableNote) {
     const hn = document.createElement("p");
-    hn.className = "glass-bounded-claim-receipt-limitation";
+    hn.className = "glass-bounded-claim-receipt-limitation glass-surface-technical-only";
     hn.setAttribute("data-testid", `${options.testIdPrefix}-bounded-claim-receipt-limitation`);
     hn.textContent = receipt.weaknessOrUnavailableNote;
     wrap.appendChild(hn);

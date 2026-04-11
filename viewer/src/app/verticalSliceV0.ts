@@ -83,9 +83,36 @@ export const VERTICAL_SLICE_V28_EVIDENCE_LEAD = "From this step — not the whol
 export const VERTICAL_SLICE_V30_SCENE_NOTE_OVERVIEW =
   "What you see reflects the session so far — not the full machine or live feed.";
 
+/**
+ * Vertical Slice v31 — Overview default surface: one calm line under primary actions (idle).
+ */
+export const VERTICAL_SLICE_V31_REPLAY_OVERVIEW_HELPER =
+  "Load a session to see what changed, the evidence behind it, and what Glass can claim.";
+
+/** v31 — Scene (Overview): one short line, no topology or feed jargon. */
+export const VERTICAL_SLICE_V31_SCENE_NOTE_OVERVIEW = "What you see is the session so far.";
+
+/** v31 — Evidence lead (Overview). */
+export const VERTICAL_SLICE_V31_EVIDENCE_LEAD_OVERVIEW = "What Glass is using right now.";
+
+/** v31 — Evidence empty (Overview). */
+export const VERTICAL_SLICE_V31_EVIDENCE_EMPTY_OVERVIEW = "No evidence to show yet.";
+
+/** v31 — Claim lead (Overview). */
+export const VERTICAL_SLICE_V31_CLAIM_LEAD_OVERVIEW = "What Glass can support from this view.";
+
+/** v31 — Claim / receipt empty (Overview). */
+export const VERTICAL_SLICE_V31_CLAIM_EMPTY_OVERVIEW = "Glass cannot make a strong claim yet.";
+
+/** v31 — Episodes empty (Overview). */
+export const VERTICAL_SLICE_V31_EPISODES_EMPTY_OVERVIEW = "Nothing notable yet.";
+
 /** Vertical Slice v30 — live visual block lead for Overview (no canvas/compiler wording). */
 export const VERTICAL_SLICE_V30_LIVE_VISUAL_INTRO_OVERVIEW =
   "Same strip as replay: scene, evidence, claims, receipt, and time.";
+
+/** v31 — live Scene block lead (Overview); matches replay spirit. */
+export const VERTICAL_SLICE_V31_LIVE_VISUAL_INTRO_OVERVIEW = VERTICAL_SLICE_V31_SCENE_NOTE_OVERVIEW;
 
 /** Vertical Slice v28 — receipt empty (minimum words). */
 export const VERTICAL_SLICE_V28_RECEIPT_EMPTY = "Pick a claim or story card.";

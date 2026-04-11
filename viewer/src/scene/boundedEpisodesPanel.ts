@@ -3,12 +3,14 @@
  */
 
 import type { BoundedEpisodeV0, BoundedSceneEpisodesV0 } from "./boundedEpisodes.js";
+import { VERTICAL_SLICE_V31_EPISODES_EMPTY_OVERVIEW } from "../app/verticalSliceV0.js";
 
 export interface RenderBoundedEpisodesOptions {
   /** Prefix for `data-testid` attributes (`replay` / `live`). */
   testIdPrefix: "replay" | "live";
   selectedEpisodeId: string | null;
   onSelectEpisode: (nextSelectedId: string | null, episode: BoundedEpisodeV0) => void;
+  surface?: "overview" | "technical";
 }
 
 export function renderBoundedEpisodesInto(
@@ -18,13 +20,19 @@ export function renderBoundedEpisodesInto(
 ): void {
   container.replaceChildren();
 
-  const lead = document.createElement("p");
-  lead.className = "glass-bounded-episodes-lead";
-  lead.setAttribute("data-testid", `${options.testIdPrefix}-bounded-episodes-lead`);
-  lead.textContent = pack.honestyLineSimple;
+  const surface = options.surface ?? "technical";
+
+  if (surface === "overview" && pack.episodes.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "glass-bounded-episodes-empty-overview";
+    empty.setAttribute("data-testid", `${options.testIdPrefix}-bounded-episodes-empty-overview`);
+    empty.textContent = VERTICAL_SLICE_V31_EPISODES_EMPTY_OVERVIEW;
+    container.appendChild(empty);
+    return;
+  }
 
   const tech = document.createElement("details");
-  tech.className = "glass-trust-technical";
+  tech.className = "glass-trust-technical glass-surface-technical-only";
   tech.setAttribute("data-testid", `${options.testIdPrefix}-bounded-episodes-technical`);
   const techSum = document.createElement("summary");
   techSum.className = "glass-trust-technical-summary";
@@ -69,5 +77,13 @@ export function renderBoundedEpisodesInto(
     row.appendChild(card);
   }
 
-  container.append(lead, tech, row);
+  if (surface === "technical") {
+    const lead = document.createElement("p");
+    lead.className = "glass-bounded-episodes-lead";
+    lead.setAttribute("data-testid", `${options.testIdPrefix}-bounded-episodes-lead`);
+    lead.textContent = pack.honestyLineSimple;
+    container.append(lead, tech, row);
+  } else {
+    container.append(tech, row);
+  }
 }

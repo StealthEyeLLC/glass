@@ -35,6 +35,8 @@ describe("Vertical Slice v19 — compare baseline handoff (replay)", () => {
   it("clears episode and claim selection when compare baseline changes via temporal ring", () => {
     const root = document.createElement("div");
     const h = mountReplayShell(root);
+    const techBtn = root.querySelector('[data-testid="glass-surface-technical"]') as HTMLButtonElement;
+    techBtn.click();
     const r = loadGlassPack(flagshipBytes(), "strict_kinds");
     expect(r.ok).toBe(true);
     if (!r.ok) {

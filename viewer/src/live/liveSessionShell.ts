@@ -99,6 +99,7 @@ import { tryInitWebGpuCanvas } from "./liveVisualWebGpu.js";
 import {
   GLASS_FLAGSHIP_CHAIN_DOC,
   RECEIPT_EMPTY_SUPPLEMENT_AFTER_TEMPORAL_BASELINE,
+  VERTICAL_SLICE_V31_CLAIM_EMPTY_OVERVIEW,
   VERTICAL_SLICE_FLAGSHIP_V18_BODY,
   VERTICAL_SLICE_FLAGSHIP_V18_TITLE,
   VERTICAL_SLICE_V27_FLAGSHIP_FRAMING_SIMPLE,
@@ -111,7 +112,7 @@ import {
   VERTICAL_SLICE_V27_SCENARIO_TITLE_SIMPLE,
   VERTICAL_SLICE_V26_LIVE_INTRO_HONEST,
   VERTICAL_SLICE_V28_READING_ORDER_LIVE_MICRO,
-  VERTICAL_SLICE_V30_LIVE_VISUAL_INTRO_OVERVIEW,
+  VERTICAL_SLICE_V31_LIVE_VISUAL_INTRO_OVERVIEW,
   liveHeroSubtitle,
 } from "../app/verticalSliceV0.js";
 import { buildReplayHrefFromLive, mountGlassSurfaceControls } from "../app/glassSurface.js";
@@ -164,6 +165,10 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   root.innerHTML = "";
   root.classList.add("glass-live-root");
   mountGlassSurfaceControls(root);
+
+  function liveSurfaceTier(): "overview" | "technical" {
+    return root.dataset.surface === "easy" ? "overview" : "technical";
+  }
 
   const hero = el("section", "glass-vs-hero glass-live-vs-hero");
   hero.setAttribute("data-testid", "live-vs-hero");
@@ -231,12 +236,15 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     liveReadingWrap,
   );
   hero.append(
-    el("h1", "glass-vs-title", "Glass — Vertical Slice v0"),
+    el("h1", "glass-vs-title", "Glass"),
     el("p", "glass-vs-badge", "Live session (this machine)"),
-    el("p", "glass-vs-subtitle", liveHeroSubtitle()),
+    el("p", "glass-vs-subtitle glass-surface-technical-only", liveHeroSubtitle()),
   );
 
-  const technicalChromeLive = el("section", "glass-surface-technical glass-live-technical-chrome");
+  const technicalChromeLive = el(
+    "section",
+    "glass-surface-technical glass-surface-technical-only glass-live-technical-chrome",
+  );
   technicalChromeLive.setAttribute("data-testid", "live-technical-chrome");
   technicalChromeLive.append(liveHeroMore);
 
@@ -489,7 +497,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const visualIntroOverview = el(
     "p",
     "glass-live-field glass-scene-note--easy",
-    VERTICAL_SLICE_V30_LIVE_VISUAL_INTRO_OVERVIEW,
+    VERTICAL_SLICE_V31_LIVE_VISUAL_INTRO_OVERVIEW,
   );
   visualIntroOverview.setAttribute("data-testid", "live-visual-intro-overview");
   visualIntroOverview.setAttribute("id", "live-visual-surface-title");
@@ -573,18 +581,28 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   boundedEpisodeTitle.setAttribute("data-testid", "live-bounded-episodes-heading");
   const boundedEpisodeRoot = el("div", "glass-bounded-episodes-root");
   boundedEpisodeRoot.setAttribute("data-testid", "live-bounded-episodes-root");
-  const boundedClaimTitle = el("h4", "glass-bounded-claims-title", "Claims");
-  boundedClaimTitle.setAttribute("data-testid", "live-bounded-claims-heading");
+  const boundedClaimTitleOverview = el("h4", "glass-bounded-claims-title glass-heading-overview-only", "Claim");
+  boundedClaimTitleOverview.setAttribute("data-testid", "live-bounded-claims-heading-overview");
+  const boundedClaimTitleTechnical = el("h4", "glass-bounded-claims-title glass-heading-technical-only", "Claims");
+  boundedClaimTitleTechnical.setAttribute("data-testid", "live-bounded-claims-heading");
   const boundedClaimStripRoot = el("div", "glass-bounded-claims-strip-root");
   boundedClaimStripRoot.setAttribute("data-testid", "live-bounded-claims-strip-root");
   const boundedClaimReceiptRoot = el("div", "glass-bounded-claim-receipt-root");
   boundedClaimReceiptRoot.setAttribute("data-testid", "live-bounded-claim-receipt-root");
-  const boundedTemporalTitle = el("h4", "glass-bounded-temporal-title", "Time context");
+  const boundedTemporalTitleOverview = el("h4", "glass-bounded-temporal-title glass-heading-overview-only", "Time");
+  const boundedTemporalTitleTechnical = el(
+    "h4",
+    "glass-bounded-temporal-title glass-heading-technical-only",
+    "Time context",
+  );
   const boundedTemporalRoot = el("div", "glass-bounded-temporal-root");
   boundedTemporalRoot.setAttribute("data-testid", "live-temporal-lens-root");
   visualCanvas.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
   visualCanvasWebGpu.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
   visualCanvasTextOverlay.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
+  const boundedInspectorBlock = el("div", "glass-live-bounded-inspector glass-surface-technical-only");
+  boundedInspectorBlock.setAttribute("data-testid", "live-bounded-inspector-block");
+  boundedInspectorBlock.append(boundedInspectorTitle, boundedInspectorPre);
   visualSurface.append(
     visualIntroOverview,
     visualIntro,
@@ -592,18 +610,19 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     visualGpuStatus,
     visualCanvasStack,
     visualFallback,
-    boundedInspectorTitle,
-    boundedInspectorPre,
     boundedEvidenceTitle,
     boundedEvidenceRoot,
     boundedEvidenceCrosslinkNote,
-    boundedEpisodeTitle,
-    boundedEpisodeRoot,
-    boundedClaimTitle,
+    boundedClaimTitleOverview,
+    boundedClaimTitleTechnical,
     boundedClaimStripRoot,
     boundedClaimReceiptRoot,
-    boundedTemporalTitle,
+    boundedTemporalTitleOverview,
+    boundedTemporalTitleTechnical,
     boundedTemporalRoot,
+    boundedEpisodeTitle,
+    boundedEpisodeRoot,
+    boundedInspectorBlock,
     visualProvenanceHeader,
     visualProvenanceStrip,
     visualLegend,
@@ -724,9 +743,11 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     if (!boundedEpisodeSelectionStillValid(episodes.episodes, selectedBoundedEpisodeId)) {
       selectedBoundedEpisodeId = null;
     }
+    const tier = liveSurfaceTier();
     renderBoundedEpisodesInto(boundedEpisodeRoot, episodes, {
       testIdPrefix: "live",
       selectedEpisodeId: selectedBoundedEpisodeId,
+      surface: tier,
       onSelectEpisode: (nextId, ep) => {
         selectedBoundedEpisodeId = nextId;
         if (nextId !== null && ep.suggestedSelectionId) {
@@ -786,6 +807,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     renderBoundedClaimsInto(boundedClaimStripRoot, claimsPack, {
       testIdPrefix: "live",
       highlightClaimId,
+      surface: tier,
       onSelectClaim: (nextId, cl) => {
         selectedBoundedClaimId = nextId;
         if (nextId !== null && cl.suggestedSelectionId) {
@@ -796,12 +818,14 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     });
     renderBoundedClaimReceiptInto(boundedClaimReceiptRoot, receipt, {
       testIdPrefix: "live",
+      emptyPrimaryLine: tier === "overview" ? VERTICAL_SLICE_V31_CLAIM_EMPTY_OVERVIEW : undefined,
       emptySupplementLine:
-        !receipt && !liveTrustPrimaryClaimHighlight
+        tier === "technical" && !receipt && !liveTrustPrimaryClaimHighlight
           ? RECEIPT_EMPTY_SUPPLEMENT_AFTER_TEMPORAL_BASELINE
           : undefined,
     });
     renderBoundedEvidenceInto(boundedEvidenceRoot, drill, {
+      surface: tier,
       scene: lastPaintedLiveScene,
       selectedSelectionId: selectedBoundedSelectionId,
       liveEventTail: model.eventTail,

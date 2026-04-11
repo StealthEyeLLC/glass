@@ -22,7 +22,9 @@ import {
   VERTICAL_SLICE_V27_SCENARIO_LABEL_SIMPLE,
   VERTICAL_SLICE_V27_SCENARIO_TITLE_SIMPLE,
   VERTICAL_SLICE_V28_READING_ORDER_REPLAY_MICRO,
-  VERTICAL_SLICE_V30_SCENE_NOTE_OVERVIEW,
+  VERTICAL_SLICE_V31_CLAIM_EMPTY_OVERVIEW,
+  VERTICAL_SLICE_V31_SCENE_NOTE_OVERVIEW,
+  VERTICAL_SLICE_V31_REPLAY_OVERVIEW_HELPER,
   replayHeroSubtitle,
   replayHeroSubtitleTechnical,
 } from "../app/verticalSliceV0.js";
@@ -121,6 +123,10 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   root.classList.add("glass-replay-root");
   mountGlassSurfaceControls(root);
 
+  function replaySurfaceTier(): "overview" | "technical" {
+    return root.dataset.surface === "easy" ? "overview" : "technical";
+  }
+
   let state = initialReplayState();
   let playTimer: ReturnType<typeof setInterval> | null = null;
   let lastReplayEmphasis: BoundedSceneEmphasisV0 | null = null;
@@ -153,15 +159,15 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     el("p", "glass-vs-scenario", VERTICAL_SLICE_V27_SCENARIO_BODY_SIMPLE),
   );
   hero.append(
-    el("h1", "glass-vs-title", "Glass — Vertical Slice v0"),
+    el("h1", "glass-vs-title", "Glass"),
     el(
       "p",
       "glass-vs-badge",
       mode === "static_replay"
-        ? "Saved session replay (default)"
+        ? "Saved session replay"
         : "Dev build — not the shipped static bundle",
     ),
-    el("p", "glass-vs-subtitle", replayHeroSubtitle()),
+    el("p", "glass-vs-subtitle glass-surface-technical-only", replayHeroSubtitle()),
   );
 
   const flagshipCallout = el("section", "glass-flagship-callout");
@@ -221,7 +227,10 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   readingOrderWrap.append(readingOrderSum, readingOrderMicro, readingOrderSimple, readingOrderTechnical);
   readingOrder.append(readingOrderWrap);
 
-  const technicalChrome = el("section", "glass-surface-technical glass-replay-technical-chrome");
+  const technicalChrome = el(
+    "section",
+    "glass-surface-technical glass-surface-technical-only glass-replay-technical-chrome",
+  );
   technicalChrome.setAttribute("data-testid", "replay-technical-chrome");
   technicalChrome.append(heroMore, flagshipCallout, readingOrder);
 
@@ -244,22 +253,48 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   liveNavDetails.append(liveNavSummary, liveNavTechP, liveNavCode);
   liveNav.append(liveA, liveNavDetails);
 
-  const easyEntry = el("section", "glass-easy-entry");
-  easyEntry.setAttribute("data-testid", "replay-easy-entry");
-  easyEntry.append(
-    el("h2", "glass-easy-entry-title", "Try the flagship"),
-    el("p", "glass-easy-entry-lead", "Open file, drop a pack, or Load flagship demo (dev)."),
-  );
+  const fileInput = document.createElement("input");
+  fileInput.type = "file";
+  fileInput.accept = ".glass_pack,application/zip";
+  fileInput.setAttribute("data-testid", "replay-file-input");
+
+  const primaryActions = el("div", "glass-overview-primary-actions");
+  primaryActions.setAttribute("data-testid", "replay-overview-primary-actions");
+  const openBtn = el("button", "glass-overview-open-file glass-primary-open-file", "Open file");
+  openBtn.type = "button";
+  openBtn.setAttribute("data-testid", "replay-open-file");
+  openBtn.addEventListener("click", () => fileInput.click());
+  primaryActions.append(openBtn);
   if (import.meta.env.DEV) {
     const flagshipDemo = document.createElement("a");
     flagshipDemo.href = buildFlagshipDevHref();
     flagshipDemo.setAttribute("data-testid", "replay-easy-flagship-load");
     flagshipDemo.className = "glass-easy-flagship-cta glass-primary-flagship-cta";
     flagshipDemo.textContent = "Load flagship demo";
-    easyEntry.append(flagshipDemo);
+    primaryActions.insertBefore(flagshipDemo, openBtn);
   }
 
-  const dropZone = el("div", "glass-drop-zone");
+  const overviewHelper = el(
+    "p",
+    "glass-replay-overview-helper glass-surface-overview-only",
+    VERTICAL_SLICE_V31_REPLAY_OVERVIEW_HELPER,
+  );
+  overviewHelper.setAttribute("data-testid", "replay-overview-helper");
+
+  const easyEntry = el("section", "glass-easy-entry");
+  easyEntry.setAttribute("data-testid", "replay-easy-entry");
+  easyEntry.append(
+    el("h2", "glass-easy-entry-title glass-surface-technical-only", "Try the flagship"),
+    el(
+      "p",
+      "glass-easy-entry-lead glass-surface-technical-only",
+      "Open file, drop a pack, or Load flagship demo (dev).",
+    ),
+    primaryActions,
+    overviewHelper,
+  );
+
+  const dropZone = el("div", "glass-drop-zone glass-surface-technical-only");
   dropZone.setAttribute("data-testid", "replay-drop-zone");
   dropZone.append(
     el("p", "glass-drop-zone-lead", "Drop a .glass_pack here, or use Open file."),
@@ -280,16 +315,13 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     })(),
   );
 
-  const fileRow = el("div", "glass-file-row");
-  const fileInput = document.createElement("input");
-  fileInput.type = "file";
-  fileInput.accept = ".glass_pack,application/zip";
-  fileInput.setAttribute("data-testid", "replay-file-input");
-  const openBtn = el("button", undefined, "Open file…");
-  openBtn.type = "button";
-  openBtn.setAttribute("data-testid", "replay-open-file");
-  openBtn.addEventListener("click", () => fileInput.click());
-  fileRow.append(openBtn, fileInput);
+  const fileRow = el("div", "glass-file-row glass-surface-technical-only");
+  fileRow.setAttribute("data-testid", "replay-file-row");
+  const openBtnTechnical = el("button", undefined, "Open file…");
+  openBtnTechnical.type = "button";
+  openBtnTechnical.setAttribute("data-testid", "replay-open-file-technical");
+  openBtnTechnical.addEventListener("click", () => fileInput.click());
+  fileRow.append(openBtnTechnical, fileInput);
 
   const errorBox = el("div", "glass-error");
   errorBox.setAttribute("data-testid", "replay-error");
@@ -306,7 +338,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   sanitizedSection.setAttribute("data-testid", "replay-sanitized");
   sanitizedSection.style.display = "none";
 
-  const controls = el("div", "glass-controls");
+  const controls = el("div", "glass-controls glass-overview-loaded-only");
   const btnPlay = el("button", undefined, "Play");
   btnPlay.setAttribute("data-testid", "replay-play");
   const btnPause = el("button", undefined, "Pause");
@@ -331,10 +363,10 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     btnClose,
   );
 
-  const sceneSection = el("section", "glass-scene-v0");
+  const sceneSection = el("section", "glass-scene-v0 glass-overview-loaded-only");
   sceneSection.setAttribute("data-testid", "replay-scene-v0");
   const sceneTitle = el("h3", "glass-scene-v0-title", "Scene");
-  const sceneNoteEasy = el("p", "glass-scene-note--easy", VERTICAL_SLICE_V30_SCENE_NOTE_OVERVIEW);
+  const sceneNoteEasy = el("p", "glass-scene-note--easy", VERTICAL_SLICE_V31_SCENE_NOTE_OVERVIEW);
   sceneNoteEasy.setAttribute("data-testid", "replay-scene-note-overview");
   const sceneNote = el(
     "p",
@@ -359,30 +391,43 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   sceneCanvas.setAttribute("data-scene", GLASS_SCENE_V0);
   sceneSection.append(sceneTitle, sceneNoteEasy, sceneNote, sceneNoteTechnical, sceneCanvas);
 
-  const temporalSection = el("section", "glass-bounded-temporal");
-  temporalSection.setAttribute("data-testid", "replay-temporal-lens");
-  const episodeTitle = el("h4", "glass-bounded-episodes-title", "Episodes");
-  episodeTitle.setAttribute("data-testid", "replay-bounded-episodes-heading");
-  const episodeRoot = el("div", "glass-bounded-episodes-root");
-  episodeRoot.setAttribute("data-testid", "replay-bounded-episodes-root");
-  const claimTitle = el("h4", "glass-bounded-claims-title", "Claims");
-  claimTitle.setAttribute("data-testid", "replay-bounded-claims-heading");
+  const evidenceSection = el("section", "glass-replay-evidence glass-overview-loaded-only");
+  evidenceSection.setAttribute("data-testid", "replay-evidence-section");
+  const boundedEvidenceTitle = el("h4", "glass-bounded-evidence-heading", "Evidence");
+  const boundedEvidenceRoot = el("div", "glass-bounded-evidence-root");
+  boundedEvidenceRoot.setAttribute("data-testid", "replay-bounded-evidence");
+  const boundedEvidenceCrosslinkNote = el("p", "glass-bounded-evidence-crosslink-note");
+  boundedEvidenceCrosslinkNote.setAttribute("data-testid", "replay-bounded-evidence-crosslink-note");
+  boundedEvidenceCrosslinkNote.setAttribute("aria-live", "polite");
+  evidenceSection.append(boundedEvidenceTitle, boundedEvidenceRoot, boundedEvidenceCrosslinkNote);
+
+  const claimSection = el("section", "glass-replay-claim glass-overview-loaded-only");
+  claimSection.setAttribute("data-testid", "replay-claim-section");
+  const claimTitleOverview = el("h4", "glass-bounded-claims-title glass-heading-overview-only", "Claim");
+  claimTitleOverview.setAttribute("data-testid", "replay-bounded-claims-heading-overview");
+  const claimTitleTechnical = el("h4", "glass-bounded-claims-title glass-heading-technical-only", "Claims");
+  claimTitleTechnical.setAttribute("data-testid", "replay-bounded-claims-heading");
   const claimStripRoot = el("div", "glass-bounded-claims-strip-root");
   claimStripRoot.setAttribute("data-testid", "replay-bounded-claims-strip-root");
   const claimReceiptRoot = el("div", "glass-bounded-claim-receipt-root");
   claimReceiptRoot.setAttribute("data-testid", "replay-bounded-claim-receipt-root");
-  const temporalTitle = el("h4", "glass-bounded-temporal-title", "Time context");
+  claimSection.append(claimTitleOverview, claimTitleTechnical, claimStripRoot, claimReceiptRoot);
+
+  const timeSection = el("section", "glass-bounded-temporal glass-overview-loaded-only");
+  timeSection.setAttribute("data-testid", "replay-temporal-lens");
+  const temporalTitleOverview = el("h4", "glass-bounded-temporal-title glass-heading-overview-only", "Time");
+  const temporalTitleTechnical = el("h4", "glass-bounded-temporal-title glass-heading-technical-only", "Time context");
   const temporalRoot = el("div", "glass-bounded-temporal-root");
   temporalRoot.setAttribute("data-testid", "replay-temporal-lens-root");
-  temporalSection.append(
-    episodeTitle,
-    episodeRoot,
-    claimTitle,
-    claimStripRoot,
-    claimReceiptRoot,
-    temporalTitle,
-    temporalRoot,
-  );
+  timeSection.append(temporalTitleOverview, temporalTitleTechnical, temporalRoot);
+
+  const episodeSection = el("section", "glass-replay-episodes glass-overview-loaded-only");
+  episodeSection.setAttribute("data-testid", "replay-episodes-section");
+  const episodeTitle = el("h4", "glass-bounded-episodes-title", "Episodes");
+  episodeTitle.setAttribute("data-testid", "replay-bounded-episodes-heading");
+  const episodeRoot = el("div", "glass-bounded-episodes-root");
+  episodeRoot.setAttribute("data-testid", "replay-bounded-episodes-root");
+  episodeSection.append(episodeTitle, episodeRoot);
 
   function effectiveCompareBaselineReplay(): GlassSceneV0 | null {
     replayCompareBaselineRingIndex = clampTemporalBaselineIndex(
@@ -466,41 +511,33 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   scrub.min = "0";
   scrub.max = "1000";
   scrub.step = "1";
-  scrub.className = "glass-scrub";
+  scrub.className = "glass-scrub glass-overview-loaded-only";
   scrub.setAttribute("data-testid", "replay-scrub");
 
-  const positionLine = el("div", "glass-status-line");
+  const positionLine = el("div", "glass-status-line glass-overview-loaded-only");
   positionLine.setAttribute("data-testid", "replay-position");
+  const positionLineEasy = el("span", "glass-position-easy");
+  positionLineEasy.setAttribute("data-testid", "replay-position-easy");
+  const positionLineTech = el("span", "glass-position-technical glass-surface-technical-only");
+  positionLineTech.setAttribute("data-testid", "replay-position-technical");
+  positionLine.append(positionLineEasy, positionLineTech);
 
-  const timeline = el("div", "glass-timeline");
+  const timeline = el("div", "glass-timeline glass-surface-technical-only");
   timeline.setAttribute("data-testid", "replay-timeline");
 
-  const inspector = el("section", "glass-inspector");
+  const inspector = el("section", "glass-inspector glass-surface-technical-only");
   inspector.setAttribute("data-testid", "replay-inspector");
   const boundedInspectorTitle = el("h4", "glass-bounded-inspector-title", "Selection details");
   const boundedInspectorPre = el("pre", "glass-bounded-inspector");
   boundedInspectorPre.setAttribute("data-testid", "replay-bounded-inspector");
-  const boundedEvidenceTitle = el("h4", "glass-bounded-evidence-heading", "Evidence");
-  const boundedEvidenceRoot = el("div", "glass-bounded-evidence-root");
-  boundedEvidenceRoot.setAttribute("data-testid", "replay-bounded-evidence");
-  const boundedEvidenceCrosslinkNote = el("p", "glass-bounded-evidence-crosslink-note");
-  boundedEvidenceCrosslinkNote.setAttribute("data-testid", "replay-bounded-evidence-crosslink-note");
-  boundedEvidenceCrosslinkNote.setAttribute("aria-live", "polite");
   const eventInspectorTitle = el("h4", "glass-event-inspector-title", "Current event (debug)");
   const inspectorPre = el("pre");
   const eventDebugWrap = el("div", "glass-replay-event-debug glass-surface-technical-only");
   eventDebugWrap.setAttribute("data-testid", "replay-event-debug-wrap");
   eventDebugWrap.append(eventInspectorTitle, inspectorPre);
-  inspector.append(
-    boundedInspectorTitle,
-    boundedInspectorPre,
-    boundedEvidenceTitle,
-    boundedEvidenceRoot,
-    boundedEvidenceCrosslinkNote,
-    eventDebugWrap,
-  );
+  inspector.append(boundedInspectorTitle, boundedInspectorPre, eventDebugWrap);
 
-  const chipsRow = el("div");
+  const chipsRow = el("div", "glass-surface-technical-only");
   chipsRow.setAttribute("data-testid", "replay-entity-chips");
 
   root.append(
@@ -515,7 +552,10 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     metaSection,
     sanitizedSection,
     sceneSection,
-    temporalSection,
+    evidenceSection,
+    claimSection,
+    timeSection,
+    episodeSection,
     controls,
     scrub,
     positionLine,
@@ -588,9 +628,11 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     if (!boundedEpisodeSelectionStillValid(episodes.episodes, selectedBoundedEpisodeId)) {
       selectedBoundedEpisodeId = null;
     }
+    const tier = replaySurfaceTier();
     renderBoundedEpisodesInto(episodeRoot, episodes, {
       testIdPrefix: "replay",
       selectedEpisodeId: selectedBoundedEpisodeId,
+      surface: tier,
       onSelectEpisode: (nextId, ep) => {
         selectedBoundedEpisodeId = nextId;
         if (nextId !== null && ep.suggestedSelectionId) {
@@ -650,6 +692,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     renderBoundedClaimsInto(claimStripRoot, claimsPack, {
       testIdPrefix: "replay",
       highlightClaimId,
+      surface: tier,
       onSelectClaim: (nextId, cl) => {
         selectedBoundedClaimId = nextId;
         if (nextId !== null && cl.suggestedSelectionId) {
@@ -660,12 +703,14 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     });
     renderBoundedClaimReceiptInto(claimReceiptRoot, receipt, {
       testIdPrefix: "replay",
+      emptyPrimaryLine: tier === "overview" ? VERTICAL_SLICE_V31_CLAIM_EMPTY_OVERVIEW : undefined,
       emptySupplementLine:
-        !receipt && !replayTrustPrimaryClaimHighlight
+        tier === "technical" && !receipt && !replayTrustPrimaryClaimHighlight
           ? RECEIPT_EMPTY_SUPPLEMENT_AFTER_TEMPORAL_BASELINE
           : undefined,
     });
     renderBoundedEvidenceInto(boundedEvidenceRoot, drill, {
+      surface: tier,
       scene: lastReplayScene,
       selectedSelectionId: selectedBoundedSelectionId,
       liveEventTail: null,
@@ -827,6 +872,9 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   });
 
   function render(): void {
+    root.dataset.overviewPhase =
+      state.loadStatus === "ready" && state.manifest !== undefined ? "loaded" : "idle";
+
     if (
       state.loadStatus === "reading" ||
       state.loadStatus === "idle" ||
@@ -846,6 +894,11 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
 
     const ready = state.loadStatus === "ready";
     const emptyPack = ready && state.events.length === 0;
+
+    if (!(ready && state.manifest)) {
+      positionLineEasy.textContent = "";
+      positionLineTech.textContent = "";
+    }
 
     btnPlay.disabled =
       !ready || state.events.length === 0 || state.playback === "playing";
@@ -918,7 +971,8 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
       }
 
       if (emptyPack) {
-        positionLine.textContent =
+        positionLineEasy.textContent = "No events in this pack.";
+        positionLineTech.textContent =
           "No events in pack (empty timeline). Playback controls disabled.";
         inspectorPre.textContent = "{}";
       } else {
@@ -927,7 +981,8 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
         const ev = currentEvent(state);
         const idx = state.cursorIndex;
         const total = state.events.length;
-        positionLine.textContent = `Event ${idx + 1} / ${total} · seq ${ev?.seq ?? "—"} · kind ${ev?.kind ?? "—"} · ts_ns ${ev?.ts_ns ?? "—"}`;
+        positionLineEasy.textContent = `Step ${idx + 1} of ${total}`;
+        positionLineTech.textContent = `Event ${idx + 1} / ${total} · seq ${ev?.seq ?? "—"} · kind ${ev?.kind ?? "—"} · ts_ns ${ev?.ts_ns ?? "—"}`;
 
         for (let i = 0; i < state.events.length; i++) {
           const e = state.events[i];
@@ -985,7 +1040,6 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     }
 
     if (state.loadStatus === "idle") {
-      positionLine.textContent = "";
       scrub.value = "0";
     }
 

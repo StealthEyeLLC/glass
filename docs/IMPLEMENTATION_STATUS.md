@@ -5,6 +5,10 @@
 
 ## Vertical Slice v0 / v1 / v2 (milestone)
 
+## Vertical Slice v31 (Overview default-surface reduction)
+
+**Viewer:** **Overview** idle shows only title, **Load flagship demo** / **Open file**, one helper line, **Live session** link — **`data-overview-phase`** + **`glass-overview-loaded-only`** hide Scene/Evidence/Claim/Time/Episodes/playback until a pack is loaded. **Technical** keeps full chrome and dense strings (receipt supplement after temporal baseline, index-ordered phrasing, manifest, debug). Trust panels accept **`surface: overview | technical`** for short Overview copy. **No** wire or engine changes. See **`docs/VERTICAL_SLICE_V0.md`**, tests **`verticalSliceV31Overview.test.ts`**.
+
 ## Vertical Slice v30 (Overview vs Technical surfaces)
 
 **Viewer:** **Overview** (default) vs **Technical** — segmented control + **`?surface=technical`**; **Technical** chrome holds flagship explainer, reading order, live/transport honesty, pack manifest rows, operator JSON, event debug; trust panels keep **technical** sub-blocks off **Overview** via CSS. **No** wire or engine changes. See **`docs/VERTICAL_SLICE_V0.md`**, **`viewer/src/app/glassSurface.ts`**, tests **`surfaceSeparationV30.test.ts`**, **`glassSurface.test.ts`**.

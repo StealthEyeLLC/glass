@@ -87,3 +87,36 @@
 .glass-live-root[data-surface="easy"] .glass-scene-note--full {
   display: none !important;
 }
+
+/* Vertical Slice v31 — Overview: hide trust stack until a session is loaded */
+.glass-replay-root[data-surface="easy"][data-overview-phase="idle"] .glass-overview-loaded-only,
+.glass-live-root[data-surface="easy"][data-overview-phase="idle"] .glass-overview-loaded-only {
+  display: none !important;
+}
+
+.glass-replay-root[data-surface="technical"] .glass-heading-overview-only,
+.glass-live-root[data-surface="technical"] .glass-heading-overview-only {
+  display: none !important;
+}
+
+.glass-replay-root[data-surface="easy"] .glass-heading-technical-only,
+.glass-live-root[data-surface="easy"] .glass-heading-technical-only {
+  display: none !important;
+}
+
+.glass-replay-root[data-surface="technical"] .glass-surface-overview-only,
+.glass-live-root[data-surface="technical"] .glass-surface-overview-only {
+  display: none !important;
+}
+
+.glass-overview-primary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.glass-primary-open-file {
+  font-weight: 600;
+}

@@ -24,8 +24,8 @@ Live: WS tail and HTTP snapshot stay **separate**. Replay: index-ordered prefix;
 **Easy path (what to do):**
 
 1. Run the viewer locally (`cd viewer`, then `npm ci` and `npm run dev` — see **Verify bootstrap** below).
-2. In the replay shell, use **Try the flagship** → **Load flagship demo** (dev only) **or** **Open file** / drop a pack — file `tests/fixtures/canonical_scenarios_v15/canonical_v15_append_heavy.glass_pack`.
-3. Use **View → Technical** when you want the full instrument (paths, scan order, receipt ids, operator JSON). On **Overview** (default), scroll top-to-bottom: **Scene** → **Evidence** → **Episodes** → **Claims** → receipt → **Time context**. Expand **How to read** in Technical for the exact scan order.
+2. In the replay shell, use **Load flagship demo** (dev only) **or** **Open file** — file `tests/fixtures/canonical_scenarios_v15/canonical_v15_append_heavy.glass_pack` (drop zone and pack-format detail are under **Technical**).
+3. Use **View → Technical** when you want the full instrument (paths, scan order, receipt ids, operator JSON, flagship **How to read**). On **Overview** (default), before a pack loads you only see title, primary actions, and one short helper line; after load, scroll **Scene** → **Evidence** → **Claim** → **Time** → **Episodes** (playback controls follow **Time**).
 
 **Technical (how it loads):** Static **`dist/`** does not auto-load fixtures — use **Open file** with the committed pack. **Dev-only:** the shell can load the same bytes via `?fixture=flagship` ([details](docs/VERTICAL_SLICE_V0.md)). Add **`?surface=technical`** to deep-link the Technical surface. Live **`?live=1`** is optional; connection and transport honesty live under **Technical** — still **local** bridge semantics, not cloud-hosted Glass.
 
@@ -91,7 +91,7 @@ Naming and re-capture checklist: **[docs/media/README.md](docs/media/README.md)*
 | `graph_engine/` | Graph derivation (stub crate; no presentation) |
 | `collector/` | Linux collector binary (lifecycle stub only) |
 | `bridge/` | Local loopback bridge (`glass_bridge`) + resync types — HTTP/WS per docs |
-| `viewer/` | Tier B static replay + optional **`?live=1`** — **Vertical Slice v0–v26** ([docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md)) |
+| `viewer/` | Tier B static replay + optional **`?live=1`** — **Vertical Slice v0–v31** ([docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md)) |
 | `tools/glass-pack` | CLI: validate / inspect packs; strict kinds + share-safe vs raw-dev |
 | `tools/golden_scenes/` | Golden-scene harness scaffold |
 | `docs/` | Status, boundaries, tests, contracts, **media** guidance |
