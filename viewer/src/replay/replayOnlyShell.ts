@@ -14,8 +14,11 @@ import {
   VERTICAL_SLICE_SCENARIO_BODY,
   VERTICAL_SLICE_SCENARIO_LABEL,
   VERTICAL_SLICE_SCENARIO_TITLE,
+  VERTICAL_SLICE_V26_FLAGSHIP_EASY_SUMMARY,
+  VERTICAL_SLICE_V26_LIVE_NAV_TECHNICAL,
   VERTICAL_SLICE_V20_READING_ORDER_REPLAY,
   replayHeroSubtitle,
+  replayHeroSubtitleTechnical,
 } from "../app/verticalSliceV0.js";
 import { loadGlassPack } from "../pack/loadPack.js";
 import { attachPackDropHandlers, wirePackFileInput } from "./dragDrop.js";
@@ -143,15 +146,26 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   flagshipCallout.setAttribute("data-testid", "replay-flagship-callout");
   const flagshipFraming = el("p", "glass-flagship-callout-framing", GLASS_FLAGSHIP_CHAIN_DOC);
   flagshipFraming.setAttribute("data-testid", "replay-flagship-framing");
+  const flagshipEasy = el("p", "glass-flagship-callout-easy", VERTICAL_SLICE_V26_FLAGSHIP_EASY_SUMMARY);
+  flagshipEasy.setAttribute("data-testid", "replay-flagship-easy-summary");
+  const flagshipTechnicalDetails = document.createElement("details");
+  flagshipTechnicalDetails.className = "glass-technical-details";
+  flagshipTechnicalDetails.setAttribute("data-testid", "replay-flagship-technical-details");
+  const flagshipTechnicalSummary = document.createElement("summary");
+  flagshipTechnicalSummary.className = "glass-technical-details-summary";
+  flagshipTechnicalSummary.textContent = "Fixture paths & developer auto-load";
+  const flagshipTechnicalBody = el(
+    "p",
+    "glass-flagship-callout-meta",
+    `Committed: tests/fixtures/canonical_scenarios_v15/${VERTICAL_SLICE_FLAGSHIP_V18_PACK_FILE} · session ${VERTICAL_SLICE_FLAGSHIP_V18_SESSION_ID}. Dev: npm run dev + ${VERTICAL_SLICE_FLAGSHIP_V18_DEV_QUERY_HINT}. ${replayHeroSubtitleTechnical()}`,
+  );
+  flagshipTechnicalDetails.append(flagshipTechnicalSummary, flagshipTechnicalBody);
   flagshipCallout.append(
     el("h2", "glass-flagship-callout-title", VERTICAL_SLICE_FLAGSHIP_V18_TITLE),
     el("p", "glass-flagship-callout-body", VERTICAL_SLICE_FLAGSHIP_V18_BODY),
     flagshipFraming,
-    el(
-      "p",
-      "glass-flagship-callout-meta",
-      `Committed: tests/fixtures/canonical_scenarios_v15/${VERTICAL_SLICE_FLAGSHIP_V18_PACK_FILE} · session ${VERTICAL_SLICE_FLAGSHIP_V18_SESSION_ID}. Dev: npm run dev + ${VERTICAL_SLICE_FLAGSHIP_V18_DEV_QUERY_HINT}`,
-    ),
+    flagshipEasy,
+    flagshipTechnicalDetails,
   );
 
   const readingOrder = el("section", "glass-vs-reading-order");
@@ -162,16 +176,70 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   );
 
   const liveNav = el("div", "glass-live-nav");
+  liveNav.setAttribute("data-testid", "replay-live-nav");
   const liveA = document.createElement("a");
   liveA.href = "?live=1";
   liveA.setAttribute("data-testid", "replay-link-live-session");
-  liveA.textContent =
-    "Open live session skeleton (bridge WebSocket + HTTP) — ?live=1";
-  liveNav.append(liveA);
+  liveA.className = "glass-live-nav-primary";
+  liveA.textContent = "Advanced: bounded live session (local bridge)";
+  const liveNavDetails = document.createElement("details");
+  liveNavDetails.className = "glass-technical-details glass-live-nav-details";
+  liveNavDetails.setAttribute("data-testid", "replay-live-nav-technical");
+  const liveNavSummary = document.createElement("summary");
+  liveNavSummary.className = "glass-technical-details-summary";
+  liveNavSummary.textContent = "Live mode URL flag & mechanics";
+  const liveNavTechP = el("p", "glass-live-nav-technical-body", VERTICAL_SLICE_V26_LIVE_NAV_TECHNICAL);
+  const liveNavCode = el("p", "glass-live-nav-code-hint", "Query flag: add ?live=1 to this page’s URL (bookmark-friendly).");
+  liveNavCode.setAttribute("data-testid", "replay-live-nav-code-hint");
+  liveNavDetails.append(liveNavSummary, liveNavTechP, liveNavCode);
+  liveNav.append(liveA, liveNavDetails);
+
+  const easyEntry = el("section", "glass-easy-entry");
+  easyEntry.setAttribute("data-testid", "replay-easy-entry");
+  easyEntry.append(
+    el("h2", "glass-easy-entry-title", "Start here"),
+    el(
+      "p",
+      "glass-easy-entry-lead",
+      "Load the flagship append-heavy pack to walk the full bounded claim chain in replay — scene canvas through temporal lens.",
+    ),
+  );
+  if (import.meta.env.DEV) {
+    const flagshipDemo = document.createElement("a");
+    flagshipDemo.href = `?fixture=flagship`;
+    flagshipDemo.setAttribute("data-testid", "replay-easy-flagship-load");
+    flagshipDemo.className = "glass-easy-flagship-cta";
+    flagshipDemo.textContent = "Load flagship demo";
+    easyEntry.append(flagshipDemo);
+  }
+  easyEntry.append(
+    el(
+      "p",
+      "glass-easy-entry-secondary",
+      "Or use Open file with any Tier B .glass_pack from this checkout.",
+    ),
+  );
 
   const dropZone = el("div", "glass-drop-zone");
-  dropZone.textContent =
-    "Drop a .glass_pack here, or use Open file. Prefer the flagship append-heavy pack for the full bounded demo; Tier B: manifest.json + events.jsonl (glass.pack.v0.scaffold) or events.seg (glass.pack.v0.scaffold_seg).";
+  dropZone.setAttribute("data-testid", "replay-drop-zone");
+  dropZone.append(
+    el("p", "glass-drop-zone-lead", "Drop a .glass_pack here, or use Open file."),
+    (() => {
+      const d = document.createElement("details");
+      d.className = "glass-technical-details";
+      d.setAttribute("data-testid", "replay-pack-format-details");
+      const s = document.createElement("summary");
+      s.className = "glass-technical-details-summary";
+      s.textContent = "Pack format (Tier B)";
+      const p = el(
+        "p",
+        "glass-drop-zone-formats",
+        "Tier B: manifest.json + events.jsonl (glass.pack.v0.scaffold) or events.seg (glass.pack.v0.scaffold_seg). Prefer the flagship append-heavy pack for the full bounded demo.",
+      );
+      d.append(s, p);
+      return d;
+    })(),
+  );
 
   const fileRow = el("div", "glass-file-row");
   const fileInput = document.createElement("input");
@@ -404,6 +472,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     hero,
     flagshipCallout,
     readingOrder,
+    easyEntry,
     liveNav,
     dropZone,
     fileRow,

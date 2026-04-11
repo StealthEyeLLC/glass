@@ -105,6 +105,7 @@ import {
   VERTICAL_SLICE_SCENARIO_LABEL,
   VERTICAL_SLICE_SCENARIO_TITLE,
   VERTICAL_SLICE_V20_READING_ORDER_LIVE,
+  VERTICAL_SLICE_V26_LIVE_INTRO_HONEST,
   liveHeroSubtitle,
 } from "../app/verticalSliceV0.js";
 import "./liveSessionShell.css";
@@ -160,7 +161,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   hero.setAttribute("data-testid", "live-vs-hero");
   hero.append(
     el("h1", "glass-vs-title", "Glass — Vertical Slice v0"),
-    el("p", "glass-vs-badge", "Live path · ?live=1"),
+    el("p", "glass-vs-badge", "Bounded live session (local)"),
     el("p", "glass-vs-scenario-kicker", `${VERTICAL_SLICE_SCENARIO_TITLE} · live`),
     el("p", "glass-vs-nickname", VERTICAL_SLICE_SCENARIO_LABEL),
     el("p", "glass-vs-subtitle", liveHeroSubtitle()),
@@ -184,28 +185,40 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       p.setAttribute("data-testid", "live-reading-order");
       return p;
     })(),
-    el(
-      "p",
-      "glass-live-tech-note",
-      "Bridge WebSocket + bounded HTTP snapshot (F-04). F-IPC transport provisional. Bearer token not persisted (sessionStorage: URL, session id, delta-wire preference).",
-    ),
   );
 
   const nav = el("div", "glass-live-nav");
   const back = document.createElement("a");
   back.href = "?";
-  back.textContent = "← Tier B replay (remove ?live=1)";
+  back.setAttribute("data-testid", "live-back-to-replay");
+  back.textContent = "← Back to bounded replay";
   nav.append(back);
+
+  const liveIntro = el("p", "glass-live-easy-intro", VERTICAL_SLICE_V26_LIVE_INTRO_HONEST);
+  liveIntro.setAttribute("data-testid", "live-easy-intro");
+
+  const transportDetails = document.createElement("details");
+  transportDetails.className = "glass-technical-details";
+  transportDetails.setAttribute("data-testid", "live-transport-honesty-details");
+  const transportSummary = document.createElement("summary");
+  transportSummary.className = "glass-technical-details-summary";
+  transportSummary.textContent = "Transport & trust boundaries (F-04, provisional F-IPC)";
+  const transportBody = el(
+    "p",
+    "glass-live-tech-note",
+    "Bridge WebSocket + bounded HTTP snapshot (F-04). F-IPC transport provisional. Bearer token not persisted (sessionStorage: URL, session id, delta-wire preference).",
+  );
+  transportDetails.append(transportSummary, transportBody);
 
   const form = el("section", "glass-live-form");
   const bridgeInput = document.createElement("input");
   bridgeInput.type = "url";
-  bridgeInput.placeholder = "http://127.0.0.1:9781";
+  bridgeInput.placeholder = "Loopback bridge base URL (typical dev)";
   bridgeInput.className = "glass-live-input";
   bridgeInput.setAttribute("data-testid", "live-bridge-url");
   const tokenInput = document.createElement("input");
   tokenInput.type = "password";
-  tokenInput.placeholder = "Bridge bearer token (not persisted)";
+  tokenInput.placeholder = "Bearer token (not persisted)";
   tokenInput.className = "glass-live-input";
   tokenInput.setAttribute("data-testid", "live-token");
   const sessionInput = document.createElement("input");
@@ -219,7 +232,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   deltaWire.setAttribute("data-testid", "live-delta-wire");
   const deltaLabel = el("label");
   deltaLabel.htmlFor = "live-delta-wire";
-  deltaLabel.textContent = "session_delta_wire (needs bridge + collector + capability)";
+  deltaLabel.textContent = "Use session_delta wire when bridge + collector allow it";
   const btnPreflight = el("button", undefined, "Preflight capabilities");
   btnPreflight.type = "button";
   btnPreflight.setAttribute("data-testid", "live-preflight");
@@ -236,7 +249,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   btnSnapshot.type = "button";
   btnSnapshot.setAttribute("data-testid", "live-http-snapshot");
   form.append(
-    el("div", "glass-live-field", "Bridge base URL"),
+    el("div", "glass-live-field", "Local bridge base URL"),
     bridgeInput,
     el("div", "glass-live-field", "Bearer token"),
     tokenInput,
@@ -261,6 +274,14 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   if (prefs.sessionDeltaWire !== undefined) {
     deltaWire.checked = prefs.sessionDeltaWire;
   }
+
+  const connectionDetails = document.createElement("details");
+  connectionDetails.className = "glass-live-connection-advanced";
+  connectionDetails.setAttribute("data-testid", "live-connection-advanced");
+  const connectionSummary = document.createElement("summary");
+  connectionSummary.className = "glass-live-connection-summary";
+  connectionSummary.textContent = "Connection settings (local bridge)";
+  connectionDetails.append(connectionSummary, form);
 
   let activeWs: WebSocket | null = null;
   const closeAttribution = new WeakMap<WebSocket, "operator" | "reconnect">();
@@ -839,7 +860,9 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   root.append(
     hero,
     nav,
-    form,
+    liveIntro,
+    transportDetails,
+    connectionDetails,
     statePanel,
     capsHeader,
     capsPre,

@@ -11,6 +11,7 @@ import {
   VERTICAL_SLICE_V0_ID,
   liveHeroSubtitle,
   replayHeroSubtitle,
+  replayHeroSubtitleTechnical,
 } from "./verticalSliceV0.js";
 
 describe("verticalSliceV0", () => {
@@ -20,6 +21,8 @@ describe("verticalSliceV0", () => {
     expect(VERTICAL_SLICE_SCENARIO_LABEL.length).toBeGreaterThan(4);
     expect(replayHeroSubtitle()).toContain("static replay");
     expect(replayHeroSubtitle()).toContain("flagship");
+    expect(replayHeroSubtitleTechnical()).toContain("vertical_slice_v0");
+    expect(replayHeroSubtitleTechnical()).toContain("?fixture=flagship");
     expect(liveHeroSubtitle()).toContain("Same strip");
     expect(VERTICAL_SLICE_FLAGSHIP_V18_SESSION_ID).toBe("canonical_v15_append_heavy");
     expect(VERTICAL_SLICE_V20_READING_ORDER_REPLAY).toContain("temporal lens");

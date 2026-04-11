@@ -135,6 +135,103 @@
   font-family: ui-monospace, monospace;
 }
 
+/* Vertical Slice v26 — easy-first entry; technical copy in <details> */
+.glass-flagship-callout-easy {
+  margin: 0 0 8px;
+  font-size: 0.84rem;
+  color: #0c4a6e;
+  line-height: 1.45;
+}
+
+.glass-technical-details {
+  margin: 0 0 4px;
+  font-size: 0.78rem;
+  color: #475569;
+}
+
+.glass-technical-details-summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #334155;
+}
+
+.glass-easy-entry {
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: linear-gradient(180deg, #eef2ff 0%, #e0e7ff 100%);
+  border-left: 4px solid #4f46e5;
+}
+
+.glass-easy-entry-title {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e1b4b;
+}
+
+.glass-easy-entry-lead {
+  margin: 0 0 10px;
+  font-size: 0.84rem;
+  color: #312e81;
+  line-height: 1.45;
+}
+
+.glass-easy-flagship-cta {
+  display: inline-block;
+  margin: 0 0 10px;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: #4f46e5;
+  color: #fff !important;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 0.88rem;
+}
+
+.glass-easy-flagship-cta:hover {
+  background: #4338ca;
+}
+
+.glass-easy-entry-secondary {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #4338ca;
+}
+
+.glass-drop-zone-lead {
+  margin: 0 0 8px;
+}
+
+.glass-drop-zone-formats {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.glass-live-nav-primary {
+  font-weight: 600;
+}
+
+.glass-live-nav-details {
+  margin-top: 6px;
+}
+
+.glass-live-nav-technical-body {
+  margin: 6px 0 4px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.glass-live-nav-code-hint {
+  margin: 0;
+  font-size: 0.72rem;
+  font-family: ui-monospace, monospace;
+  color: #64748b;
+}
+
 .glass-live-nav {
   margin-bottom: 8px;
 }

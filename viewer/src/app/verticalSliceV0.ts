@@ -36,12 +36,36 @@ export const VERTICAL_SLICE_SCENARIO_LABEL = "Agent expectations vs honest bound
 export const VERTICAL_SLICE_SCENARIO_BODY =
   "One path: the same Glass Scene System v0 strip and Drawable Primitives semantics in replay (index-ordered prefix from a pack) and in live (bounded WebSocket tail + optional HTTP reconcile). Wire-mode slots are real roles — not a process graph or invented continuity.";
 
-export function replayHeroSubtitle(): string {
-  return "Tier B static replay stays the default surface. Start with the flagship append-heavy pack for the full bounded story (compare, evidence, claims, temporal lens). Minimal smoke: tests/fixtures/vertical_slice_v0/ Tier B (3 events) for fast CI; canonical suite packs prove breadth (replace, calm, file-heavy).";
+/**
+ * Vertical Slice v26 — first-run hero lead: what to do, not how the dev server is launched.
+ * Technical fixture paths live in `replayHeroSubtitleTechnical()` / README / collapsible UI.
+ */
+export const VERTICAL_SLICE_V26_REPLAY_HERO_LEAD =
+  "Tier B static replay is the default surface. Open the flagship append-heavy pack for the full bounded story — compare, evidence, claims, receipt, temporal lens. Minimal smoke packs and breadth scenarios stay in-repo for CI; you do not need them for a first read.";
+
+/** Checkout-relative paths, CI roles, and dev auto-load — for advanced/docs only. */
+export function replayHeroSubtitleTechnical(): string {
+  return "Minimal smoke: tests/fixtures/vertical_slice_v0/ Tier B (3 events) for fast CI. Canonical suite packs under tests/fixtures/canonical_scenarios_v15/ prove breadth (replace, calm, file-heavy). Development: npm run dev with ?fixture=flagship loads the flagship bytes without picking a path from disk.";
 }
 
+export function replayHeroSubtitle(): string {
+  return VERTICAL_SLICE_V26_REPLAY_HERO_LEAD;
+}
+
+/** Flagship callout — one sentence for scanning; no npm/query in the primary line. */
+export const VERTICAL_SLICE_V26_FLAGSHIP_EASY_SUMMARY =
+  "The flagship pack is committed in this repo — use Open file, or Load flagship demo when running the dev build.";
+
+/** One paragraph for collapsible “technical” on replay + README-adjacent honesty. */
+export const VERTICAL_SLICE_V26_LIVE_NAV_TECHNICAL =
+  "Live mode is still local: this tab talks to a bridge on your machine (not a hosted cloud). The viewer adds a query flag to switch shells; connection fields stay under Connection settings.";
+
+/** Live shell — honest local scope without surfacing ports or URLs in the primary paragraph. */
+export const VERTICAL_SLICE_V26_LIVE_INTRO_HONEST =
+  "Live mode runs in this browser against a bridge on your machine — not a hosted Glass service. Expand Connection settings when you have a loopback URL, bearer token, and session id; bounded replay (default) needs no bridge.";
+
 export function liveHeroSubtitle(): string {
-  return "Same strip, selection, compare, evidence, claims, and episodes as replay — driven by the bounded WS tail + HTTP snapshot. The flagship replay path (append-heavy canonical) defines the vocabulary; live proves the same surfaces under wire deltas.";
+  return "Same strip, selection, compare, evidence, claims, and episodes as replay — driven by the bounded WebSocket tail and HTTP snapshot. The flagship replay path (append-heavy canonical) defines the vocabulary; live proves the same surfaces under wire deltas.";
 }
 
 /** Freeze-candidate product framing — use sparingly (README, flagship callout, reading order). */

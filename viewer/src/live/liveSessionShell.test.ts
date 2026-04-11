@@ -8,6 +8,8 @@ describe("mountLiveSessionShell", () => {
     const root = document.createElement("div");
     mountLiveSessionShell(root);
     expect(root.querySelector('[data-testid="live-vs-hero"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="live-easy-intro"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="live-connection-advanced"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="live-flagship-note"]')).not.toBeNull();
     const liveFraming = root.querySelector('[data-testid="live-flagship-framing"]');
     expect(liveFraming).not.toBeNull();
