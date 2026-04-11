@@ -53,5 +53,6 @@ describe("liveVisualSpecFromScene (renderer boundary)", () => {
     expect(spec.replayPrefixFraction).toBe(1);
     expect(spec.snapshotOriginLabel).toBeNull();
     expect(spec.actorClusterSummaryLine).toContain("Prefix");
+    expect(spec.boundedCompositionCaption).toBe("Wire · System · Evidence");
   });
 });

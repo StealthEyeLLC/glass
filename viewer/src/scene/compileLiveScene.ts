@@ -5,9 +5,8 @@
 import type { LiveSessionModelState } from "../live/applyLiveSessionMessage.js";
 import type { HttpReconcileRecord } from "../live/liveHttpReconcile.js";
 import { buildLiveVisualSpec, liveVisualDensity01 } from "../live/liveVisualModel.js";
-import {
-  deriveLiveBoundedActorClusters,
-} from "./boundedActorClusters.js";
+import { deriveLiveBoundedActorClusters } from "./boundedActorClusters.js";
+import { buildLiveBoundedRegions } from "./boundedSceneRegions.js";
 import {
   DEFAULT_SCENE_BOUNDS,
   GLASS_SCENE_V0,
@@ -153,6 +152,7 @@ export function compileLiveToGlassSceneV0(input: LiveSceneCompileInput): GlassSc
     snapshotOriginLabel: spec.snapshotOriginLabel,
     replayPrefixFraction: spec.replayPrefixFraction,
     clusters,
+    regions: buildLiveBoundedRegions(),
     zones,
     nodes,
     edges,

@@ -1,6 +1,17 @@
-# Glass Vertical Slice v0 / v1 / v2
+# Glass Vertical Slice v0 / v1 / v2 / v3
 
-**Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier). **Vertical Slice v1** added a richer bounded scene; **v2** adds **bounded actor/sample clusters** from real event kinds only — still **no** wire contract changes.
+**Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier). **Vertical Slice v1** added a richer bounded scene; **v2** adds **bounded actor/sample clusters** from real event kinds only; **v3** adds **bounded regions** (membership + compositional drawable layers) — still **no** wire contract changes.
+
+## Vertical Slice v3 (bounded relationships / composition)
+
+**What it adds (viewer-only):**
+
+- **`GlassSceneV0.regions`:** three **`SceneBoundedRegion`** entries with **`memberZoneIds`** only (wire + density + markers vs snapshot/reconcile/state rail vs actor clusters — live; replay uses **`z_primary` / `z_density` / `z_playback`** vs **`z_snapshot` / `z_state_rail`** vs **`z_actor`**). **Roles:** `primary_wire_sample`, `system_integrity_rail`, `bounded_sample_evidence`. This is **grouping**, not edges and not a process tree.
+- **Builders:** `buildLiveBoundedRegions` / `buildReplayBoundedRegions` in `viewer/src/scene/boundedSceneRegions.ts` — deterministic labels and zone lists from existing zone ids only.
+- **Drawable Primitives v0:** **`applyBoundedSceneComposition`** runs after the state rail + cluster strip: underlay **panels** + **left accent bars** aligned to the fixed band / rail / cluster layout, a **1px separator** between system rail and evidence strip, and an **outer bounded-scene frame** stroke. New **`composition_*`** semantic tags (including **`composition_bounded_scene_frame`** + WebGPU edge expansion). Same primitive stream for Canvas and WebGPU.
+- **`LiveVisualSpec.boundedCompositionCaption`:** short **`Wire · System · Evidence`** line (from `formatBoundedCompositionCaption`) on the Canvas text overlay — **not** a second semantic authority.
+
+**What it does *not* imply:** causal links between regions, full topology, or history outside the bounded sample. **F-IPC transport** remains **provisional**. This is still **not** the Phase-6 full runtime scene.
 
 ## Vertical Slice v2 (bounded actor clusters)
 

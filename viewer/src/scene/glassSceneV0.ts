@@ -66,6 +66,23 @@ export interface SceneActorCluster {
   emphasis01: number;
 }
 
+/**
+ * Vertical Slice v3 — bounded region roles (membership references `SceneZone.id`; not graph edges).
+ */
+export type SceneBoundedRegionRole =
+  | "primary_wire_sample"
+  | "system_integrity_rail"
+  | "bounded_sample_evidence";
+
+export interface SceneBoundedRegion {
+  id: string;
+  role: SceneBoundedRegionRole;
+  /** Human-readable; must not imply topology or full history. */
+  label: string;
+  /** Zone ids grouped under this region — adjacency/grouping only. */
+  memberZoneIds: readonly string[];
+}
+
 export interface SceneNode {
   id: string;
   zoneId: string;
@@ -118,6 +135,8 @@ export interface GlassSceneV0 {
   replayPrefixFraction: number | null;
   /** Vertical Slice v2 — bounded actor/sample clusters from current tail or prefix only. */
   clusters: readonly SceneActorCluster[];
+  /** Vertical Slice v3 — honest grouping of zones (containers / lanes / emphasis); not edges. */
+  regions: readonly SceneBoundedRegion[];
   zones: readonly SceneZone[];
   nodes: readonly SceneNode[];
   edges: readonly SceneEdge[];

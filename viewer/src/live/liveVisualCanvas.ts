@@ -87,6 +87,17 @@ export function drawLiveVisualTextLabelsIntoContext(
       : railBottom;
   let lineY = clusterBottom + 8;
 
+  if (spec.boundedCompositionCaption) {
+    ctx.font = "600 10px system-ui, sans-serif";
+    ctx.fillStyle = "#0f766e";
+    ctx.fillText(
+      truncate(`composition: ${spec.boundedCompositionCaption}`, 58),
+      16,
+      lineY,
+    );
+    lineY += 14;
+  }
+
   if (spec.actorClusterSummaryLine) {
     ctx.font = "500 10px system-ui, sans-serif";
     ctx.fillStyle = "#475569";

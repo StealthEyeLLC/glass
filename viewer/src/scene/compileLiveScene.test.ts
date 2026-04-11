@@ -17,6 +17,12 @@ describe("compileLiveToGlassSceneV0", () => {
     expect(scene.zones[0]?.label.toLowerCase()).toContain("wire");
     expect(scene.clusters.length).toBeGreaterThan(0);
     expect(scene.clusters[0]?.lane).toBe("empty_sample");
+    expect(scene.regions).toHaveLength(3);
+    expect(scene.regions.map((r) => r.role)).toEqual([
+      "primary_wire_sample",
+      "system_integrity_rail",
+      "bounded_sample_evidence",
+    ]);
   });
 
   it("passes httpSnapshotOrigin into snapshotOriginLabel when model has no replace yet", () => {

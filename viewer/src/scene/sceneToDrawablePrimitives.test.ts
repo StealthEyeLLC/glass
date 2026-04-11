@@ -10,6 +10,7 @@ import { compileLiveToGlassSceneV0 } from "./compileLiveScene.js";
 import { compileReplayToGlassSceneV0 } from "./compileReplayScene.js";
 import {
   appendBoundedActorClusterStrip,
+  applyBoundedSceneComposition,
   buildBoundedVisualGeometryPrimitives,
 } from "./drawablePrimitivesV0.js";
 import { liveVisualSpecFromScene } from "./sceneToLiveVisualSpec.js";
@@ -58,6 +59,7 @@ describe("sceneToDrawablePrimitives", () => {
       scene.bounds.heightCss,
     );
     appendBoundedActorClusterStrip(scene.clusters, scene.bounds.widthCss, b);
+    applyBoundedSceneComposition(scene, scene.bounds.widthCss, scene.bounds.heightCss, b);
     expect(a).toEqual(b);
   });
 
@@ -73,6 +75,7 @@ describe("sceneToDrawablePrimitives", () => {
       200,
     );
     appendBoundedActorClusterStrip(scene.clusters, 400, direct);
+    applyBoundedSceneComposition(scene, 400, 200, direct);
     expect(withLayout).toEqual(direct);
   });
 
@@ -108,11 +111,13 @@ describe("sceneToDrawablePrimitives", () => {
     });
     st = reduceReplay(st, { type: "seek_index", index: 0 });
     const replayScene = compileReplayToGlassSceneV0(st);
-    const a = listSemanticTagsForScene(liveScene).slice(0, 6);
-    const b = listSemanticTagsForScene(replayScene).slice(0, 6);
-    expect(a.slice(0, 5)).toEqual(b.slice(0, 5));
+    const a = listSemanticTagsForScene(liveScene).slice(0, 8);
+    const b = listSemanticTagsForScene(replayScene).slice(0, 8);
+    expect(a.slice(0, 7)).toEqual(b.slice(0, 7));
     expect(a[0]).toBe("band_background");
-    expect(a[1]).toBe("density_band");
-    expect(a[2]).toBe("tick_slot_replace");
+    expect(a[1]).toBe("composition_panel_primary");
+    expect(a[2]).toBe("composition_accent_primary");
+    expect(a[3]).toBe("density_band");
+    expect(a[4]).toBe("tick_slot_replace");
   });
 });

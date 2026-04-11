@@ -5,6 +5,7 @@
 import type { GlassSceneV0, SceneBounds } from "./glassSceneV0.js";
 import {
   appendBoundedActorClusterStrip,
+  applyBoundedSceneComposition,
   buildBoundedVisualGeometryPrimitives,
   type DrawablePrimitive,
 } from "./drawablePrimitivesV0.js";
@@ -24,5 +25,6 @@ export function sceneToDrawablePrimitives(
   const spec = liveVisualSpecFromScene(scene);
   const out = buildBoundedVisualGeometryPrimitives(spec, w, h);
   appendBoundedActorClusterStrip(scene.clusters, w, out);
+  applyBoundedSceneComposition(scene, w, h, out);
   return out;
 }

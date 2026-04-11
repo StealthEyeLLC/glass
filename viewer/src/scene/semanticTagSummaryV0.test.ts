@@ -86,15 +86,18 @@ describe("listSemanticTagsForScene", () => {
     });
     st = reduceReplay(st, { type: "seek_index", index: 0 });
     const replayScene = compileReplayToGlassSceneV0(st);
-    const a = listSemanticTagsForScene(liveScene).slice(0, 5);
-    const b = listSemanticTagsForScene(replayScene).slice(0, 5);
+    const a = listSemanticTagsForScene(liveScene).slice(0, 8);
+    const b = listSemanticTagsForScene(replayScene).slice(0, 8);
     expect(a).toEqual(b);
     expect(a).toEqual([
       "band_background",
+      "composition_panel_primary",
+      "composition_accent_primary",
       "density_band",
       "tick_slot_replace",
       "tick_slot_append",
       "tick_slot_resync",
+      "band_frame",
     ]);
   });
 });
@@ -108,12 +111,13 @@ describe("listSemanticTagsForWebGpuPrimitiveExpansion", () => {
     const prim = sceneToPrimitives(scene);
     const expanded = listSemanticTagsForWebGpuPrimitiveExpansion(prim);
     const strokes = prim.filter((p) => p.kind === "stroke_rect");
-    expect(strokes.length).toBe(3);
+    expect(strokes.length).toBe(4);
     expect(strokes[0]?.semanticTag).toBe("band_frame");
     expect(strokes[1]?.semanticTag).toBe("state_rail_frame");
     expect(strokes[2]?.semanticTag).toBe("actor_cluster_strip_frame");
-    expect(expanded[expanded.length - 4]).toBe("actor_cluster_strip_frame_top");
-    expect(expanded[expanded.length - 1]).toBe("actor_cluster_strip_frame_right");
+    expect(strokes[3]?.semanticTag).toBe("composition_bounded_scene_frame");
+    expect(expanded[expanded.length - 4]).toBe("composition_bounded_scene_frame_top");
+    expect(expanded[expanded.length - 1]).toBe("composition_bounded_scene_frame_right");
   });
 
   it("listSemanticTagsForSceneWebGpuExpansion matches listSemanticTagsForWebGpuPrimitiveExpansion(scene primitives)", () => {

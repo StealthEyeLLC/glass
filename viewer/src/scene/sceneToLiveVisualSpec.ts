@@ -4,6 +4,7 @@
 
 import type { LiveVisualSpec } from "../live/liveVisualModel.js";
 import { formatActorClusterSummaryLine } from "./boundedActorClusters.js";
+import { formatBoundedCompositionCaption } from "./boundedSceneRegions.js";
 import type { GlassSceneV0 } from "./glassSceneV0.js";
 
 /** Maps a bounded scene to the strip spec consumed by `liveVisualCanvas` / `liveVisualWebGpu`. */
@@ -24,6 +25,10 @@ export function liveVisualSpecFromScene(scene: GlassSceneV0): LiveVisualSpec {
     actorClusterSummaryLine: (() => {
       const s = formatActorClusterSummaryLine(scene.clusters);
       return s.length > 0 ? s : null;
+    })(),
+    boundedCompositionCaption: (() => {
+      const cap = formatBoundedCompositionCaption(scene.regions);
+      return cap.length > 0 ? cap : null;
     })(),
   };
 }

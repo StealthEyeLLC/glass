@@ -124,6 +124,25 @@ describe("expandStrokeRectToFillRects", () => {
     ]);
   });
 
+  it("uses composition_bounded_scene_frame_* tags for composition_bounded_scene_frame strokes", () => {
+    const fills = expandStrokeRectToFillRects({
+      kind: "stroke_rect",
+      semanticTag: "composition_bounded_scene_frame",
+      x: 0,
+      y: 0,
+      width: 360,
+      height: 200,
+      strokeColorHex: "#94a3b8",
+      lineWidthCss: 1,
+    });
+    expect(fills.map((f) => f.semanticTag)).toEqual([
+      "composition_bounded_scene_frame_top",
+      "composition_bounded_scene_frame_bottom",
+      "composition_bounded_scene_frame_left",
+      "composition_bounded_scene_frame_right",
+    ]);
+  });
+
   it("uses http_chip_frame_* tags for http_chip_frame strokes", () => {
     const fills = expandStrokeRectToFillRects({
       kind: "stroke_rect",

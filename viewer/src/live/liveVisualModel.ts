@@ -36,6 +36,8 @@ export interface LiveVisualSpec {
   stripSource: "live" | "replay";
   /** Vertical Slice v2 — compact cluster summary for Canvas overlay (from `scene.clusters`). */
   actorClusterSummaryLine: string | null;
+  /** Vertical Slice v3 — short region caption for overlay (from `scene.regions`; not topology). */
+  boundedCompositionCaption: string | null;
 }
 
 /** Fill colors for primary band (deterministic, sRGB hex). */
@@ -86,6 +88,7 @@ export function buildLiveVisualSpec(
     replayPrefixFraction: null as number | null,
     stripSource: "live" as const,
     actorClusterSummaryLine: null as string | null,
+    boundedCompositionCaption: null as string | null,
   };
 
   if (model.lastWarning) {

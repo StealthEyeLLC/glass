@@ -11,6 +11,8 @@ export {
   type SceneEdge,
   type SceneHonesty,
   type SceneSampleScope,
+  type SceneBoundedRegion,
+  type SceneBoundedRegionRole,
 } from "./glassSceneV0.js";
 export {
   countBoundedKindBuckets,
@@ -21,11 +23,17 @@ export {
 } from "./boundedActorClusters.js";
 export { compileLiveToGlassSceneV0, type LiveSceneCompileInput } from "./compileLiveScene.js";
 export { compileReplayToGlassSceneV0 } from "./compileReplayScene.js";
+export {
+  buildLiveBoundedRegions,
+  buildReplayBoundedRegions,
+  formatBoundedCompositionCaption,
+} from "./boundedSceneRegions.js";
 export { liveVisualSpecFromScene } from "./sceneToLiveVisualSpec.js";
 export {
   DRAWABLE_PRIMITIVES_V0,
   LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT,
   appendBoundedActorClusterStrip,
+  applyBoundedSceneComposition,
   buildBoundedVisualGeometryPrimitives,
   edgeFrameTagsForStroke,
   expandStrokeRectToFillRects,

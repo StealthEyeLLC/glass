@@ -20,7 +20,7 @@ import {
   type LiveVisualSpec,
   liveVisualDensity01,
 } from "../live/liveVisualModel.js";
-import type { SceneActorCluster, SceneActorClusterLane } from "./glassSceneV0.js";
+import type { GlassSceneV0, SceneActorCluster, SceneActorClusterLane } from "./glassSceneV0.js";
 
 export const DRAWABLE_PRIMITIVES_V0 = "glass.drawable_primitives.v0" as const;
 
@@ -87,7 +87,21 @@ export type DrawablePrimitiveSemanticTag =
   | "actor_cluster_strip_frame_top"
   | "actor_cluster_strip_frame_bottom"
   | "actor_cluster_strip_frame_left"
-  | "actor_cluster_strip_frame_right";
+  | "actor_cluster_strip_frame_right"
+  /** Vertical Slice v3 — bounded region panels / accents (grouping, not graph edges). */
+  | "composition_panel_primary"
+  | "composition_panel_system"
+  | "composition_panel_evidence"
+  | "composition_accent_primary"
+  | "composition_accent_system"
+  | "composition_accent_evidence"
+  | "composition_separator_system_evidence"
+  /** Outer bounded-scene frame; WebGPU expands to `composition_bounded_scene_frame_*` edge fills. */
+  | "composition_bounded_scene_frame"
+  | "composition_bounded_scene_frame_top"
+  | "composition_bounded_scene_frame_bottom"
+  | "composition_bounded_scene_frame_left"
+  | "composition_bounded_scene_frame_right";
 
 export type DrawablePrimitiveKind = "fill_rect" | "stroke_rect";
 
@@ -162,6 +176,14 @@ export function edgeFrameTagsForStroke(
       "actor_cluster_strip_frame_bottom",
       "actor_cluster_strip_frame_left",
       "actor_cluster_strip_frame_right",
+    ];
+  }
+  if (tag === "composition_bounded_scene_frame") {
+    return [
+      "composition_bounded_scene_frame_top",
+      "composition_bounded_scene_frame_bottom",
+      "composition_bounded_scene_frame_left",
+      "composition_bounded_scene_frame_right",
     ];
   }
   return ["band_frame_top", "band_frame_bottom", "band_frame_left", "band_frame_right"];
@@ -411,6 +433,134 @@ export function appendBoundedActorClusterStrip(
   });
 }
 
+const COMPOSITION_INSET = 16;
+const COMPOSITION_ACCENT_X = 8;
+const COMPOSITION_ACCENT_W = 3;
+
+/**
+ * Vertical Slice v3 — insert underlay panels / accents / separator before existing strip primitives,
+ * then append an outer bounded-scene frame stroke. Uses only `scene.regions.length` as gate; geometry
+ * aligns to fixed band/rail/cluster layout constants. No graph edges.
+ */
+export function applyBoundedSceneComposition(
+  scene: GlassSceneV0,
+  widthCss: number,
+  heightCss: number,
+  out: DrawablePrimitive[],
+): void {
+  if (scene.regions.length === 0) {
+    return;
+  }
+  const w = widthCss;
+  const innerW = w - 2 * COMPOSITION_INSET;
+
+  const primaryY = LIVE_VISUAL_BAND_LAYOUT.originY;
+  const primaryH = LIVE_VISUAL_BAND_LAYOUT.height;
+  const systemY = LIVE_VISUAL_STATE_RAIL_LAYOUT.originY;
+  const systemH = LIVE_VISUAL_STATE_RAIL_LAYOUT.height;
+  const evidenceY = LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.originY;
+  const evidenceH = LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.height;
+
+  const bgIdx = out.findIndex((p) => p.semanticTag === "band_background");
+  if (bgIdx >= 0) {
+    out.splice(
+      bgIdx + 1,
+      0,
+      {
+        kind: "fill_rect",
+        semanticTag: "composition_panel_primary",
+        x: COMPOSITION_INSET,
+        y: primaryY,
+        width: innerW,
+        height: primaryH,
+        fillColorHex: "#f8fafc",
+      },
+      {
+        kind: "fill_rect",
+        semanticTag: "composition_accent_primary",
+        x: COMPOSITION_ACCENT_X,
+        y: primaryY,
+        width: COMPOSITION_ACCENT_W,
+        height: primaryH,
+        fillColorHex: "#3b82f6",
+      },
+    );
+  }
+
+  const railIdx = out.findIndex((p) => p.semanticTag === "state_rail_bg");
+  if (railIdx >= 0) {
+    out.splice(
+      railIdx,
+      0,
+      {
+        kind: "fill_rect",
+        semanticTag: "composition_panel_system",
+        x: COMPOSITION_INSET,
+        y: systemY,
+        width: innerW,
+        height: systemH,
+        fillColorHex: "#eef2f6",
+      },
+      {
+        kind: "fill_rect",
+        semanticTag: "composition_accent_system",
+        x: COMPOSITION_ACCENT_X,
+        y: systemY,
+        width: COMPOSITION_ACCENT_W,
+        height: systemH,
+        fillColorHex: "#64748b",
+      },
+    );
+  }
+
+  const clusterIdx = out.findIndex((p) => p.semanticTag === "actor_cluster_strip_bg");
+  if (clusterIdx >= 0) {
+    const sepY = systemY + systemH;
+    out.splice(
+      clusterIdx,
+      0,
+      {
+        kind: "fill_rect",
+        semanticTag: "composition_separator_system_evidence",
+        x: COMPOSITION_INSET,
+        y: sepY,
+        width: innerW,
+        height: 1,
+        fillColorHex: "#cbd5e1",
+      },
+      {
+        kind: "fill_rect",
+        semanticTag: "composition_panel_evidence",
+        x: COMPOSITION_INSET,
+        y: evidenceY,
+        width: innerW,
+        height: evidenceH,
+        fillColorHex: "#f0fdf4",
+      },
+      {
+        kind: "fill_rect",
+        semanticTag: "composition_accent_evidence",
+        x: COMPOSITION_ACCENT_X,
+        y: evidenceY,
+        width: COMPOSITION_ACCENT_W,
+        height: evidenceH,
+        fillColorHex: "#15803d",
+      },
+    );
+  }
+
+  out.push({
+    kind: "stroke_rect",
+    semanticTag: "composition_bounded_scene_frame",
+    x: 0,
+    y: 0,
+    width: widthCss,
+    height: heightCss,
+    strokeColorHex: "#94a3b8",
+    lineWidthCss: 1,
+  });
+}
+
 export function buildBoundedVisualGeometryPrimitives(
   spec: LiveVisualSpec,
   widthCss: number,
@@ -503,7 +653,7 @@ export function buildBoundedVisualGeometryPrimitives(
 
 /**
  * Expand a stroke rectangle into axis-aligned fill rectangles (for WebGPU solid-color pipeline).
- * Edge tags are derived from `stroke.semanticTag` via `edgeFrameTagsForStroke` (`band_frame`, `http_chip_frame`, `state_rail_frame`, or `actor_cluster_strip_frame`).
+ * Edge tags are derived from `stroke.semanticTag` via `edgeFrameTagsForStroke` (`band_frame`, `http_chip_frame`, `state_rail_frame`, `actor_cluster_strip_frame`, or `composition_bounded_scene_frame`).
  */
 export function expandStrokeRectToFillRects(s: DrawablePrimitiveStrokeRect): DrawablePrimitiveFillRect[] {
   const { x, y, width, height, strokeColorHex, lineWidthCss, semanticTag } = s;

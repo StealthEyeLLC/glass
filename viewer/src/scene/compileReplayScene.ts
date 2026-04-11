@@ -6,6 +6,7 @@ import type { ReplayState } from "../replay/replayModel.js";
 import { liveVisualDensity01 } from "../live/liveVisualModel.js";
 import type { LiveVisualMode } from "../live/liveVisualModel.js";
 import { deriveReplayBoundedActorClusters } from "./boundedActorClusters.js";
+import { buildReplayBoundedRegions } from "./boundedSceneRegions.js";
 import {
   DEFAULT_SCENE_BOUNDS,
   GLASS_SCENE_V0,
@@ -108,6 +109,7 @@ function baseReplayFields(
       line: REPLAY_HONESTY_LINE,
     },
     ...overrides,
+    regions: buildReplayBoundedRegions(),
   };
 }
 
@@ -246,5 +248,6 @@ export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
       sampleScope: total === 0 ? "empty" : "replay_index_prefix",
       line: REPLAY_HONESTY_LINE,
     },
+    regions: buildReplayBoundedRegions(),
   };
 }
