@@ -105,6 +105,25 @@ describe("expandStrokeRectToFillRects", () => {
     ]);
   });
 
+  it("uses actor_cluster_strip_frame_* tags for actor_cluster_strip_frame strokes", () => {
+    const fills = expandStrokeRectToFillRects({
+      kind: "stroke_rect",
+      semanticTag: "actor_cluster_strip_frame",
+      x: 16,
+      y: 74,
+      width: 100,
+      height: 22,
+      strokeColorHex: "#64748b",
+      lineWidthCss: 1,
+    });
+    expect(fills.map((f) => f.semanticTag)).toEqual([
+      "actor_cluster_strip_frame_top",
+      "actor_cluster_strip_frame_bottom",
+      "actor_cluster_strip_frame_left",
+      "actor_cluster_strip_frame_right",
+    ]);
+  });
+
   it("uses http_chip_frame_* tags for http_chip_frame strokes", () => {
     const fills = expandStrokeRectToFillRects({
       kind: "stroke_rect",

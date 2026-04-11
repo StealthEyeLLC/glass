@@ -15,6 +15,8 @@ describe("compileLiveToGlassSceneV0", () => {
     expect(spec.sessionId).toBe("sid");
     expect(spec.honestyLine).toContain("not topology");
     expect(scene.zones[0]?.label.toLowerCase()).toContain("wire");
+    expect(scene.clusters.length).toBeGreaterThan(0);
+    expect(scene.clusters[0]?.lane).toBe("empty_sample");
   });
 
   it("passes httpSnapshotOrigin into snapshotOriginLabel when model has no replace yet", () => {

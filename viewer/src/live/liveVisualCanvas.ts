@@ -11,6 +11,7 @@
 import type { GlassSceneV0 } from "../scene/glassSceneV0.js";
 import {
   buildBoundedVisualGeometryPrimitives,
+  LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT,
   LIVE_VISUAL_STATE_RAIL_LAYOUT,
 } from "../scene/drawablePrimitivesV0.js";
 import { sceneToDrawablePrimitives } from "../scene/sceneToDrawablePrimitives.js";
@@ -25,7 +26,7 @@ export interface LiveVisualCanvasLayout {
 
 const DEFAULT_LAYOUT: LiveVisualCanvasLayout = {
   widthCss: 360,
-  heightCss: 168,
+  heightCss: 200,
 };
 
 /** Rasterize drawable primitives to a 2D context (CSS pixel space; caller sets DPR transform). */
@@ -80,7 +81,18 @@ export function drawLiveVisualTextLabelsIntoContext(
   }
 
   const railBottom = LIVE_VISUAL_STATE_RAIL_LAYOUT.originY + LIVE_VISUAL_STATE_RAIL_LAYOUT.height;
-  let lineY = railBottom + 8;
+  const clusterBottom =
+    spec.actorClusterSummaryLine !== null && spec.actorClusterSummaryLine.length > 0
+      ? LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.originY + LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.height
+      : railBottom;
+  let lineY = clusterBottom + 8;
+
+  if (spec.actorClusterSummaryLine) {
+    ctx.font = "500 10px system-ui, sans-serif";
+    ctx.fillStyle = "#475569";
+    ctx.fillText(truncate(`clusters: ${spec.actorClusterSummaryLine}`, 58), 16, lineY);
+    lineY += 14;
+  }
 
   ctx.fillStyle = "#0f172a";
   ctx.font = "600 12px system-ui, sans-serif";

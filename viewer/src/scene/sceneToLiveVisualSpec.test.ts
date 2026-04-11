@@ -52,5 +52,6 @@ describe("liveVisualSpecFromScene (renderer boundary)", () => {
     expect(spec.stripSource).toBe("replay");
     expect(spec.replayPrefixFraction).toBe(1);
     expect(spec.snapshotOriginLabel).toBeNull();
+    expect(spec.actorClusterSummaryLine).toContain("Prefix");
   });
 });

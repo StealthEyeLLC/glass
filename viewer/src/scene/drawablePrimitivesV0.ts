@@ -20,6 +20,7 @@ import {
   type LiveVisualSpec,
   liveVisualDensity01,
 } from "../live/liveVisualModel.js";
+import type { SceneActorCluster, SceneActorClusterLane } from "./glassSceneV0.js";
 
 export const DRAWABLE_PRIMITIVES_V0 = "glass.drawable_primitives.v0" as const;
 
@@ -27,6 +28,13 @@ export const DRAWABLE_PRIMITIVES_V0 = "glass.drawable_primitives.v0" as const;
 export const LIVE_VISUAL_STATE_RAIL_LAYOUT = {
   originY: 52,
   height: 20,
+  insetX: 16,
+} as const;
+
+/** Vertical Slice v2 — bounded actor cluster strip (below state rail). */
+export const LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT = {
+  originY: 74,
+  height: 22,
   insetX: 16,
 } as const;
 
@@ -64,7 +72,22 @@ export type DrawablePrimitiveSemanticTag =
   | "state_rail_frame_top"
   | "state_rail_frame_bottom"
   | "state_rail_frame_left"
-  | "state_rail_frame_right";
+  | "state_rail_frame_right"
+  /** Vertical Slice v2 — bounded actor/sample cluster strip (not topology). */
+  | "actor_cluster_strip_bg"
+  | "actor_cluster_segment_system"
+  | "actor_cluster_segment_process"
+  | "actor_cluster_segment_file"
+  | "actor_cluster_segment_snapshot"
+  | "actor_cluster_segment_replay_prefix"
+  | "actor_cluster_segment_empty"
+  /** Shared tag for emphasis bar inside a lane (paired with lane segment fill above). */
+  | "actor_cluster_emphasis_bar"
+  | "actor_cluster_strip_frame"
+  | "actor_cluster_strip_frame_top"
+  | "actor_cluster_strip_frame_bottom"
+  | "actor_cluster_strip_frame_left"
+  | "actor_cluster_strip_frame_right";
 
 export type DrawablePrimitiveKind = "fill_rect" | "stroke_rect";
 
@@ -131,6 +154,14 @@ export function edgeFrameTagsForStroke(
       "state_rail_frame_bottom",
       "state_rail_frame_left",
       "state_rail_frame_right",
+    ];
+  }
+  if (tag === "actor_cluster_strip_frame") {
+    return [
+      "actor_cluster_strip_frame_top",
+      "actor_cluster_strip_frame_bottom",
+      "actor_cluster_strip_frame_left",
+      "actor_cluster_strip_frame_right",
     ];
   }
   return ["band_frame_top", "band_frame_bottom", "band_frame_left", "band_frame_right"];
@@ -259,6 +290,127 @@ function appendVerticalSliceStateRail(spec: LiveVisualSpec, widthCss: number, ou
   });
 }
 
+function actorClusterLaneSemanticTag(lane: SceneActorClusterLane): DrawablePrimitiveSemanticTag {
+  switch (lane) {
+    case "system_attention":
+      return "actor_cluster_segment_system";
+    case "process_samples":
+      return "actor_cluster_segment_process";
+    case "file_samples":
+      return "actor_cluster_segment_file";
+    case "snapshot_origin":
+      return "actor_cluster_segment_snapshot";
+    case "replay_index_prefix":
+      return "actor_cluster_segment_replay_prefix";
+    case "empty_sample":
+      return "actor_cluster_segment_empty";
+  }
+}
+
+function actorClusterLaneMutedFill(lane: SceneActorClusterLane): string {
+  switch (lane) {
+    case "system_attention":
+      return "#fee2e2";
+    case "process_samples":
+      return "#e0f2fe";
+    case "file_samples":
+      return "#fef9c3";
+    case "snapshot_origin":
+      return "#ede9fe";
+    case "replay_index_prefix":
+      return "#e0f7ff";
+    case "empty_sample":
+      return "#f1f5f9";
+  }
+}
+
+function actorClusterLaneEmphasisFill(lane: SceneActorClusterLane): string {
+  switch (lane) {
+    case "system_attention":
+      return "#dc2626";
+    case "process_samples":
+      return "#0284c7";
+    case "file_samples":
+      return "#ca8a04";
+    case "snapshot_origin":
+      return "#7c3aed";
+    case "replay_index_prefix":
+      return "#0369a1";
+    case "empty_sample":
+      return "#94a3b8";
+  }
+}
+
+/**
+ * Vertical Slice v2 — bounded actor cluster strip (after state rail). Same primitive stream as Canvas/WebGPU.
+ */
+export function appendBoundedActorClusterStrip(
+  clusters: readonly SceneActorCluster[],
+  widthCss: number,
+  out: DrawablePrimitive[],
+): void {
+  if (clusters.length === 0) {
+    return;
+  }
+  const inset = LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.insetX;
+  const y = LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.originY;
+  const h = LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.height;
+  const innerW = widthCss - 2 * inset;
+  const pad = 2;
+  const gap = 2;
+  const n = clusters.length;
+  const innerW2 = innerW - 2 * pad;
+  const segW = (innerW2 - (n - 1) * gap) / n;
+  const innerY = y + pad;
+  const innerH = h - 2 * pad;
+
+  out.push({
+    kind: "fill_rect",
+    semanticTag: "actor_cluster_strip_bg",
+    x: inset,
+    y,
+    width: innerW,
+    height: h,
+    fillColorHex: "#f8fafc",
+  });
+
+  let x = inset + pad;
+  for (const c of clusters) {
+    const tag = actorClusterLaneSemanticTag(c.lane);
+    out.push({
+      kind: "fill_rect",
+      semanticTag: tag,
+      x,
+      y: innerY,
+      width: segW,
+      height: innerH,
+      fillColorHex: actorClusterLaneMutedFill(c.lane),
+    });
+    const emH = Math.max(2, innerH * c.emphasis01);
+    out.push({
+      kind: "fill_rect",
+      semanticTag: "actor_cluster_emphasis_bar",
+      x,
+      y: innerY + innerH - emH,
+      width: segW,
+      height: emH,
+      fillColorHex: actorClusterLaneEmphasisFill(c.lane),
+    });
+    x += segW + gap;
+  }
+
+  out.push({
+    kind: "stroke_rect",
+    semanticTag: "actor_cluster_strip_frame",
+    x: inset,
+    y,
+    width: innerW,
+    height: h,
+    strokeColorHex: "#64748b",
+    lineWidthCss: 1,
+  });
+}
+
 export function buildBoundedVisualGeometryPrimitives(
   spec: LiveVisualSpec,
   widthCss: number,
@@ -351,7 +503,7 @@ export function buildBoundedVisualGeometryPrimitives(
 
 /**
  * Expand a stroke rectangle into axis-aligned fill rectangles (for WebGPU solid-color pipeline).
- * Edge tags are derived from `stroke.semanticTag` via `edgeFrameTagsForStroke` (`band_frame`, `http_chip_frame`, or `state_rail_frame`).
+ * Edge tags are derived from `stroke.semanticTag` via `edgeFrameTagsForStroke` (`band_frame`, `http_chip_frame`, `state_rail_frame`, or `actor_cluster_strip_frame`).
  */
 export function expandStrokeRectToFillRects(s: DrawablePrimitiveStrokeRect): DrawablePrimitiveFillRect[] {
   const { x, y, width, height, strokeColorHex, lineWidthCss, semanticTag } = s;

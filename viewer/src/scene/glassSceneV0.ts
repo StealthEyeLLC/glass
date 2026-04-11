@@ -44,7 +44,27 @@ export type SceneNodeKind =
   | "cursor_position"
   | "text_annotation"
   /** Key/value fact from current wire or HTTP — no graph semantics */
-  | "fact_card";
+  | "fact_card"
+  /** Vertical Slice v2 — one bounded cluster lane (counts from current sample only) */
+  | "cluster_lane";
+
+/** Honest bounded lane — not a process tree, not cross-event causality. */
+export type SceneActorClusterLane =
+  | "system_attention"
+  | "process_samples"
+  | "file_samples"
+  | "snapshot_origin"
+  | "replay_index_prefix"
+  | "empty_sample";
+
+export interface SceneActorCluster {
+  id: string;
+  lane: SceneActorClusterLane;
+  label: string;
+  sampleCount: number;
+  /** 0–1 emphasis for drawable bar (from count/cap or active severity). */
+  emphasis01: number;
+}
 
 export interface SceneNode {
   id: string;
@@ -96,14 +116,16 @@ export interface GlassSceneV0 {
   snapshotOriginLabel: string | null;
   /** Replay only: prefix cursor coverage vs pack cardinality (honest split strip); live: null */
   replayPrefixFraction: number | null;
+  /** Vertical Slice v2 — bounded actor/sample clusters from current tail or prefix only. */
+  clusters: readonly SceneActorCluster[];
   zones: readonly SceneZone[];
   nodes: readonly SceneNode[];
   edges: readonly SceneEdge[];
   honesty: SceneHonesty;
 }
 
-/** Vertical Slice v1 — room for bounded state rail below primary band + text. */
+/** Vertical Slice v2 — state rail + actor cluster strip + text. */
 export const DEFAULT_SCENE_BOUNDS: SceneBounds = {
   widthCss: 360,
-  heightCss: 168,
+  heightCss: 200,
 };

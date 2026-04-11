@@ -9,3 +9,7 @@
 {"i":8,"tag":"state_rail_resync_lane"}
 {"i":9,"tag":"state_rail_warning_lane"}
 {"i":10,"tag":"state_rail_frame"}
+{"i":11,"tag":"actor_cluster_strip_bg"}
+{"i":12,"tag":"actor_cluster_segment_empty"}
+{"i":13,"tag":"actor_cluster_emphasis_bar"}
+{"i":14,"tag":"actor_cluster_strip_frame"}

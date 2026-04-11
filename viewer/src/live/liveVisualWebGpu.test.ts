@@ -3,7 +3,12 @@ import { createInitialLiveSessionModelState } from "./applyLiveSessionMessage.js
 import { buildLiveVisualSpec } from "./liveVisualModel.js";
 import { compileLiveToGlassSceneV0 } from "../scene/compileLiveScene.js";
 import { sceneToDrawablePrimitives } from "../scene/sceneToDrawablePrimitives.js";
-import { expandStrokeRectToFillRects } from "../scene/drawablePrimitivesV0.js";
+import {
+  appendBoundedActorClusterStrip,
+  buildBoundedVisualGeometryPrimitives,
+  expandStrokeRectToFillRects,
+} from "../scene/drawablePrimitivesV0.js";
+import { liveVisualSpecFromScene } from "../scene/sceneToLiveVisualSpec.js";
 import {
   buildDrawablePrimitivesWebGpuVertexData,
   buildLiveVisualWebGpuVertexData,
@@ -56,22 +61,22 @@ describe("buildDrawablePrimitivesWebGpuVertexData", () => {
       sceneToDrawablePrimitives(scene, layout),
       layout,
     );
-    const fromSpec = buildLiveVisualWebGpuVertexData(
-      buildLiveVisualSpec(createInitialLiveSessionModelState("sid"), null),
-      layout,
-    );
-    expect(fromScene.length).toBe(fromSpec.length);
-    expect([...fromScene]).toEqual([...fromSpec]);
+    const spec = liveVisualSpecFromScene(scene);
+    const manual = buildBoundedVisualGeometryPrimitives(spec, layout.widthCss, layout.heightCss);
+    appendBoundedActorClusterStrip(scene.clusters, layout.widthCss, manual);
+    const fromManual = buildDrawablePrimitivesWebGpuVertexData(manual, layout);
+    expect(fromScene.length).toBe(fromManual.length);
+    expect([...fromScene]).toEqual([...fromManual]);
   });
 
   it("expands tagged strokes to edge-tagged fills without changing float count vs untagged geometry", () => {
     const layout = { widthCss: 200, heightCss: 100 };
-    const spec = buildLiveVisualSpec(createInitialLiveSessionModelState("sid"), null);
-    const buf = buildLiveVisualWebGpuVertexData(spec, layout);
-    const primitives = sceneToDrawablePrimitives(
-      compileLiveToGlassSceneV0({ model: createInitialLiveSessionModelState("sid"), lastReconcile: null }),
-      layout,
-    );
+    const scene = compileLiveToGlassSceneV0({
+      model: createInitialLiveSessionModelState("sid"),
+      lastReconcile: null,
+    });
+    const buf = buildDrawablePrimitivesWebGpuVertexData(sceneToDrawablePrimitives(scene, layout), layout);
+    const primitives = sceneToDrawablePrimitives(scene, layout);
     let manualFloats = 0;
     for (const pr of primitives) {
       if (pr.kind === "fill_rect") {

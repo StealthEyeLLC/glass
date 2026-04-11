@@ -34,6 +34,8 @@ export interface LiveVisualSpec {
   replayPrefixFraction: number | null;
   /** Drives state rail geometry: live triage lanes vs replay prefix/remainder */
   stripSource: "live" | "replay";
+  /** Vertical Slice v2 — compact cluster summary for Canvas overlay (from `scene.clusters`). */
+  actorClusterSummaryLine: string | null;
 }
 
 /** Fill colors for primary band (deterministic, sRGB hex). */
@@ -83,6 +85,7 @@ export function buildLiveVisualSpec(
     snapshotOriginLabel: snapshotOriginLabelFromModel(model, options),
     replayPrefixFraction: null as number | null,
     stripSource: "live" as const,
+    actorClusterSummaryLine: null as string | null,
   };
 
   if (model.lastWarning) {

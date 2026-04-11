@@ -63,6 +63,8 @@ describe("Vertical Slice v0 fixture pack (integration)", () => {
     expect(sceneAtStart.wireMode).toBe("replace");
     expect(sceneAtStart.snapshotOriginLabel).toBeNull();
     expect(sceneAtStart.replayPrefixFraction).toBeCloseTo(1 / 3);
+    expect(sceneAtStart.clusters.length).toBeGreaterThan(0);
+    expect(sceneAtStart.clusters.map((c) => c.lane)).toContain("replay_index_prefix");
 
     st = reduceReplay(st, { type: "seek_index", index: 2 });
     const sceneEnd = compileReplayToGlassSceneV0(st);

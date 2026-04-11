@@ -1,6 +1,17 @@
-# Glass Vertical Slice v0 / v1
+# Glass Vertical Slice v0 / v1 / v2
 
-**Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier). **Vertical Slice v1** is the same demo path with a **richer bounded scene** (see below); it does **not** change wire contracts.
+**Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier). **Vertical Slice v1** added a richer bounded scene; **v2** adds **bounded actor/sample clusters** from real event kinds only — still **no** wire contract changes.
+
+## Vertical Slice v2 (bounded actor clusters)
+
+**What it adds (viewer-only):**
+
+- **`GlassSceneV0.clusters`:** a **small** (≤4) ordered list of **`SceneActorCluster`** entries: **system** (warning / resync / HTTP reconcile when present), **process** / **file** sample counts from **`kind`** in the bounded live tail or replay prefix only, **snapshot origin** (live, when known), **replay index prefix** (replay, when pack loaded). **Empty tail** / **idle replay** uses an honest **`empty_sample`** lane — not a fake graph.
+- **Derivation:** `deriveLiveBoundedActorClusters` / `deriveReplayBoundedActorClusters` in `viewer/src/scene/boundedActorClusters.ts` — counts `process_*`, `command_exec`, `env_access` vs `file_*`; **no** parent/child tree, **no** edges, **no** history outside the current sample.
+- **Drawable Primitives v0:** **`actor_cluster_strip_*`**, per-lane **`actor_cluster_segment_*`**, shared **`actor_cluster_emphasis_bar`**, and **`LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT`** (strip under the v1 state rail). **WebGPU** draws the same fills + stroke expansion as Canvas; **cluster text summary** (`clusters: …`) is Canvas overlay only.
+- **Default canvas height** for the strip is **200px** CSS (state rail + actor strip + text).
+
+**What it does *not* imply:** process tree, syscall-complete file graph, or full execution history — only **bounded kind tallies** and **current** system/snapshot/replay facts.
 
 ## Vertical Slice v1 (scene richness)
 
@@ -9,7 +20,7 @@
 - **Scene System v0:** clearer **zone** grouping (wire mode, bounded tail density, R/A/Rz slots, snapshot origin, reconcile/resync, **state rail**). **Fact cards** surface only **current** strings (`snapshot_origin`, `resync_reason`, `warning_code`, replay-specific snapshot disclaimer) — **no** graph edges, **no** process tree, **no** invented history.
 - **`GlassSceneV0`:** `snapshotOriginLabel` (live: WS `session_snapshot_replaced` or optional last **HTTP** `bounded_snapshot.snapshot_origin` when passed into `compileLiveToGlassSceneV0`); `replayPrefixFraction` (replay only: prefix length / pack size, or `null` when no split yet). **`stripSource`** on `LiveVisualSpec` drives Drawable state-rail geometry (**live** = three lanes: snapshot / resync / warning emphasis; **replay** = honest **prefix vs remainder** lanes or a single remainder fill when unloaded).
 - **Drawable Primitives v0:** **`state_rail_*`** and **`replay_*`** semantic tags plus **`LIVE_VISUAL_STATE_RAIL_LAYOUT`**; Canvas 2D and WebGPU still share **`sceneToDrawablePrimitives`**. **WebGPU** does not render text; labels remain on the Canvas overlay (mode, snapshot origin or replay prefix %, wire, HTTP reconcile, honesty).
-- **Default canvas height** for the strip is **168px** CSS (room for the rail + text).
+- **Default canvas height** was raised for v2; see **Vertical Slice v2** (currently **200px** CSS for rail + cluster strip + text).
 
 **What it does *not* imply:** full Glass topology, durable history, or continuity beyond existing bounded contracts. **F-IPC transport** remains **provisional**. This is still **not** the Phase-6 full runtime scene.
 

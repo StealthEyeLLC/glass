@@ -5,10 +5,12 @@
 import type { ReplayState } from "../replay/replayModel.js";
 import { liveVisualDensity01 } from "../live/liveVisualModel.js";
 import type { LiveVisualMode } from "../live/liveVisualModel.js";
+import { deriveReplayBoundedActorClusters } from "./boundedActorClusters.js";
 import {
   DEFAULT_SCENE_BOUNDS,
   GLASS_SCENE_V0,
   type GlassSceneV0,
+  type SceneActorCluster,
   type SceneEdge,
   type SceneNode,
   type SceneZone,
@@ -40,7 +42,26 @@ function replayZones(): SceneZone[] {
       kind: "state_rail",
       label: "Bounded state rail (prefix vs remainder)",
     },
+    {
+      id: "z_actor",
+      kind: "annotation",
+      label: "Bounded actor / sample clusters (prefix index order)",
+    },
   ];
+}
+
+function replayClusterNodes(clusters: readonly SceneActorCluster[]): SceneNode[] {
+  return clusters.map((c) => ({
+    id: `n_${c.id}`,
+    zoneId: "z_actor",
+    kind: "cluster_lane" as const,
+    payload: {
+      lane: c.lane,
+      label: c.label,
+      sampleCount: c.sampleCount,
+      emphasis01: c.emphasis01,
+    },
+  }));
 }
 
 function replayWireMode(state: ReplayState): LiveVisualMode {
@@ -78,6 +99,7 @@ function baseReplayFields(
     reconcileSummary: null,
     snapshotOriginLabel: null,
     replayPrefixFraction: null,
+    clusters: [],
     zones,
     nodes: [],
     edges,
@@ -97,13 +119,16 @@ export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
   const edges: SceneEdge[] = [];
 
   if (state.loadStatus === "error") {
+    const clusters = deriveReplayBoundedActorClusters(state, []);
     return baseReplayFields(zones, edges, "load_error", {
       wireMode: "warning",
       sessionLabel: state.packFileName ?? "—",
       lastWireMsg: "replay_load_error",
       lastWireSummary: state.loadError ?? "error",
       warningCode: "replay_load",
+      clusters,
       nodes: [
+        ...replayClusterNodes(clusters),
         {
           id: "n_err",
           zoneId: "z_primary",
@@ -121,12 +146,15 @@ export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
   }
 
   if (state.loadStatus === "reading") {
+    const clusters = deriveReplayBoundedActorClusters(state, []);
     return baseReplayFields(zones, edges, "empty", {
       wireMode: "hello",
       sessionLabel: state.packFileName ?? "—",
       lastWireMsg: "replay_reading",
       lastWireSummary: state.packFileName ?? "",
+      clusters,
       nodes: [
+        ...replayClusterNodes(clusters),
         {
           id: "n_reading",
           zoneId: "z_primary",
@@ -138,8 +166,10 @@ export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
   }
 
   if (state.loadStatus === "idle") {
+    const clusters = deriveReplayBoundedActorClusters(state, []);
     return baseReplayFields(zones, edges, "empty", {
-      nodes: [],
+      clusters,
+      nodes: [...replayClusterNodes(clusters)],
     });
   }
 
@@ -149,8 +179,11 @@ export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
   const sessionLabel = state.manifest?.session_id ?? state.packFileName ?? "—";
   const density = liveVisualDensity01(prefixLen, Math.max(total, 1));
   const replayFrac = total > 0 ? prefixLen / total : null;
+  const prefixEvents = state.events.slice(0, prefixLen);
+  const clusters = deriveReplayBoundedActorClusters(state, prefixEvents);
 
   const nodes: SceneNode[] = [
+    ...replayClusterNodes(clusters),
     {
       id: "n_mode",
       zoneId: "z_primary",
@@ -205,6 +238,7 @@ export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
     reconcileSummary: null,
     snapshotOriginLabel: null,
     replayPrefixFraction: replayFrac,
+    clusters,
     zones,
     nodes,
     edges,

@@ -33,6 +33,7 @@ describe("buildLiveVisualSpec", () => {
     expect(spec.eventTailCount).toBe(0);
     expect(spec.stripSource).toBe("live");
     expect(spec.replayPrefixFraction).toBeNull();
+    expect(spec.actorClusterSummaryLine).toBeNull();
     expect(spec.honestyLine.length).toBeGreaterThan(10);
   });
 

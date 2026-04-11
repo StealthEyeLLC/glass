@@ -108,11 +108,12 @@ describe("listSemanticTagsForWebGpuPrimitiveExpansion", () => {
     const prim = sceneToPrimitives(scene);
     const expanded = listSemanticTagsForWebGpuPrimitiveExpansion(prim);
     const strokes = prim.filter((p) => p.kind === "stroke_rect");
-    expect(strokes.length).toBe(2);
+    expect(strokes.length).toBe(3);
     expect(strokes[0]?.semanticTag).toBe("band_frame");
     expect(strokes[1]?.semanticTag).toBe("state_rail_frame");
-    expect(expanded[expanded.length - 4]).toBe("state_rail_frame_top");
-    expect(expanded[expanded.length - 1]).toBe("state_rail_frame_right");
+    expect(strokes[2]?.semanticTag).toBe("actor_cluster_strip_frame");
+    expect(expanded[expanded.length - 4]).toBe("actor_cluster_strip_frame_top");
+    expect(expanded[expanded.length - 1]).toBe("actor_cluster_strip_frame_right");
   });
 
   it("listSemanticTagsForSceneWebGpuExpansion matches listSemanticTagsForWebGpuPrimitiveExpansion(scene primitives)", () => {

@@ -6,9 +6,13 @@ import type { LiveSessionModelState } from "../live/applyLiveSessionMessage.js";
 import type { HttpReconcileRecord } from "../live/liveHttpReconcile.js";
 import { buildLiveVisualSpec, liveVisualDensity01 } from "../live/liveVisualModel.js";
 import {
+  deriveLiveBoundedActorClusters,
+} from "./boundedActorClusters.js";
+import {
   DEFAULT_SCENE_BOUNDS,
   GLASS_SCENE_V0,
   type GlassSceneV0,
+  type SceneActorCluster,
   type SceneEdge,
   type SceneNode,
   type SceneZone,
@@ -49,15 +53,38 @@ function liveZones(): SceneZone[] {
       kind: "state_rail",
       label: "Bounded state rail (Drawable Primitives v1)",
     },
+    {
+      id: "z_actor",
+      kind: "annotation",
+      label: "Bounded actor / sample clusters (current tail)",
+    },
   ];
 }
 
-function liveNodes(spec: ReturnType<typeof buildLiveVisualSpec>): SceneNode[] {
+function clusterNodes(clusters: readonly SceneActorCluster[]): SceneNode[] {
+  return clusters.map((c) => ({
+    id: `n_${c.id}`,
+    zoneId: "z_actor",
+    kind: "cluster_lane" as const,
+    payload: {
+      lane: c.lane,
+      label: c.label,
+      sampleCount: c.sampleCount,
+      emphasis01: c.emphasis01,
+    },
+  }));
+}
+
+function liveNodes(
+  spec: ReturnType<typeof buildLiveVisualSpec>,
+  clusters: readonly SceneActorCluster[],
+): SceneNode[] {
   const d = liveVisualDensity01(spec.eventTailCount);
   const origin = spec.snapshotOriginLabel ?? "—";
   const resync = spec.resyncReason ?? "—";
   const warn = spec.warningCode ?? "—";
   const nodes: SceneNode[] = [
+    ...clusterNodes(clusters),
     {
       id: "n_mode",
       zoneId: "z_wire",
@@ -99,8 +126,14 @@ export function compileLiveToGlassSceneV0(input: LiveSceneCompileInput): GlassSc
   const spec = buildLiveVisualSpec(input.model, input.lastReconcile, {
     httpSnapshotOrigin: input.httpSnapshotOrigin,
   });
+  const clusters = deriveLiveBoundedActorClusters(input.model.eventTail, {
+    snapshotOriginLabel: spec.snapshotOriginLabel,
+    warningCode: spec.warningCode,
+    resyncReason: spec.resyncReason,
+    reconcileSummary: spec.reconcileSummary,
+  });
   const zones = liveZones();
-  const nodes = liveNodes(spec);
+  const nodes = liveNodes(spec, clusters);
   const edges: SceneEdge[] = [];
 
   return {
@@ -119,6 +152,7 @@ export function compileLiveToGlassSceneV0(input: LiveSceneCompileInput): GlassSc
     reconcileSummary: spec.reconcileSummary,
     snapshotOriginLabel: spec.snapshotOriginLabel,
     replayPrefixFraction: spec.replayPrefixFraction,
+    clusters,
     zones,
     nodes,
     edges,

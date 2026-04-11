@@ -8,7 +8,10 @@ import {
 import type { GlassEvent, GlassManifest } from "../pack/types.js";
 import { compileLiveToGlassSceneV0 } from "./compileLiveScene.js";
 import { compileReplayToGlassSceneV0 } from "./compileReplayScene.js";
-import { buildBoundedVisualGeometryPrimitives } from "./drawablePrimitivesV0.js";
+import {
+  appendBoundedActorClusterStrip,
+  buildBoundedVisualGeometryPrimitives,
+} from "./drawablePrimitivesV0.js";
 import { liveVisualSpecFromScene } from "./sceneToLiveVisualSpec.js";
 import { sceneToDrawablePrimitives } from "./sceneToDrawablePrimitives.js";
 import { listSemanticTagsForScene } from "./semanticTagSummaryV0.js";
@@ -54,6 +57,7 @@ describe("sceneToDrawablePrimitives", () => {
       scene.bounds.widthCss,
       scene.bounds.heightCss,
     );
+    appendBoundedActorClusterStrip(scene.clusters, scene.bounds.widthCss, b);
     expect(a).toEqual(b);
   });
 
@@ -68,6 +72,7 @@ describe("sceneToDrawablePrimitives", () => {
       400,
       200,
     );
+    appendBoundedActorClusterStrip(scene.clusters, 400, direct);
     expect(withLayout).toEqual(direct);
   });
 

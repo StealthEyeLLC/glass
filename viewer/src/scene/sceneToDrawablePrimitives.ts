@@ -3,7 +3,11 @@
  */
 
 import type { GlassSceneV0, SceneBounds } from "./glassSceneV0.js";
-import { buildBoundedVisualGeometryPrimitives, type DrawablePrimitive } from "./drawablePrimitivesV0.js";
+import {
+  appendBoundedActorClusterStrip,
+  buildBoundedVisualGeometryPrimitives,
+  type DrawablePrimitive,
+} from "./drawablePrimitivesV0.js";
 import { liveVisualSpecFromScene } from "./sceneToLiveVisualSpec.js";
 
 /**
@@ -18,5 +22,7 @@ export function sceneToDrawablePrimitives(
   const w = layout?.widthCss ?? scene.bounds.widthCss;
   const h = layout?.heightCss ?? scene.bounds.heightCss;
   const spec = liveVisualSpecFromScene(scene);
-  return buildBoundedVisualGeometryPrimitives(spec, w, h);
+  const out = buildBoundedVisualGeometryPrimitives(spec, w, h);
+  appendBoundedActorClusterStrip(scene.clusters, w, out);
+  return out;
 }
