@@ -1,6 +1,7 @@
 /* Tier B static replay — minimal utility styling only */
 @import "../app/glassSurface.css";
 @import "../scene/boundedTrustSurfaces.css";
+@import "../app/glassPremiumV32.css";
 
 .glass-replay-root {
   font-family: system-ui, sans-serif;

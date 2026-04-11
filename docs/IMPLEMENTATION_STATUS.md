@@ -5,6 +5,10 @@
 
 ## Vertical Slice v0 / v1 / v2 (milestone)
 
+## Vertical Slice v32 (premium visual hierarchy)
+
+**Viewer:** **`glass-showcase-v32`** on replay/live roots + **`glassPremiumV32.css`** — calmer **Overview** chrome, clearer **Technical** instrument feel, **scene** as visual centerpiece; **replay/live** share vocabulary (accent differs: replay vs live hero stripe). **No** wire, protocol, or engine changes. See **`docs/VERTICAL_SLICE_V0.md`**, tests **`verticalSliceV32PremiumVisual.test.ts`**.
+
 ## Vertical Slice v31 (Overview default-surface reduction)
 
 **Viewer:** **Overview** idle shows only title, **Load flagship demo** / **Open file**, one helper line, **Live session** link — **`data-overview-phase`** + **`glass-overview-loaded-only`** hide Scene/Evidence/Claim/Time/Episodes/playback until a pack is loaded. **Technical** keeps full chrome and dense strings (receipt supplement after temporal baseline, index-ordered phrasing, manifest, debug). Trust panels accept **`surface: overview | technical`** for short Overview copy. **No** wire or engine changes. See **`docs/VERTICAL_SLICE_V0.md`**, tests **`verticalSliceV31Overview.test.ts`**.

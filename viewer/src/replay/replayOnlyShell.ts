@@ -120,7 +120,7 @@ function el<K extends keyof HTMLElementTagNameMap>(
 export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   const mode = getBuildMode();
   root.innerHTML = "";
-  root.classList.add("glass-replay-root");
+  root.classList.add("glass-replay-root", "glass-showcase-v32");
   mountGlassSurfaceControls(root);
 
   function replaySurfaceTier(): "overview" | "technical" {

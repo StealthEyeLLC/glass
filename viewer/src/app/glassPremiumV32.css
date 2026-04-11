@@ -1,0 +1,276 @@
+/**
+ * Vertical Slice v32 — premium visual hierarchy for the bounded showcase path.
+ * Presentation only: no semantics, wire, or engine changes.
+ * Stunning at a glance · calm on use · exact on inspection.
+ */
+
+.glass-replay-root.glass-showcase-v32,
+.glass-live-root.glass-showcase-v32 {
+  --glass-v32-page: #e8ecf3;
+  --glass-v32-surface: #ffffff;
+  --glass-v32-surface-raised: #f8fafc;
+  --glass-v32-border: rgb(226 232 240);
+  --glass-v32-border-strong: rgb(203 213 225);
+  --glass-v32-text: #0f172a;
+  --glass-v32-muted: #64748b;
+  --glass-v32-accent: #1e3a8a;
+  --glass-v32-accent-hover: #1d4ed8;
+  --glass-v32-radius: 12px;
+  --glass-v32-radius-sm: 8px;
+  --glass-v32-shadow: 0 2px 8px rgb(15 23 42 / 6%);
+  --glass-v32-shadow-scene: 0 8px 32px rgb(15 23 42 / 10%);
+  --glass-v32-ease: 0.18s ease;
+
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background: var(--glass-v32-page);
+  color: var(--glass-v32-text);
+  max-width: 56rem;
+  padding: 1.25rem 1.35rem 2.25rem;
+  line-height: 1.45;
+}
+
+/* --- View switcher --- */
+.glass-showcase-v32 .glass-surface-bar {
+  background: var(--glass-v32-surface);
+  border: 1px solid var(--glass-v32-border);
+  border-radius: var(--glass-v32-radius-sm);
+  box-shadow: var(--glass-v32-shadow);
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 1.1rem;
+}
+
+.glass-showcase-v32 .glass-surface-segmented {
+  border-color: var(--glass-v32-border-strong);
+  background: var(--glass-v32-surface-raised);
+}
+
+.glass-showcase-v32 .glass-surface-segment {
+  transition: background var(--glass-v32-ease), color var(--glass-v32-ease), box-shadow var(--glass-v32-ease);
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+}
+
+.glass-showcase-v32 .glass-surface-segment--selected {
+  box-shadow: 0 1px 3px rgb(15 23 42 / 8%);
+}
+
+/* --- Hero --- */
+.glass-showcase-v32 .glass-vs-hero {
+  background: var(--glass-v32-surface);
+  border: 1px solid var(--glass-v32-border);
+  border-radius: var(--glass-v32-radius);
+  box-shadow: var(--glass-v32-shadow);
+  padding: 1.15rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.glass-replay-root.glass-showcase-v32 .glass-replay-vs-hero {
+  border-left: 4px solid #1e40af;
+}
+
+.glass-live-root.glass-showcase-v32 .glass-live-vs-hero {
+  border-left: 4px solid #047857;
+}
+
+.glass-showcase-v32 .glass-vs-title {
+  font-size: 1.5rem;
+  font-weight: 750;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  margin-bottom: 0.35rem;
+}
+
+.glass-showcase-v32 .glass-vs-badge {
+  letter-spacing: 0.07em;
+  color: var(--glass-v32-muted);
+}
+
+/* --- Primary path (easy entry) --- */
+.glass-showcase-v32 .glass-easy-entry {
+  background: var(--glass-v32-surface);
+  border: 1px solid var(--glass-v32-border);
+  border-radius: var(--glass-v32-radius);
+  box-shadow: var(--glass-v32-shadow);
+  padding: 1rem 1.15rem;
+  margin-bottom: 1rem;
+  border-left: 3px solid #4f46e5;
+}
+
+.glass-showcase-v32 .glass-overview-primary-actions {
+  gap: 0.65rem;
+  margin-top: 0.35rem;
+}
+
+.glass-showcase-v32 .glass-easy-flagship-cta {
+  border-radius: var(--glass-v32-radius-sm);
+  padding: 0.55rem 1.1rem;
+  font-size: 0.875rem;
+  box-shadow: 0 2px 8px rgb(79 70 229 / 28%);
+  transition: background var(--glass-v32-ease), box-shadow var(--glass-v32-ease), transform 0.12s ease;
+}
+
+.glass-showcase-v32 .glass-easy-flagship-cta:hover {
+  box-shadow: 0 4px 14px rgb(79 70 229 / 35%);
+}
+
+.glass-showcase-v32 .glass-primary-open-file {
+  border-radius: var(--glass-v32-radius-sm);
+  padding: 0.55rem 1.1rem;
+  font-size: 0.875rem;
+  background: var(--glass-v32-surface);
+  color: var(--glass-v32-accent);
+  border: 1px solid var(--glass-v32-border-strong);
+  cursor: pointer;
+  transition: border-color var(--glass-v32-ease), background var(--glass-v32-ease), box-shadow var(--glass-v32-ease);
+}
+
+.glass-showcase-v32 .glass-primary-open-file:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+  box-shadow: var(--glass-v32-shadow);
+}
+
+.glass-showcase-v32 .glass-replay-overview-helper {
+  margin: 0.75rem 0 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: #475569;
+  max-width: 36rem;
+}
+
+/* --- Live nav --- */
+.glass-showcase-v32 .glass-live-nav a {
+  color: #1d4ed8;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: color var(--glass-v32-ease);
+}
+
+.glass-showcase-v32 .glass-live-nav a:hover {
+  color: #1e3a8a;
+  text-decoration: underline;
+}
+
+/* --- Technical chrome (deep mode) --- */
+.glass-replay-root.glass-showcase-v32[data-surface="technical"] .glass-replay-technical-chrome,
+.glass-live-root.glass-showcase-v32[data-surface="technical"] .glass-live-technical-chrome {
+  background: linear-gradient(180deg, #f1f5f9 0%, #e2e8f0 100%);
+  border: 1px solid var(--glass-v32-border-strong);
+  border-radius: var(--glass-v32-radius);
+  padding: 1rem 1.1rem;
+  margin-bottom: 1rem;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 60%);
+}
+
+/* --- Scene: centerpiece --- */
+.glass-showcase-v32 .glass-scene-v0 {
+  margin: 1rem 0 1.25rem;
+  padding: 1rem 1.1rem 1.15rem;
+  background: var(--glass-v32-surface);
+  border: 1px solid var(--glass-v32-border);
+  border-radius: var(--glass-v32-radius);
+  box-shadow: var(--glass-v32-shadow-scene);
+}
+
+.glass-showcase-v32 .glass-scene-v0-title {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--glass-v32-muted);
+  margin: 0 0 0.65rem;
+}
+
+.glass-showcase-v32 .glass-scene-v0-canvas {
+  border-radius: var(--glass-v32-radius-sm);
+  border: 1px solid var(--glass-v32-border-strong);
+  background: #f1f5f9;
+  box-shadow: inset 0 1px 2px rgb(15 23 42 / 4%);
+}
+
+/* Live canvas stack — same family as replay scene */
+.glass-showcase-v32 .glass-live-visual-canvas-stack {
+  padding: 0.5rem;
+  background: var(--glass-v32-surface);
+  border: 1px solid var(--glass-v32-border);
+  border-radius: var(--glass-v32-radius-sm);
+  box-shadow: var(--glass-v32-shadow-scene);
+}
+
+.glass-showcase-v32 .glass-live-visual-canvas {
+  border-radius: calc(var(--glass-v32-radius-sm) - 2px);
+  border: 1px solid var(--glass-v32-border-strong);
+  background: #f1f5f9;
+}
+
+/* --- Trust band sections (replay) --- */
+.glass-showcase-v32 .glass-replay-evidence,
+.glass-showcase-v32 .glass-replay-claim,
+.glass-showcase-v32 .glass-replay-episodes {
+  margin-bottom: 0.85rem;
+  padding: 0.65rem 0.75rem 0.85rem;
+  background: var(--glass-v32-surface-raised);
+  border: 1px solid var(--glass-v32-border);
+  border-radius: var(--glass-v32-radius-sm);
+}
+
+.glass-showcase-v32 section.glass-bounded-temporal.glass-overview-loaded-only {
+  margin-bottom: 0.85rem;
+  padding: 0.65rem 0.75rem;
+  background: var(--glass-v32-surface-raised);
+  border: 1px solid var(--glass-v32-border);
+  border-radius: var(--glass-v32-radius-sm);
+}
+
+/* --- Controls --- */
+.glass-showcase-v32 .glass-controls {
+  gap: 0.45rem;
+  margin: 0.75rem 0;
+}
+
+.glass-showcase-v32 .glass-controls button {
+  border-radius: 6px;
+  border: 1px solid var(--glass-v32-border-strong);
+  background: var(--glass-v32-surface);
+  padding: 0.35rem 0.65rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--glass-v32-text);
+  cursor: pointer;
+  transition: background var(--glass-v32-ease), border-color var(--glass-v32-ease), box-shadow var(--glass-v32-ease);
+}
+
+.glass-showcase-v32 .glass-controls button:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.glass-showcase-v32 .glass-controls button:disabled {
+  opacity: 0.4;
+}
+
+.glass-showcase-v32 .glass-scrub {
+  margin: 0.65rem 0;
+}
+
+/* --- Technical: denser panels --- */
+.glass-replay-root.glass-showcase-v32[data-surface="technical"] .glass-meta,
+.glass-replay-root.glass-showcase-v32[data-surface="technical"] .glass-inspector,
+.glass-live-root.glass-showcase-v32[data-surface="technical"] .glass-live-pre {
+  border-radius: var(--glass-v32-radius-sm);
+  border-color: var(--glass-v32-border);
+  background: var(--glass-v32-surface-raised);
+}
+
+.glass-replay-root.glass-showcase-v32[data-surface="technical"] .glass-timeline {
+  border-radius: var(--glass-v32-radius-sm);
+  border-color: var(--glass-v32-border);
+  background: var(--glass-v32-surface);
+}
+
+/* --- Evidence / claims roots: slightly elevated in Technical --- */
+.glass-replay-root.glass-showcase-v32[data-surface="technical"] .glass-bounded-evidence-root,
+.glass-live-root.glass-showcase-v32[data-surface="technical"] .glass-bounded-evidence-root {
+  box-shadow: var(--glass-v32-shadow);
+}

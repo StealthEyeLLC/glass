@@ -1,5 +1,6 @@
 @import "../app/glassSurface.css";
 @import "../scene/boundedTrustSurfaces.css";
+@import "../app/glassPremiumV32.css";
 
 .glass-live-root {
   font-family: system-ui, sans-serif;

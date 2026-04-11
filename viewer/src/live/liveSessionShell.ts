@@ -163,7 +163,7 @@ export interface LiveSessionShellHandle {
 
 export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle {
   root.innerHTML = "";
-  root.classList.add("glass-live-root");
+  root.classList.add("glass-live-root", "glass-showcase-v32");
   mountGlassSurfaceControls(root);
 
   function liveSurfaceTier(): "overview" | "technical" {

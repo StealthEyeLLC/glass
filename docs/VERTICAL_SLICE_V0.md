@@ -1,6 +1,18 @@
-# Glass Vertical Slice v0 / v1 / v2 / v3 / v4 / v5 / v6 / v7 / v8 / v9 / v10 / v11 / v12 / v13 / v14 / v15 / v16 / v17 / v18 / v19 / v20 / v21 / v22 / v23 / v24 / v25 / v26 / v27 / v28 / v29 / v30 / v31
+# Glass Vertical Slice v0 / v1 / v2 / v3 / v4 / v5 / v6 / v7 / v8 / v9 / v10 / v11 / v12 / v13 / v14 / v15 / v16 / v17 / v18 / v19 / v20 / v21 / v22 / v23 / v24 / v25 / v26 / v27 / v28 / v29 / v30 / v31 / v32
 
 **Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier).
+
+## Vertical Slice v32 (premium visual hierarchy — bounded showcase)
+
+**Goal:** Stronger **first impression** and **deliberate hierarchy** on the same bounded path — **stunning at a glance**, **calm on use**, **exact on inspection** — without new engine features, wire changes, or trust-surface semantics.
+
+**What v32 adds (presentation only):** Root class **`glass-showcase-v32`** on replay and live shells; stylesheet **`viewer/src/app/glassPremiumV32.css`** imported after existing shell CSS (**`replayShell.css`**, **`liveSessionShell.css`**) so overrides stay scoped. Refined **page background**, **surface bar**, **hero** and **easy-entry** framing, **primary CTA** vs secondary **Open file** weight, **scene stage** emphasis (replay canvas + live visual stack), **Technical** surface gets slightly stronger **panel layering** and chrome when **`data-surface="technical"`** — replay (blue) vs live (green) hero accents preserved. **Restrained** hover/focus transitions only; **no** decorative loops, **no** neon/gimmick gradients.
+
+**What v32 intentionally does not change:** Bounded compilers, receipts, **`?surface=`** / **`glassSurface.ts`** behavior, bridge/WS contracts, copy strings (aside from any incidental DOM/CSS that does not alter text), **F-IPC** still **provisional**. Still the **bounded showcase path** only.
+
+**Tests:** **`verticalSliceV32PremiumVisual.test.ts`** — root classes, default **Overview**, **Technical** toggle + **`glass-surface-technical-only`**; complements **v30/v31** separation tests.
+
+**Next major step:** durable push ingest and/or additive live-era HTTP/WS fields **without** breaking frozen bounded-era HTTP — see `docs/IMPLEMENTATION_STATUS.md`.
 
 ## Vertical Slice v31 (Overview default-surface reduction)
 
