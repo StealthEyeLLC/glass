@@ -52,6 +52,11 @@ import {
 import { formatLiveVisualLegendBlock } from "./liveVisualMarkers.js";
 import type { BoundedSceneEmphasisV0 } from "../scene/boundedSceneEmphasis.js";
 import { compileLiveToGlassSceneV0 } from "../scene/compileLiveScene.js";
+import {
+  buildBoundedInspectorLines,
+  buildBoundedSelectionHitTargetsForScene,
+  hitTestBoundedSelection,
+} from "../scene/boundedSceneSelection.js";
 import { GLASS_SCENE_V0, type GlassSceneV0 } from "../scene/glassSceneV0.js";
 import { liveVisualSpecFromScene } from "../scene/sceneToLiveVisualSpec.js";
 import type { LiveVisualSpec } from "./liveVisualModel.js";
@@ -371,7 +376,9 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   visualCanvasTextOverlay.setAttribute("data-testid", "live-visual-canvas-text-overlay");
   visualCanvasTextOverlay.hidden = true;
   visualCanvasStack.setAttribute("data-scene", GLASS_SCENE_V0);
+  visualCanvasStack.classList.add("glass-live-visual-hit-target");
   visualCanvasStack.append(visualCanvas, visualCanvasWebGpu, visualCanvasTextOverlay);
+
   const visualFallback = el("p", "glass-live-visual-fallback");
   visualFallback.setAttribute("data-testid", "live-visual-fallback");
   visualFallback.textContent =
@@ -397,6 +404,13 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   visualLegend.setAttribute("data-testid", "live-visual-legend");
   visualLegend.setAttribute("id", "live-visual-legend");
   visualLegend.textContent = formatLiveVisualLegendBlock();
+  const boundedInspectorTitle = el(
+    "h4",
+    "glass-bounded-inspector-title",
+    "Bounded scene selection (Vertical Slice v5)",
+  );
+  const boundedInspectorPre = el("pre", "glass-bounded-inspector");
+  boundedInspectorPre.setAttribute("data-testid", "live-bounded-inspector");
   visualCanvas.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
   visualCanvasWebGpu.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
   visualCanvasTextOverlay.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
@@ -405,6 +419,8 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     visualGpuStatus,
     visualCanvasStack,
     visualFallback,
+    boundedInspectorTitle,
+    boundedInspectorPre,
     visualProvenanceHeader,
     visualProvenanceStrip,
     visualLegend,
@@ -414,6 +430,26 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   let lastPaintResult: PaintLiveVisualSurfaceResult | null = null;
   let lastPaintedLiveScene: GlassSceneV0 | null = null;
   let lastLiveEmphasis: BoundedSceneEmphasisV0 | null = null;
+  let selectedBoundedSelectionId: string | null = null;
+
+  function refreshBoundedInspectorLive(): void {
+    if (!lastPaintedLiveScene) {
+      boundedInspectorPre.textContent = "";
+      boundedInspectorPre.removeAttribute("data-selected");
+      return;
+    }
+    const spec = liveVisualSpecFromScene(lastPaintedLiveScene);
+    boundedInspectorPre.textContent = buildBoundedInspectorLines(
+      lastPaintedLiveScene,
+      spec,
+      selectedBoundedSelectionId,
+    ).join("\n");
+    if (selectedBoundedSelectionId) {
+      boundedInspectorPre.dataset.selected = "true";
+    } else {
+      boundedInspectorPre.removeAttribute("data-selected");
+    }
+  }
 
   function buildCurrentLiveVisualSpec(): LiveVisualSpec {
     if (lastPaintedLiveScene) {
@@ -587,12 +623,33 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       scene,
       undefined,
       webGpuBundle,
+      { selectedSelectionId: selectedBoundedSelectionId },
     );
     lastPaintResult = result;
     visualFallback.hidden = result.fallbackTextShouldHide;
     visualLegend.textContent = formatLiveVisualLegendBlock();
     refreshVisualProvenanceStrip();
+    refreshBoundedInspectorLive();
   }
+
+  visualCanvasStack.addEventListener("pointerdown", (ev) => {
+    const scene = lastPaintedLiveScene;
+    if (!scene) {
+      return;
+    }
+    const rect = visualCanvasStack.getBoundingClientRect();
+    const x = ev.clientX - rect.left;
+    const y = ev.clientY - rect.top;
+    const lay = { widthCss: scene.bounds.widthCss, heightCss: scene.bounds.heightCss };
+    const targets = buildBoundedSelectionHitTargetsForScene(scene, lay);
+    const id = hitTestBoundedSelection(x, y, targets);
+    if (id === selectedBoundedSelectionId) {
+      selectedBoundedSelectionId = null;
+    } else {
+      selectedBoundedSelectionId = id;
+    }
+    void paintLiveVisual();
+  });
 
   function renderCaps(): void {
     capsPre.textContent = capsError

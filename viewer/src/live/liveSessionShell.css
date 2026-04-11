@@ -318,3 +318,33 @@
   margin: 0.4rem 0 0;
   white-space: pre-line;
 }
+
+.glass-live-visual-hit-target {
+  cursor: crosshair;
+}
+
+.glass-bounded-inspector-title {
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0.25rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.glass-bounded-inspector {
+  font-size: 0.72rem;
+  line-height: 1.4;
+  font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", monospace;
+  color: #334155;
+  margin: 0 0 0.5rem;
+  padding: 0.35rem 0.35rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.glass-bounded-inspector[data-selected="true"] {
+  border-color: #b45309;
+  background: #fffbeb;
+}

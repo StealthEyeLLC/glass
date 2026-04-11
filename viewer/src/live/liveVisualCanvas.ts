@@ -10,6 +10,10 @@
 
 import type { GlassSceneV0 } from "../scene/glassSceneV0.js";
 import {
+  buildBoundedSelectionHitTargetsForScene,
+  unionBoundingRectForSelectionId,
+} from "../scene/boundedSceneSelection.js";
+import {
   buildBoundedVisualGeometryPrimitives,
   LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT,
   LIVE_VISUAL_STATE_RAIL_LAYOUT,
@@ -163,6 +167,28 @@ export function drawLiveVisualTextLabelsIntoContext(
   ctx.fillText(truncate(spec.honestyLine, 72), 16, h - 10);
 }
 
+function drawBoundedSelectionHighlightIntoContext(
+  ctx: CanvasRenderingContext2D,
+  scene: GlassSceneV0,
+  layout: LiveVisualCanvasLayout,
+  selectedSelectionId: string | null,
+): void {
+  if (selectedSelectionId === null || selectedSelectionId.length === 0) {
+    return;
+  }
+  const targets = buildBoundedSelectionHitTargetsForScene(scene, layout);
+  const r = unionBoundingRectForSelectionId(selectedSelectionId, targets);
+  if (!r || r.width <= 0 || r.height <= 0) {
+    return;
+  }
+  ctx.save();
+  ctx.strokeStyle = "#b45309";
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 4]);
+  ctx.strokeRect(r.x + 0.5, r.y + 0.5, r.width - 1, r.height - 1);
+  ctx.restore();
+}
+
 /**
  * Transparent overlay: clear then text labels — hybrid WebGPU + Canvas (alpha canvas).
  */
@@ -171,11 +197,24 @@ export function renderLiveVisualTextOverlayIntoContext(
   spec: LiveVisualSpec,
   widthCss: number,
   heightCss: number,
+  selectionHighlight?: {
+    scene: GlassSceneV0;
+    layout: LiveVisualCanvasLayout;
+    selectedSelectionId: string | null;
+  },
 ): void {
   const w = widthCss;
   const h = heightCss;
   ctx.clearRect(0, 0, w, h);
   drawLiveVisualTextLabelsIntoContext(ctx, spec, w, h);
+  if (selectionHighlight) {
+    drawBoundedSelectionHighlightIntoContext(
+      ctx,
+      selectionHighlight.scene,
+      selectionHighlight.layout,
+      selectionHighlight.selectedSelectionId,
+    );
+  }
 }
 
 /**
@@ -198,6 +237,10 @@ export function renderLiveVisualTextOverlayOnCanvas(
   canvas: HTMLCanvasElement,
   spec: LiveVisualSpec,
   layout: LiveVisualCanvasLayout = DEFAULT_LAYOUT,
+  selectionHighlight?: {
+    scene: GlassSceneV0;
+    selectedSelectionId: string | null;
+  },
 ): boolean {
   let ctx: CanvasRenderingContext2D | null = null;
   try {
@@ -218,7 +261,15 @@ export function renderLiveVisualTextOverlayOnCanvas(
   canvas.height = Math.floor(h * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  renderLiveVisualTextOverlayIntoContext(ctx, spec, w, h);
+  if (selectionHighlight?.scene) {
+    renderLiveVisualTextOverlayIntoContext(ctx, spec, w, h, {
+      scene: selectionHighlight.scene,
+      layout,
+      selectedSelectionId: selectionHighlight.selectedSelectionId ?? null,
+    });
+  } else {
+    renderLiveVisualTextOverlayIntoContext(ctx, spec, w, h);
+  }
 
   return true;
 }
@@ -230,13 +281,18 @@ function layoutForScene(
   return layout ?? { widthCss: scene.bounds.widthCss, heightCss: scene.bounds.heightCss };
 }
 
+export interface RenderLiveVisualOnCanvasOptions {
+  layout?: LiveVisualCanvasLayout;
+  selectedSelectionId?: string | null;
+}
+
 /**
  * Draw the current scene (geometry primitives + text). Returns false if 2D context is unavailable (caller may show fallback text).
  */
 export function renderLiveVisualOnCanvas(
   canvas: HTMLCanvasElement,
   scene: GlassSceneV0,
-  layout?: LiveVisualCanvasLayout,
+  options?: RenderLiveVisualOnCanvasOptions,
 ): boolean {
   let ctx: CanvasRenderingContext2D | null = null;
   try {
@@ -248,7 +304,7 @@ export function renderLiveVisualOnCanvas(
     return false;
   }
 
-  const lay = layoutForScene(scene, layout);
+  const lay = layoutForScene(scene, options?.layout);
   const spec = liveVisualSpecFromScene(scene);
   const dpr = typeof window !== "undefined" && window.devicePixelRatio ? window.devicePixelRatio : 1;
   const w = lay.widthCss;
@@ -262,6 +318,7 @@ export function renderLiveVisualOnCanvas(
   const primitives = sceneToDrawablePrimitives(scene, lay);
   renderDrawablePrimitivesToCanvas2D(ctx, primitives);
   drawLiveVisualTextLabelsIntoContext(ctx, spec, w, h);
+  drawBoundedSelectionHighlightIntoContext(ctx, scene, lay, options?.selectedSelectionId ?? null);
 
   return true;
 }

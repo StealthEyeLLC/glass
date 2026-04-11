@@ -82,6 +82,14 @@ describe("static replay shell", () => {
     expect(cv?.getAttribute("data-scene")).toBe(GLASS_SCENE_V0);
   });
 
+  it("mounts Vertical Slice v5 bounded selection inspector", () => {
+    const root = document.createElement("div");
+    mountReplayShell(root);
+    const bi = root.querySelector('[data-testid="replay-bounded-inspector"]');
+    expect(bi).toBeTruthy();
+    expect(bi?.textContent).toMatch(/Selection: \(none\)|Click a scene/i);
+  });
+
   it("shows pack metadata and inspector after programmatic load", () => {
     const root = document.createElement("div");
     const h = mountReplayShell(root);

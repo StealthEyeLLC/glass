@@ -29,6 +29,8 @@ describe("mountLiveSessionShell", () => {
     expect((prov?.textContent ?? "").toLowerCase()).toContain("renderer=");
     const legend = root.querySelector('[data-testid="live-visual-legend"]');
     expect(legend).not.toBeNull();
+    const boundedInsp = root.querySelector('[data-testid="live-bounded-inspector"]');
+    expect(boundedInsp).not.toBeNull();
     const lt = legend?.textContent ?? "";
     expect(lt).toContain("R = ");
     expect(lt).toContain("HTTP = ");

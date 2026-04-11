@@ -1,6 +1,19 @@
-# Glass Vertical Slice v0 / v1 / v2 / v3 / v4
+# Glass Vertical Slice v0 / v1 / v2 / v3 / v4 / v5
 
-**Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier). **Vertical Slice v1** added a richer bounded scene; **v2** adds **bounded actor/sample clusters** from real event kinds only; **v3** adds **bounded regions** (membership + compositional drawable layers); **v4** adds **bounded scene emphasis** and **pulse/flash overlays** driven only by real basis changes between compiles — still **no** wire contract changes.
+**Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier). **Vertical Slice v1** added a richer bounded scene; **v2** adds **bounded actor/sample clusters** from real event kinds only; **v3** adds **bounded regions** (membership + compositional drawable layers); **v4** adds **bounded scene emphasis** and **pulse/flash overlays** driven only by real basis changes between compiles; **v5** adds **bounded scene selection** and **inspector coupling** (same ids + hit map for replay and live) — still **no** wire contract changes.
+
+## Vertical Slice v5 (bounded selection + inspector)
+
+**What it adds (viewer-only):**
+
+- **Stable selection ids:** `glass.sel.v0:…` strings derived only from **Scene v0** structures and **Drawable Primitives v0** / Canvas overlay layout — **not** a graph node id space, **not** topology navigation.
+- **Pure helpers:** `viewer/src/scene/boundedSceneSelection.ts` — **`buildBoundedSelectionHitTargetsForScene`** (geometry from `sceneToDrawablePrimitives` + overlay line rects aligned with `drawLiveVisualTextLabelsIntoContext`), **`hitTestBoundedSelection`** (last-painted / topmost wins), **`buildBoundedInspectorLines`** (bounded facts + honesty line).
+- **Shells:** **`replayOnlyShell`** and **`liveSessionShell`** — pointer hit-testing on the scene surface; **toggle** same target to clear; **replace** on a new target; **bounded inspector** `<pre>` (`data-testid="replay-bounded-inspector"` / `live-bounded-inspector`) plus optional dashed **selection outline** on Canvas (full Canvas or hybrid **text overlay**).
+- **Replay default unchanged:** Tier B replay remains the default surface; event JSON inspector remains **debug** (not merged into selection authority).
+
+**Selectable targets (non-exhaustive):** bounded **regions** (`composition_*` panels), **wire** band / ticks / HTTP chip, **state rail** lanes, **cluster** segments, **overlay** lines (mode/tail/snapshot/replay/wire/HTTP), **`bounded_scene_frame`**. **Not** included: fake graph nodes/edges, full-history drill-down, or any structure not already in Scene v0.
+
+**What it does *not* imply:** causal graph, process tree navigation, syscall-complete file graph, or continuity beyond existing bounded replay/live contracts. **F-IPC transport** remains **provisional**. This is still **not** the Phase-6 full runtime scene.
 
 ## Vertical Slice v4 (bounded emphasis / transitions)
 
@@ -94,4 +107,4 @@ A single **bounded** demo path through the real Glass v0 substrate: **Tier B sta
 
 ## Next major step
 
-Durable push ingest and/or additive live-era HTTP/WS fields **without** breaking frozen bounded-era HTTP — see `docs/IMPLEMENTATION_STATUS.md` “Next engineering steps”.
+Durable push ingest and/or additive live-era HTTP/WS fields **without** breaking frozen bounded-era HTTP — see `docs/IMPLEMENTATION_STATUS.md` “Next engineering steps”. Selection/inspector stay bounded to the current compile; they do **not** replace the need for durable ingest or a future honest topology surface when data exists.

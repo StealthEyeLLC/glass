@@ -32,14 +32,19 @@ export async function paintLiveVisualSurface(
   scene: GlassSceneV0,
   layout: LiveVisualCanvasLayout | undefined,
   webGpuBundle: LiveVisualWebGpuBundle | null,
+  selection?: { selectedSelectionId: string | null },
 ): Promise<PaintLiveVisualSurfaceResult> {
   const lay =
     layout ?? { widthCss: scene.bounds.widthCss, heightCss: scene.bounds.heightCss };
   const spec = liveVisualSpecFromScene(scene);
+  const sel = selection?.selectedSelectionId ?? null;
   if (webGpuBundle) {
     const okGpu = await renderLiveVisualWebGpuFrame(canvasWebGpu, scene, lay, webGpuBundle);
     if (okGpu) {
-      const okText = renderLiveVisualTextOverlayOnCanvas(canvasTextOverlay, spec, lay);
+      const okText = renderLiveVisualTextOverlayOnCanvas(canvasTextOverlay, spec, lay, {
+        scene,
+        selectedSelectionId: sel,
+      });
       if (okText) {
         canvasWebGpu.hidden = false;
         canvasTextOverlay.hidden = false;
@@ -53,7 +58,10 @@ export async function paintLiveVisualSurface(
       canvasWebGpu.hidden = true;
       canvasTextOverlay.hidden = true;
       canvas2dFull.hidden = false;
-      const ok2d = renderLiveVisualOnCanvas(canvas2dFull, scene, lay);
+      const ok2d = renderLiveVisualOnCanvas(canvas2dFull, scene, {
+        layout: lay,
+        selectedSelectionId: sel,
+      });
       return {
         fallbackTextShouldHide: ok2d,
         webGpuActive: false,
@@ -64,7 +72,10 @@ export async function paintLiveVisualSurface(
   canvasWebGpu.hidden = true;
   canvasTextOverlay.hidden = true;
   canvas2dFull.hidden = false;
-  const ok2d = renderLiveVisualOnCanvas(canvas2dFull, scene, lay);
+  const ok2d = renderLiveVisualOnCanvas(canvas2dFull, scene, {
+    layout: lay,
+    selectedSelectionId: sel,
+  });
   return {
     fallbackTextShouldHide: ok2d,
     webGpuActive: false,

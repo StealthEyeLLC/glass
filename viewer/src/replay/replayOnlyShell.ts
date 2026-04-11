@@ -12,7 +12,13 @@ import {
 import { loadGlassPack } from "../pack/loadPack.js";
 import { attachPackDropHandlers, wirePackFileInput } from "./dragDrop.js";
 import { renderLiveVisualOnCanvas } from "../live/liveVisualCanvas.js";
-import { GLASS_SCENE_V0 } from "../scene/glassSceneV0.js";
+import { liveVisualSpecFromScene } from "../scene/sceneToLiveVisualSpec.js";
+import {
+  buildBoundedInspectorLines,
+  buildBoundedSelectionHitTargetsForScene,
+  hitTestBoundedSelection,
+} from "../scene/boundedSceneSelection.js";
+import { GLASS_SCENE_V0, type GlassSceneV0 } from "../scene/glassSceneV0.js";
 import type { BoundedSceneEmphasisV0 } from "../scene/boundedSceneEmphasis.js";
 import { compileReplayToGlassSceneV0 } from "../scene/compileReplayScene.js";
 import {
@@ -168,6 +174,25 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   sceneCanvas.setAttribute("data-scene", GLASS_SCENE_V0);
   sceneSection.append(sceneTitle, sceneNote, sceneCanvas);
 
+  sceneCanvas.addEventListener("pointerdown", (ev) => {
+    const scene = lastReplayScene;
+    if (!scene) {
+      return;
+    }
+    const rect = sceneCanvas.getBoundingClientRect();
+    const x = ev.clientX - rect.left;
+    const y = ev.clientY - rect.top;
+    const lay = { widthCss: scene.bounds.widthCss, heightCss: scene.bounds.heightCss };
+    const targets = buildBoundedSelectionHitTargetsForScene(scene, lay);
+    const id = hitTestBoundedSelection(x, y, targets);
+    if (id === selectedBoundedSelectionId) {
+      selectedBoundedSelectionId = null;
+    } else {
+      selectedBoundedSelectionId = id;
+    }
+    paintReplayScene();
+  });
+
   const scrub = document.createElement("input");
   scrub.type = "range";
   scrub.min = "0";
@@ -184,8 +209,16 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
 
   const inspector = el("section", "glass-inspector");
   inspector.setAttribute("data-testid", "replay-inspector");
+  const boundedInspectorTitle = el(
+    "h4",
+    "glass-bounded-inspector-title",
+    "Bounded scene selection (Vertical Slice v5)",
+  );
+  const boundedInspectorPre = el("pre", "glass-bounded-inspector");
+  boundedInspectorPre.setAttribute("data-testid", "replay-bounded-inspector");
+  const eventInspectorTitle = el("h4", "glass-event-inspector-title", "Current event (debug)");
   const inspectorPre = el("pre");
-  inspector.append(inspectorPre);
+  inspector.append(boundedInspectorTitle, boundedInspectorPre, eventInspectorTitle, inspectorPre);
 
   const chipsRow = el("div");
   chipsRow.setAttribute("data-testid", "replay-entity-chips");
@@ -229,11 +262,36 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   }
 
   let lastReplayEmphasis: BoundedSceneEmphasisV0 | null = null;
+  let lastReplayScene: GlassSceneV0 | null = null;
+  let selectedBoundedSelectionId: string | null = null;
+
+  function refreshBoundedInspectorReplay(): void {
+    if (!lastReplayScene) {
+      boundedInspectorPre.textContent = "";
+      boundedInspectorPre.removeAttribute("data-selected");
+      return;
+    }
+    const spec = liveVisualSpecFromScene(lastReplayScene);
+    boundedInspectorPre.textContent = buildBoundedInspectorLines(
+      lastReplayScene,
+      spec,
+      selectedBoundedSelectionId,
+    ).join("\n");
+    if (selectedBoundedSelectionId) {
+      boundedInspectorPre.dataset.selected = "true";
+    } else {
+      boundedInspectorPre.removeAttribute("data-selected");
+    }
+  }
 
   function paintReplayScene(): void {
     const scene = compileReplayToGlassSceneV0(state, { previousEmphasis: lastReplayEmphasis });
     lastReplayEmphasis = scene.emphasis;
-    void renderLiveVisualOnCanvas(sceneCanvas, scene);
+    lastReplayScene = scene;
+    void renderLiveVisualOnCanvas(sceneCanvas, scene, {
+      selectedSelectionId: selectedBoundedSelectionId,
+    });
+    refreshBoundedInspectorReplay();
   }
 
   function dispatch(a: ReplayAction): void {

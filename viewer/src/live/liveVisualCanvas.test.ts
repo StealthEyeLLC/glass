@@ -96,7 +96,9 @@ describe("renderLiveVisualOnCanvas", () => {
     const canvas = document.createElement("canvas");
     const m = createInitialLiveSessionModelState("sid");
     const scene = compileLiveToGlassSceneV0({ model: m, lastReconcile: null });
-    const ok = renderLiveVisualOnCanvas(canvas, scene, { widthCss: 200, heightCss: 100 });
+    const ok = renderLiveVisualOnCanvas(canvas, scene, {
+      layout: { widthCss: 200, heightCss: 100 },
+    });
     expect(ok).toBe(true);
     expect(canvas.width).toBeGreaterThan(0);
     expect(canvas.height).toBeGreaterThan(0);
