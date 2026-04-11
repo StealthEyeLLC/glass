@@ -238,6 +238,8 @@ export function renderLiveVisualTextOverlayIntoContext(
     scene: GlassSceneV0;
     layout: LiveVisualCanvasLayout;
     selectedSelectionId: string | null;
+    /** Must match WebGPU / full-Canvas geometry + pointer hit-testing (compare baseline). */
+    previousScene?: GlassSceneV0 | null;
   },
 ): void {
   const w = widthCss;
@@ -250,6 +252,7 @@ export function renderLiveVisualTextOverlayIntoContext(
       selectionHighlight.scene,
       selectionHighlight.layout,
       selectionHighlight.selectedSelectionId,
+      selectionHighlight.previousScene,
     );
   }
 }
@@ -277,6 +280,8 @@ export function renderLiveVisualTextOverlayOnCanvas(
   selectionHighlight?: {
     scene: GlassSceneV0;
     selectedSelectionId: string | null;
+    /** Same baseline as `paintLiveVisualSurface` / `renderLiveVisualOnCanvas` — required for hybrid parity. */
+    previousScene?: GlassSceneV0 | null;
   },
 ): boolean {
   let ctx: CanvasRenderingContext2D | null = null;
@@ -303,6 +308,7 @@ export function renderLiveVisualTextOverlayOnCanvas(
       scene: selectionHighlight.scene,
       layout,
       selectedSelectionId: selectionHighlight.selectedSelectionId ?? null,
+      previousScene: selectionHighlight.previousScene,
     });
   } else {
     renderLiveVisualTextOverlayIntoContext(ctx, spec, w, h);

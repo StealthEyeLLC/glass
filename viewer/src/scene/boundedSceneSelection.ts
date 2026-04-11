@@ -11,6 +11,7 @@ import {
 } from "./drawablePrimitivesV0.js";
 import type { DrawablePrimitive, DrawablePrimitiveSemanticTag } from "./drawablePrimitivesV0.js";
 import type { GlassSceneV0, SceneBounds, SceneBoundedRegionRole } from "./glassSceneV0.js";
+import { computeBoundedSceneCompare } from "./boundedSceneCompare.js";
 import { liveVisualSpecFromScene } from "./sceneToLiveVisualSpec.js";
 import { sceneToDrawablePrimitives } from "./sceneToDrawablePrimitives.js";
 
@@ -309,7 +310,13 @@ export function buildBoundedSelectionHitTargetsForScene(
     focusedSelectionId,
     previousScene: prev,
   });
-  const spec = liveVisualSpecFromScene(scene, focusedSelectionId, { previousScene: prev });
+  const cmp = computeBoundedSceneCompare(prev, scene, {
+    selectedId: focusedSelectionId ?? null,
+  });
+  const spec = liveVisualSpecFromScene(scene, focusedSelectionId, {
+    previousScene: prev,
+    compare: cmp,
+  });
   const w = layout?.widthCss ?? scene.bounds.widthCss;
   const h = layout?.heightCss ?? scene.bounds.heightCss;
   const geo = buildBoundedSelectionHitTargetsFromPrimitives(scene, primitives);

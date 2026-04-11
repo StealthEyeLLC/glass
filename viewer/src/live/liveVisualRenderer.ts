@@ -3,6 +3,7 @@
  */
 
 import type { GlassSceneV0 } from "../scene/glassSceneV0.js";
+import { computeBoundedSceneCompare } from "../scene/boundedSceneCompare.js";
 import { liveVisualSpecFromScene } from "../scene/sceneToLiveVisualSpec.js";
 import type { LiveVisualCanvasLayout } from "./liveVisualCanvas.js";
 import {
@@ -38,7 +39,8 @@ export async function paintLiveVisualSurface(
     layout ?? { widthCss: scene.bounds.widthCss, heightCss: scene.bounds.heightCss };
   const sel = selection?.selectedSelectionId ?? null;
   const prev = selection?.previousScene ?? null;
-  const spec = liveVisualSpecFromScene(scene, sel, { previousScene: prev });
+  const cmp = computeBoundedSceneCompare(prev, scene, { selectedId: sel });
+  const spec = liveVisualSpecFromScene(scene, sel, { previousScene: prev, compare: cmp });
   if (webGpuBundle) {
     const okGpu = await renderLiveVisualWebGpuFrame(canvasWebGpu, scene, lay, webGpuBundle, {
       focusedSelectionId: sel,
@@ -48,6 +50,7 @@ export async function paintLiveVisualSurface(
       const okText = renderLiveVisualTextOverlayOnCanvas(canvasTextOverlay, spec, lay, {
         scene,
         selectedSelectionId: sel,
+        previousScene: prev,
       });
       if (okText) {
         canvasWebGpu.hidden = false;

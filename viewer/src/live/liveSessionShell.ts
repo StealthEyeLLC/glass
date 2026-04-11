@@ -693,8 +693,12 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   function buildCurrentLiveVisualSpec(): LiveVisualSpec {
     if (lastPaintedLiveScene) {
       const baseline = effectiveCompareBaselineLive();
+      const cmp = computeBoundedSceneCompare(baseline, lastPaintedLiveScene, {
+        selectedId: selectedBoundedSelectionId,
+      });
       return liveVisualSpecFromScene(lastPaintedLiveScene, selectedBoundedSelectionId, {
         previousScene: baseline,
+        compare: cmp,
       });
     }
     return liveVisualSpecFromScene(
