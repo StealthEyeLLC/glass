@@ -1,19 +1,23 @@
 # Glass
 
-**Glass turns bounded runtime activity into an inspectable claim chain: scene, change, evidence, receipt.**
+**See what your code or agent actually did.**
 
-Glass is a **replay-first bounded investigation surface** above runtime telemetry. The current public surface in this repo is one honest showcase path: load a saved session, inspect what changed, inspect the evidence behind it, and open the technical layer only when you want the full instrument. Optional **`?live=1`** is local-only and secondary.
+Glass is a **replay-first bounded investigation surface**: open one saved session, move from **scene** to **change** to **evidence** to **receipt**, and stop at what the bounded window can honestly support.
 
-This repo does **not** claim production ingest at scale, final **F-IPC** transport, or Phase-6 full topology runtime. Start with the shipped bounded showcase, not the long-horizon spec.
+**Start with the flagship replay path:** open `tests/fixtures/canonical_scenarios_v15/canonical_v15_append_heavy.glass_pack` and stay on **Overview** first.
 
-## Start Here
+![00 — Flagship replay motion](docs/media/00-flagship-replay-motion.gif)
 
-1. Run the viewer locally: `cd viewer && npm ci && npm run dev`
-2. On replay, use **Load flagship demo** (dev only) or **Open file** and pick `tests/fixtures/canonical_scenarios_v15/canonical_v15_append_heavy.glass_pack`
-3. Stay on **Overview** first. Use **Technical** only when you want exact scan order, ids, manifests, receipt refs, and transport detail.
-4. Static `dist/` does not auto-load fixtures. Optional **`?live=1`** is local-only and not the front door.
+**Bounded showcase only:** not cloud-hosted Glass, not full topology runtime, not final **F-IPC** transport. The optional local **`?live=1`** shell is secondary.
 
-## Standout Interaction
+## Proof
+
+- **Fixtures:** committed flagship, smoke, and canonical scenario packs under `tests/fixtures/`
+- **CI + bootstrap:** replay, lint, tests, and fixture validation stay green
+- **Validator:** `glass-pack` checks the shipped `.glass_pack` artifacts directly
+- **Current truth:** `VISION.md`, `docs/IMPLEMENTATION_STATUS.md`, `docs/TEST_STRATEGY.md`, `docs/REPO_BOUNDARIES.md`
+
+## What Glass Lets You See
 
 | | |
 |--|--|
@@ -24,9 +28,16 @@ This repo does **not** claim production ingest at scale, final **F-IPC** transpo
 
 Replay uses an index-ordered pack prefix. Live keeps WS tail and HTTP snapshot **separate**.
 
+## Start Here
+
+1. Run the viewer locally: `cd viewer && npm ci && npm run dev`
+2. On replay, use **Load flagship demo** (dev only) or **Open file** and pick `tests/fixtures/canonical_scenarios_v15/canonical_v15_append_heavy.glass_pack`
+3. Stay on **Overview** first. Use **Technical** only when you want exact scan order, ids, manifests, receipt refs, and transport detail.
+4. Static `dist/` does not auto-load fixtures. Optional **`?live=1`** is local-only and not the front door.
+
 ## Screenshots
 
-**How these were taken:** Vite dev server (`npm run dev` in `viewer/`); replay frames use **`?fixture=flagship`** with the committed flagship pack; live frame uses **`?live=1`**. Regenerate with **`npm run capture:showcase-media -- http://127.0.0.1:<port>`** after `npx playwright install chromium` once. Synthetic committed fixtures only — not production telemetry.
+**How these were taken:** The flagship motion asset above and the stills below come from the real viewer surface. Replay frames use **`?fixture=flagship`** with the committed flagship pack; live uses **`?live=1`** in honest local setup mode. Regenerate with **`npm run capture:showcase-media -- http://127.0.0.1:<port>`** after `npx playwright install chromium` once. Synthetic committed fixtures only — not production telemetry.
 
 | | |
 |:--|:--|
