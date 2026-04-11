@@ -4,6 +4,7 @@ import {
 } from "../app/devFixtureRoute.js";
 import { getBuildMode } from "../app/mode.js";
 import {
+  RECEIPT_EMPTY_SUPPLEMENT_AFTER_TEMPORAL_BASELINE,
   VERTICAL_SLICE_FLAGSHIP_V18_BODY,
   VERTICAL_SLICE_FLAGSHIP_V18_DEV_QUERY_HINT,
   VERTICAL_SLICE_FLAGSHIP_V18_PACK_FILE,
@@ -12,6 +13,7 @@ import {
   VERTICAL_SLICE_SCENARIO_BODY,
   VERTICAL_SLICE_SCENARIO_LABEL,
   VERTICAL_SLICE_SCENARIO_TITLE,
+  VERTICAL_SLICE_V20_READING_ORDER_REPLAY,
   replayHeroSubtitle,
 } from "../app/verticalSliceV0.js";
 import { loadGlassPack } from "../pack/loadPack.js";
@@ -146,6 +148,13 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
       "glass-flagship-callout-meta",
       `Committed: tests/fixtures/canonical_scenarios_v15/${VERTICAL_SLICE_FLAGSHIP_V18_PACK_FILE} · session ${VERTICAL_SLICE_FLAGSHIP_V18_SESSION_ID}. Dev: npm run dev + ${VERTICAL_SLICE_FLAGSHIP_V18_DEV_QUERY_HINT}`,
     ),
+  );
+
+  const readingOrder = el("section", "glass-vs-reading-order");
+  readingOrder.setAttribute("data-testid", "replay-reading-order");
+  readingOrder.append(
+    el("h2", "glass-vs-reading-order-title", "How to read this surface"),
+    el("p", "glass-vs-reading-order-body", VERTICAL_SLICE_V20_READING_ORDER_REPLAY),
   );
 
   const liveNav = el("div", "glass-live-nav");
@@ -390,6 +399,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   root.append(
     hero,
     flagshipCallout,
+    readingOrder,
     liveNav,
     dropZone,
     fileRow,
@@ -541,7 +551,13 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
         paintReplayScene();
       },
     });
-    renderBoundedClaimReceiptInto(claimReceiptRoot, receipt, { testIdPrefix: "replay" });
+    renderBoundedClaimReceiptInto(claimReceiptRoot, receipt, {
+      testIdPrefix: "replay",
+      emptySupplementLine:
+        !receipt && !replayTrustPrimaryClaimHighlight
+          ? RECEIPT_EMPTY_SUPPLEMENT_AFTER_TEMPORAL_BASELINE
+          : undefined,
+    });
     renderBoundedEvidenceInto(boundedEvidenceRoot, drill, {
       scene: lastReplayScene,
       selectedSelectionId: selectedBoundedSelectionId,

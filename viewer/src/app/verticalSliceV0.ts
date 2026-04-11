@@ -43,3 +43,17 @@ export function replayHeroSubtitle(): string {
 export function liveHeroSubtitle(): string {
   return "Same strip, selection, compare, evidence, claims, and episodes as replay — driven by the bounded WS tail + HTTP snapshot. The flagship replay path (append-heavy canonical) defines the vocabulary; live proves the same surfaces under wire deltas.";
 }
+
+/**
+ * Vertical Slice v20 — external-style audit: one explicit reading order reduces first-run “internal tool” confusion.
+ * Not a workflow engine — copy only.
+ */
+export const VERTICAL_SLICE_V20_READING_ORDER_REPLAY =
+  "Suggested scan: scene canvas → bounded evidence (scope + rows) → episode cards → claim chips → receipt → temporal lens (compare baseline). Replay uses an index-ordered pack prefix; receipts/evidence are viewer-derived from bounded frames — not collector certificates.";
+
+export const VERTICAL_SLICE_V20_READING_ORDER_LIVE =
+  "Suggested scan: scene → bounded evidence → episodes → claims → receipt → temporal lens. WS tail + HTTP snapshot are distinct inputs — not one merged history; same trust surfaces as replay.";
+
+/** Shown when receipt is empty after a temporal compare-baseline override (v19/v20 handoff). */
+export const RECEIPT_EMPTY_SUPPLEMENT_AFTER_TEMPORAL_BASELINE =
+  "Compare baseline changed: scrub/step or play (replay), or wait for the next live frame, to restore suggested claim highlighting — or select a claim chip explicitly.";

@@ -87,18 +87,31 @@ export function renderBoundedClaimsInto(
   container.append(hon, row);
 }
 
+export interface RenderBoundedClaimReceiptIntoOptions {
+  testIdPrefix: "replay" | "live";
+  /** v20 — second empty-state line (e.g. temporal baseline just changed; primary highlight paused). */
+  emptySupplementLine?: string | null;
+}
+
 export function renderBoundedClaimReceiptInto(
   container: HTMLElement,
   receipt: BoundedClaimReceiptV0 | null,
-  options: { testIdPrefix: "replay" | "live" },
+  options: RenderBoundedClaimReceiptIntoOptions,
 ): void {
   container.replaceChildren();
   if (!receipt) {
     const empty = document.createElement("p");
     empty.className = "glass-bounded-claim-receipt-empty";
     empty.setAttribute("data-testid", `${options.testIdPrefix}-bounded-claim-receipt-empty`);
-    empty.textContent = "No bounded receipt — select a claim chip or episode.";
+    empty.textContent = "No active bounded receipt — select a claim chip or an episode card.";
     container.appendChild(empty);
+    if (options.emptySupplementLine) {
+      const sup = document.createElement("p");
+      sup.className = "glass-bounded-claim-receipt-empty-supplement";
+      sup.setAttribute("data-testid", `${options.testIdPrefix}-bounded-claim-receipt-empty-supplement`);
+      sup.textContent = options.emptySupplementLine;
+      container.appendChild(sup);
+    }
     return;
   }
 

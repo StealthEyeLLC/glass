@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  RECEIPT_EMPTY_SUPPLEMENT_AFTER_TEMPORAL_BASELINE,
   VERTICAL_SLICE_FLAGSHIP_V18_SESSION_ID,
   VERTICAL_SLICE_SCENARIO_LABEL,
   VERTICAL_SLICE_SCENARIO_TITLE,
+  VERTICAL_SLICE_V20_READING_ORDER_LIVE,
+  VERTICAL_SLICE_V20_READING_ORDER_REPLAY,
   VERTICAL_SLICE_V0_ID,
   liveHeroSubtitle,
   replayHeroSubtitle,
@@ -17,5 +20,8 @@ describe("verticalSliceV0", () => {
     expect(replayHeroSubtitle()).toContain("flagship");
     expect(liveHeroSubtitle()).toContain("Same strip");
     expect(VERTICAL_SLICE_FLAGSHIP_V18_SESSION_ID).toBe("canonical_v15_append_heavy");
+    expect(VERTICAL_SLICE_V20_READING_ORDER_REPLAY).toContain("temporal lens");
+    expect(VERTICAL_SLICE_V20_READING_ORDER_LIVE).toContain("WS tail");
+    expect(RECEIPT_EMPTY_SUPPLEMENT_AFTER_TEMPORAL_BASELINE.length).toBeGreaterThan(20);
   });
 });

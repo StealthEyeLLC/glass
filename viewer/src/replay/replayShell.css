@@ -77,6 +77,29 @@
   border-left: 4px solid #0284c7;
 }
 
+/* Vertical Slice v20 — first-run reading order (not a workflow; copy only) */
+.glass-vs-reading-order {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  background: #fafafa;
+}
+
+.glass-vs-reading-order-title {
+  font-size: 0.82rem;
+  margin: 0 0 6px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.glass-vs-reading-order-body {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #475569;
+  line-height: 1.5;
+}
+
 .glass-flagship-callout-title {
   margin: 0 0 8px;
   font-size: 1rem;

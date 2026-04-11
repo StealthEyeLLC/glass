@@ -68,6 +68,13 @@
   line-height: 1.45;
 }
 
+.glass-vs-reading-order-live {
+  margin: 0 0 8px;
+  font-size: 0.78rem;
+  color: #334155;
+  line-height: 1.45;
+}
+
 .glass-live-vs-hero {
   border-left: 4px solid #059669;
 }

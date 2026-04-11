@@ -97,11 +97,13 @@ import { paintLiveVisualSurface, type PaintLiveVisualSurfaceResult } from "./liv
 import type { LiveVisualWebGpuBundle } from "./liveVisualWebGpu.js";
 import { tryInitWebGpuCanvas } from "./liveVisualWebGpu.js";
 import {
+  RECEIPT_EMPTY_SUPPLEMENT_AFTER_TEMPORAL_BASELINE,
   VERTICAL_SLICE_FLAGSHIP_V18_BODY,
   VERTICAL_SLICE_FLAGSHIP_V18_TITLE,
   VERTICAL_SLICE_SCENARIO_BODY,
   VERTICAL_SLICE_SCENARIO_LABEL,
   VERTICAL_SLICE_SCENARIO_TITLE,
+  VERTICAL_SLICE_V20_READING_ORDER_LIVE,
   liveHeroSubtitle,
 } from "../app/verticalSliceV0.js";
 import "./liveSessionShell.css";
@@ -169,6 +171,11 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
         `${VERTICAL_SLICE_FLAGSHIP_V18_TITLE} (replay): ${VERTICAL_SLICE_FLAGSHIP_V18_BODY}`,
       );
       p.setAttribute("data-testid", "live-flagship-note");
+      return p;
+    })(),
+    (() => {
+      const p = el("p", "glass-vs-reading-order-live", VERTICAL_SLICE_V20_READING_ORDER_LIVE);
+      p.setAttribute("data-testid", "live-reading-order");
       return p;
     })(),
     el(
@@ -689,7 +696,13 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
         void paintLiveVisual();
       },
     });
-    renderBoundedClaimReceiptInto(boundedClaimReceiptRoot, receipt, { testIdPrefix: "live" });
+    renderBoundedClaimReceiptInto(boundedClaimReceiptRoot, receipt, {
+      testIdPrefix: "live",
+      emptySupplementLine:
+        !receipt && !liveTrustPrimaryClaimHighlight
+          ? RECEIPT_EMPTY_SUPPLEMENT_AFTER_TEMPORAL_BASELINE
+          : undefined,
+    });
     renderBoundedEvidenceInto(boundedEvidenceRoot, drill, {
       scene: lastPaintedLiveScene,
       selectedSelectionId: selectedBoundedSelectionId,

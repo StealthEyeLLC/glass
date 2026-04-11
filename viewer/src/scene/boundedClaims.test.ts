@@ -282,7 +282,20 @@ describe("renderBoundedClaimsInto / renderBoundedClaimReceiptInto", () => {
     const root = document.createElement("div");
     renderBoundedClaimReceiptInto(root, null, { testIdPrefix: "replay" });
     const empty = root.querySelector('[data-testid="replay-bounded-claim-receipt-empty"]');
-    expect(empty?.textContent).toBe("No bounded receipt — select a claim chip or episode.");
+    expect(empty?.textContent).toBe(
+      "No active bounded receipt — select a claim chip or an episode card.",
+    );
+  });
+
+  it("renders empty receipt supplement when temporal baseline handoff applies (v20)", () => {
+    const root = document.createElement("div");
+    renderBoundedClaimReceiptInto(root, null, {
+      testIdPrefix: "replay",
+      emptySupplementLine: "Compare baseline changed — next.",
+    });
+    expect(root.querySelector('[data-testid="replay-bounded-claim-receipt-empty-supplement"]')?.textContent).toBe(
+      "Compare baseline changed — next.",
+    );
   });
 
   it("renders structured receipt with trust tier and section markers", () => {

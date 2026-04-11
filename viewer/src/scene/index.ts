@@ -107,7 +107,11 @@ export {
   type BuildBoundedClaimReceiptContext,
   type ComputeBoundedClaimsInput,
 } from "./boundedClaims.js";
-export { renderBoundedClaimReceiptInto, renderBoundedClaimsInto } from "./boundedClaimsPanel.js";
+export {
+  renderBoundedClaimReceiptInto,
+  renderBoundedClaimsInto,
+  type RenderBoundedClaimReceiptIntoOptions,
+} from "./boundedClaimsPanel.js";
 export { liveVisualSpecFromScene } from "./sceneToLiveVisualSpec.js";
 export {
   DRAWABLE_PRIMITIVES_V0,

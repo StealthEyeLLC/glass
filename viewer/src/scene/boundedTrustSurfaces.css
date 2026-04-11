@@ -393,6 +393,15 @@
   line-height: 1.45;
 }
 
+.glass-bounded-claim-receipt-empty-supplement {
+  font-size: 0.72rem;
+  color: #475569;
+  margin: 0 0 0.15rem;
+  padding: 0 0.55rem 0.5rem;
+  line-height: 1.45;
+  border-left: 3px solid #94a3b8;
+}
+
 .glass-bounded-claim-receipt-header {
   padding: 0.45rem 0.6rem 0.35rem;
   border-bottom: 1px solid #e8e8e8;

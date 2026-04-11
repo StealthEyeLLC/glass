@@ -2,7 +2,7 @@
 
 **Synthetic:** all events use `source.adapter: "fixture"` and an `attrs.note` marking **`synthetic_canonical_v15_*`**. These packs exist to **prove** distinct Glass viewer behaviors under strict Tier B replay — **not** live collector truth, **not** bridge/F-IPC proof.
 
-**Vertical Slice v18 (flagship):** `canonical_v15_append_heavy.glass_pack` is the **primary bounded demo path** — append semantics, 14-event tail, rich compare / evidence / claims / temporal lens. Other packs remain **breadth proof** (replace, calm compare, file lane). See `docs/VERTICAL_SLICE_V0.md`.
+**Vertical Slice v18 (flagship):** `canonical_v15_append_heavy.glass_pack` is the **primary bounded demo path** — append semantics, 14-event tail, rich compare / evidence / claims / temporal lens. Other packs remain **breadth proof** (replace, calm compare, file lane): same compilers and trust surfaces, different **honest** wire-stress shapes — **not** staged alternate products. **Vertical Slice v20** records external-style alignment between flagship and breadth in `docs/VERTICAL_SLICE_V0.md`.
 
 | Pack file | Session id | Proves (replay path) | Does **not** prove |
 |-----------|------------|----------------------|---------------------|
