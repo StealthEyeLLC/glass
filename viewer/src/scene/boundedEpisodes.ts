@@ -47,6 +47,9 @@ export interface BoundedEpisodeV0 {
 
 export interface BoundedSceneEpisodesV0 {
   readonly kind: typeof BOUNDED_EPISODES_KIND;
+  /** Plain-language lead (Vertical Slice v27). */
+  readonly honestyLineSimple: string;
+  /** Exact bounded episode rules (technical layer). */
   readonly honestyLine: string;
   readonly episodes: readonly BoundedEpisodeV0[];
 }
@@ -77,6 +80,9 @@ function makeEpisode(
     isPrimary,
   };
 }
+
+const HONESTY_SIMPLE =
+  "Story cards summarize patterns from what changed and what’s on screen — not a full timeline or hidden intent.";
 
 const HONESTY =
   "Episodes are rule-based summaries from bounded compare + scene fields in this viewer — not full history, not intent, not topology.";
@@ -117,6 +123,7 @@ export function computeBoundedSceneEpisodes(input: ComputeBoundedEpisodesInput):
   if (!compare.available || baselineScene === null) {
     return {
       kind: BOUNDED_EPISODES_KIND,
+      honestyLineSimple: HONESTY_SIMPLE,
       honestyLine: HONESTY,
       episodes: [
         makeEpisode(
@@ -314,6 +321,7 @@ export function computeBoundedSceneEpisodes(input: ComputeBoundedEpisodesInput):
 
   return {
     kind: BOUNDED_EPISODES_KIND,
+    honestyLineSimple: HONESTY_SIMPLE,
     honestyLine: HONESTY,
     episodes: out.slice(0, BOUNDED_EPISODE_CARD_MAX),
   };

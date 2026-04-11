@@ -18,10 +18,22 @@ export function renderBoundedEpisodesInto(
 ): void {
   container.replaceChildren();
 
+  const lead = document.createElement("p");
+  lead.className = "glass-bounded-episodes-lead";
+  lead.setAttribute("data-testid", `${options.testIdPrefix}-bounded-episodes-lead`);
+  lead.textContent = pack.honestyLineSimple;
+
+  const tech = document.createElement("details");
+  tech.className = "glass-trust-technical";
+  tech.setAttribute("data-testid", `${options.testIdPrefix}-bounded-episodes-technical`);
+  const techSum = document.createElement("summary");
+  techSum.className = "glass-trust-technical-summary";
+  techSum.textContent = "Exact story-card rules";
   const hon = document.createElement("p");
   hon.className = "glass-bounded-episodes-honesty";
   hon.setAttribute("data-testid", `${options.testIdPrefix}-bounded-episodes-honesty`);
   hon.textContent = pack.honestyLine;
+  tech.append(techSum, hon);
 
   const row = document.createElement("div");
   row.className = "glass-bounded-episodes-row";
@@ -57,5 +69,5 @@ export function renderBoundedEpisodesInto(
     row.appendChild(card);
   }
 
-  container.append(hon, row);
+  container.append(lead, tech, row);
 }

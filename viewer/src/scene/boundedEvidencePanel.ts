@@ -2,6 +2,7 @@
  * DOM rendering for Vertical Slice v9–v16 bounded evidence drilldown — thin view over pure model output.
  */
 
+import { VERTICAL_SLICE_V27_EVIDENCE_LEAD } from "../app/verticalSliceV0.js";
 import type { GlassSceneV0 } from "./glassSceneV0.js";
 import type { GlassEvent } from "../pack/types.js";
 import type { LiveVisualSpec } from "../live/liveVisualModel.js";
@@ -83,12 +84,25 @@ export function renderBoundedEvidenceInto(
   trust.className = "glass-bounded-evidence-trust";
   trust.setAttribute("data-testid", "glass-bounded-evidence-trust");
 
+  const lead = document.createElement("p");
+  lead.className = "glass-bounded-evidence-lead";
+  lead.setAttribute("data-testid", "glass-bounded-evidence-lead");
+  lead.textContent = VERTICAL_SLICE_V27_EVIDENCE_LEAD;
+  trust.appendChild(lead);
+
+  const authorityDetails = document.createElement("details");
+  authorityDetails.className = "glass-trust-technical glass-bounded-evidence-authority-details";
+  authorityDetails.setAttribute("data-testid", "glass-bounded-evidence-authority-technical");
+  const authSum = document.createElement("summary");
+  authSum.className = "glass-trust-technical-summary";
+  authSum.textContent = "Exact scope & limits";
+
   const authority = document.createElement("section");
   authority.className = "glass-bounded-evidence-section glass-bounded-evidence-section--authority";
 
   const kAuthority = document.createElement("span");
   kAuthority.className = "glass-bounded-evidence-kicker";
-  kAuthority.textContent = "Bounded scope";
+  kAuthority.textContent = "What this covers";
 
   const scope = document.createElement("p");
   scope.className = "glass-bounded-evidence-scope";
@@ -96,14 +110,15 @@ export function renderBoundedEvidenceInto(
 
   const kHon = document.createElement("span");
   kHon.className = "glass-bounded-evidence-kicker";
-  kHon.textContent = "Honesty";
+  kHon.textContent = "Technical limits";
 
   const hon = document.createElement("p");
   hon.className = "glass-bounded-evidence-honesty";
   hon.textContent = drilldown.honestyLine;
 
   authority.append(kAuthority, scope, kHon, hon);
-  trust.appendChild(authority);
+  authorityDetails.append(authSum, authority);
+  trust.appendChild(authorityDetails);
 
   const context = document.createElement("div");
   context.className = "glass-bounded-evidence-context";
@@ -152,13 +167,6 @@ export function renderBoundedEvidenceInto(
       p.textContent = options.episodeContextLine;
       align.appendChild(p);
     }
-    if (options?.episodeHonestyNote) {
-      const p = document.createElement("p");
-      p.className = "glass-bounded-evidence-episode-honesty";
-      p.setAttribute("data-testid", "bounded-evidence-episode-honesty");
-      p.textContent = options.episodeHonestyNote;
-      align.appendChild(p);
-    }
     if (options?.claimContextLine) {
       const p = document.createElement("p");
       p.className = "glass-bounded-evidence-claim";
@@ -166,12 +174,28 @@ export function renderBoundedEvidenceInto(
       p.textContent = options.claimContextLine;
       align.appendChild(p);
     }
-    if (options?.claimDoesNotImplyLine) {
-      const p = document.createElement("p");
-      p.className = "glass-bounded-evidence-claim-not";
-      p.setAttribute("data-testid", "bounded-evidence-claim-not");
-      p.textContent = options.claimDoesNotImplyLine;
-      align.appendChild(p);
+    if (options?.episodeHonestyNote || options?.claimDoesNotImplyLine) {
+      const fine = document.createElement("details");
+      fine.className = "glass-trust-technical";
+      fine.setAttribute("data-testid", "glass-bounded-evidence-alignment-technical");
+      const fineSum = document.createElement("summary");
+      fineSum.className = "glass-trust-technical-summary";
+      fineSum.textContent = "Story-card & claim fine print";
+      if (options?.episodeHonestyNote) {
+        const p = document.createElement("p");
+        p.className = "glass-bounded-evidence-episode-honesty";
+        p.setAttribute("data-testid", "bounded-evidence-episode-honesty");
+        p.textContent = options.episodeHonestyNote;
+        fine.appendChild(p);
+      }
+      if (options?.claimDoesNotImplyLine) {
+        const p = document.createElement("p");
+        p.className = "glass-bounded-evidence-claim-not";
+        p.setAttribute("data-testid", "bounded-evidence-claim-not");
+        p.textContent = options.claimDoesNotImplyLine;
+        fine.appendChild(p);
+      }
+      align.appendChild(fine);
     }
     trust.appendChild(align);
   }
@@ -181,7 +205,7 @@ export function renderBoundedEvidenceInto(
     sec.className = "glass-bounded-evidence-section";
     const h = document.createElement("span");
     h.className = "glass-bounded-evidence-section-heading";
-    h.textContent = "Facts (bounded)";
+    h.textContent = "Facts";
     const ul = document.createElement("ul");
     ul.className = "glass-bounded-evidence-facts";
     for (const f of drilldown.facts) {

@@ -104,6 +104,7 @@ describe("buildReplayTemporalLensView", () => {
     const v = buildReplayTemporalLensView([s0, s1], 1, 3, null);
     expect(v.stepChips.some((c) => c.isCurrent && c.eventIndex === 1)).toBe(true);
     expect(v.ringEntries[v.ringEntries.length - 1]?.isCurrent).toBe(true);
+    expect(v.honesty.lineSimple.length).toBeGreaterThan(10);
     expect(v.honesty.line.length).toBeGreaterThan(10);
   });
 });

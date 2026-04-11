@@ -580,3 +580,39 @@
   background: #f8fafc;
   border-color: #94a3b8;
 }
+
+/* --- Vertical Slice v27 — simple layer + deliberate technical <details> --- */
+.glass-trust-technical {
+  margin: 0.45rem 0 0;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  background: #f8fafc;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #334155;
+}
+
+.glass-trust-technical-summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #0f172a;
+  list-style-position: outside;
+}
+
+.glass-trust-technical .glass-bounded-claims-honesty,
+.glass-trust-technical .glass-bounded-episodes-honesty,
+.glass-trust-technical .glass-bounded-temporal-honesty {
+  margin-top: 0.35rem;
+}
+
+.glass-bounded-claims-lead,
+.glass-bounded-episodes-lead,
+.glass-bounded-temporal-honesty-simple,
+.glass-bounded-evidence-lead {
+  margin: 0 0 0.4rem;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: #1e293b;
+  font-weight: 500;
+}

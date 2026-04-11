@@ -16,16 +16,26 @@ export const VERTICAL_SLICE_FLAGSHIP_V18_PACK_FILE = "canonical_v15_append_heavy
 /** Dev server: `npm run dev` + this query loads the flagship bytes from the repo fixture (see devFixtureRoute). */
 export const VERTICAL_SLICE_FLAGSHIP_V18_DEV_QUERY_HINT = "?fixture=flagship" as const;
 
+/** Technical / docs — full flagship path description (details layer). */
 export const VERTICAL_SLICE_FLAGSHIP_V18_TITLE = "Flagship bounded demo";
 
 export const VERTICAL_SLICE_FLAGSHIP_V18_BODY =
   "Primary product path: the canonical append-heavy pack (14× process_poll_sample, session canonical_v15_append_heavy). It exercises append wire mode late in the prefix, replay-prefix honesty, bounded compare growth, evidence tail rows, episodes, receipts, and the temporal lens — more depth than the minimal vertical_slice_v0 smoke pack (3 events), without a second compiler or lane.";
 
+/** Vertical Slice v27 — simple flagship surface (default visible copy). */
+export const VERTICAL_SLICE_V27_FLAGSHIP_TITLE_SIMPLE = "Flagship session";
+
+export const VERTICAL_SLICE_V27_FLAGSHIP_BODY_SIMPLE =
+  "The deep demo pack in this repo: many process samples, rich compare, evidence rows, story cards, claims, receipt, and time context — one file, full story.";
+
 /**
  * Single scenario: honest bounded operator visibility (replace / append / resync on one strip).
- * Not topology, not full history — same story as Scene v0 + Drawable Primitives v0.
+ * Not topology, not full history — same story as Scene System v0 + Drawable Primitives v0.
  */
 export const VERTICAL_SLICE_SCENARIO_TITLE = "Bounded operator visibility";
+
+/** Vertical Slice v27 — plain-language scenario (default layer). */
+export const VERTICAL_SLICE_V27_SCENARIO_TITLE_SIMPLE = "What this view is for";
 
 /**
  * Demo label only — same bounded strip as everywhere else; not a separate lane or storyboard telemetry.
@@ -33,8 +43,13 @@ export const VERTICAL_SLICE_SCENARIO_TITLE = "Bounded operator visibility";
  */
 export const VERTICAL_SLICE_SCENARIO_LABEL = "Agent expectations vs honest bounds";
 
+export const VERTICAL_SLICE_V27_SCENARIO_LABEL_SIMPLE = "Expectations vs what the data actually shows";
+
 export const VERTICAL_SLICE_SCENARIO_BODY =
   "One path: the same Glass Scene System v0 strip and Drawable Primitives semantics in replay (index-ordered prefix from a pack) and in live (bounded WebSocket tail + optional HTTP reconcile). Wire-mode slots are real roles — not a process graph or invented continuity.";
+
+export const VERTICAL_SLICE_V27_SCENARIO_BODY_SIMPLE =
+  "One path: the same on-screen strip in replay (saved session file) and live (what the bridge is sending now). Slots show real roles — not a drawn process graph or invented history.";
 
 /**
  * Vertical Slice v26 — first-run hero lead: what to do, not how the dev server is launched.
@@ -43,13 +58,17 @@ export const VERTICAL_SLICE_SCENARIO_BODY =
 export const VERTICAL_SLICE_V26_REPLAY_HERO_LEAD =
   "Tier B static replay is the default surface. Open the flagship append-heavy pack for the full bounded story — compare, evidence, claims, receipt, temporal lens. Minimal smoke packs and breadth scenarios stay in-repo for CI; you do not need them for a first read.";
 
+/** Vertical Slice v27 — default hero subtitle (plain language). */
+export const VERTICAL_SLICE_V27_REPLAY_HERO_LEAD =
+  "Open the flagship demo pack to walk scene → what changed → evidence → claim → receipt. Other packs in the repo are for breadth checks; you can ignore them for a first read.";
+
 /** Checkout-relative paths, CI roles, and dev auto-load — for advanced/docs only. */
 export function replayHeroSubtitleTechnical(): string {
   return "Minimal smoke: tests/fixtures/vertical_slice_v0/ Tier B (3 events) for fast CI. Canonical suite packs under tests/fixtures/canonical_scenarios_v15/ prove breadth (replace, calm, file-heavy). Development: npm run dev with ?fixture=flagship loads the flagship bytes without picking a path from disk.";
 }
 
 export function replayHeroSubtitle(): string {
-  return VERTICAL_SLICE_V26_REPLAY_HERO_LEAD;
+  return VERTICAL_SLICE_V27_REPLAY_HERO_LEAD;
 }
 
 /** Flagship callout — one sentence for scanning; no npm/query in the primary line. */
@@ -65,8 +84,15 @@ export const VERTICAL_SLICE_V26_LIVE_INTRO_HONEST =
   "Live mode runs in this browser against a bridge on your machine — not a hosted Glass service. Expand Connection settings when you have a loopback URL, bearer token, and session id; bounded replay (default) needs no bridge.";
 
 export function liveHeroSubtitle(): string {
-  return "Same strip, selection, compare, evidence, claims, and episodes as replay — driven by the bounded WebSocket tail and HTTP snapshot. The flagship replay path (append-heavy canonical) defines the vocabulary; live proves the same surfaces under wire deltas.";
+  return VERTICAL_SLICE_V27_LIVE_HERO_LEAD;
 }
+
+export const VERTICAL_SLICE_V27_LIVE_HERO_LEAD =
+  "Same surfaces as replay — driven by the live feed and the snapshot the bridge returns. The flagship replay pack defines the vocabulary; live shows the same trust panels under real wire updates.";
+
+/** Live shell — short line tying panels to the flagship replay vocabulary (default layer). */
+export const VERTICAL_SLICE_V27_LIVE_FLAGSHIP_NOTE_SIMPLE =
+  "Replay and live share the same panels — the flagship replay pack in the repo is the vocabulary reference.";
 
 /** Freeze-candidate product framing — use sparingly (README, flagship callout, reading order). */
 export const GLASS_FLAGSHIP_CHAIN_ONE_LINER =
@@ -75,16 +101,40 @@ export const GLASS_FLAGSHIP_CHAIN_ONE_LINER =
 export const GLASS_FLAGSHIP_CHAIN_DOC =
   "Glass lets you move from bounded scene state, to what changed, to supporting evidence, to the exact bounded claim you can make — without pretending to know more than it does." as const;
 
+/** Vertical Slice v27 — one short framing line for the default callout (not slogan-spam). */
+export const VERTICAL_SLICE_V27_FLAGSHIP_FRAMING_SIMPLE =
+  "Glass walks from what you see, to what changed, to supporting rows, to what you can honestly claim — without extra theater.";
+
 /**
  * Vertical Slice v20 — external-style audit: one explicit reading order reduces first-run “internal tool” confusion.
  * Not a workflow engine — copy only. v21 weaves in freeze-candidate flagship framing (scene → change → evidence → receipt).
+ * v27: split into simple + technical; `VERTICAL_SLICE_V20_READING_ORDER_REPLAY` points at the technical layer for tests.
  */
-export const VERTICAL_SLICE_V20_READING_ORDER_REPLAY =
-  `${GLASS_FLAGSHIP_CHAIN_ONE_LINER} Suggested scan: scene canvas → bounded evidence (scope + rows) → episode cards → claim chips → receipt → temporal lens (compare baseline). Replay uses an index-ordered pack prefix; receipts/evidence are viewer-derived from bounded frames — not collector certificates.`;
+export const VERTICAL_SLICE_V27_READING_ORDER_REPLAY_SIMPLE =
+  "Suggested scan: scene → what changed → evidence → story cards → claims → receipt → time context. Everything is based on the events loaded up to your current replay step — not the whole system, not a collector certificate.";
 
-export const VERTICAL_SLICE_V20_READING_ORDER_LIVE =
-  `${GLASS_FLAGSHIP_CHAIN_ONE_LINER} Suggested scan: scene → bounded evidence → episodes → claims → receipt → temporal lens. WS tail + HTTP snapshot are distinct inputs — not one merged history; same trust surfaces as replay.`;
+export const VERTICAL_SLICE_V27_READING_ORDER_REPLAY_TECHNICAL = `${GLASS_FLAGSHIP_CHAIN_ONE_LINER} Suggested scan: scene canvas → bounded evidence (scope + rows) → episode cards → claim chips → receipt → temporal lens (compare baseline). Replay uses an index-ordered pack prefix; receipts/evidence are viewer-derived from bounded frames — not collector certificates.`;
+
+/** @deprecated Prefer `VERTICAL_SLICE_V27_READING_ORDER_REPLAY_TECHNICAL` — retained for tests expecting v20 string. */
+export const VERTICAL_SLICE_V20_READING_ORDER_REPLAY =
+  VERTICAL_SLICE_V27_READING_ORDER_REPLAY_TECHNICAL;
+
+export const VERTICAL_SLICE_V27_READING_ORDER_LIVE_SIMPLE =
+  "Suggested scan: scene → what changed → evidence → story cards → claims → receipt → time context. Live feed and HTTP snapshot stay separate inputs — not one merged history.";
+
+export const VERTICAL_SLICE_V27_READING_ORDER_LIVE_TECHNICAL = `${GLASS_FLAGSHIP_CHAIN_ONE_LINER} Suggested scan: scene → bounded evidence → episodes → claims → receipt → temporal lens. WS tail + HTTP snapshot are distinct inputs — not one merged history; same trust surfaces as replay.`;
+
+/** @deprecated Prefer `VERTICAL_SLICE_V27_READING_ORDER_LIVE_TECHNICAL`. */
+export const VERTICAL_SLICE_V20_READING_ORDER_LIVE = VERTICAL_SLICE_V27_READING_ORDER_LIVE_TECHNICAL;
 
 /** Shown when receipt is empty after a temporal compare-baseline override (v19/v20 handoff). */
 export const RECEIPT_EMPTY_SUPPLEMENT_AFTER_TEMPORAL_BASELINE =
-  "Compare baseline changed: scrub/step or play (replay), or wait for the next live frame, to restore suggested claim highlighting — or select a claim chip explicitly.";
+  "The compare baseline just moved — scrub or play a step to refresh suggested highlights, or pick a claim explicitly.";
+
+/** Receipt panel — empty state (simple layer). */
+export const VERTICAL_SLICE_V27_RECEIPT_EMPTY_SIMPLE =
+  "No claim receipt yet — pick a claim chip or a story card.";
+
+/** Evidence panel — first line (simple layer). */
+export const VERTICAL_SLICE_V27_EVIDENCE_LEAD =
+  "Rows and facts here match what you’ve stepped through in this view — not the whole machine.";

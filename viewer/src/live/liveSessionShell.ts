@@ -101,10 +101,13 @@ import {
   RECEIPT_EMPTY_SUPPLEMENT_AFTER_TEMPORAL_BASELINE,
   VERTICAL_SLICE_FLAGSHIP_V18_BODY,
   VERTICAL_SLICE_FLAGSHIP_V18_TITLE,
-  VERTICAL_SLICE_SCENARIO_BODY,
-  VERTICAL_SLICE_SCENARIO_LABEL,
-  VERTICAL_SLICE_SCENARIO_TITLE,
-  VERTICAL_SLICE_V20_READING_ORDER_LIVE,
+  VERTICAL_SLICE_V27_FLAGSHIP_FRAMING_SIMPLE,
+  VERTICAL_SLICE_V27_LIVE_FLAGSHIP_NOTE_SIMPLE,
+  VERTICAL_SLICE_V27_READING_ORDER_LIVE_SIMPLE,
+  VERTICAL_SLICE_V27_READING_ORDER_LIVE_TECHNICAL,
+  VERTICAL_SLICE_V27_SCENARIO_BODY_SIMPLE,
+  VERTICAL_SLICE_V27_SCENARIO_LABEL_SIMPLE,
+  VERTICAL_SLICE_V27_SCENARIO_TITLE_SIMPLE,
   VERTICAL_SLICE_V26_LIVE_INTRO_HONEST,
   liveHeroSubtitle,
 } from "../app/verticalSliceV0.js";
@@ -161,29 +164,62 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   hero.setAttribute("data-testid", "live-vs-hero");
   hero.append(
     el("h1", "glass-vs-title", "Glass — Vertical Slice v0"),
-    el("p", "glass-vs-badge", "Bounded live session (local)"),
-    el("p", "glass-vs-scenario-kicker", `${VERTICAL_SLICE_SCENARIO_TITLE} · live`),
-    el("p", "glass-vs-nickname", VERTICAL_SLICE_SCENARIO_LABEL),
+    el("p", "glass-vs-badge", "Live session (this machine)"),
+    el("p", "glass-vs-scenario-kicker", `${VERTICAL_SLICE_V27_SCENARIO_TITLE_SIMPLE} · live`),
+    el("p", "glass-vs-nickname", VERTICAL_SLICE_V27_SCENARIO_LABEL_SIMPLE),
     el("p", "glass-vs-subtitle", liveHeroSubtitle()),
-    el("p", "glass-vs-scenario", VERTICAL_SLICE_SCENARIO_BODY),
+    el("p", "glass-vs-scenario", VERTICAL_SLICE_V27_SCENARIO_BODY_SIMPLE),
     (() => {
-      const p = el(
-        "p",
-        "glass-flagship-live-note",
-        `${VERTICAL_SLICE_FLAGSHIP_V18_TITLE} (replay): ${VERTICAL_SLICE_FLAGSHIP_V18_BODY}`,
-      );
+      const p = el("p", "glass-flagship-live-note", VERTICAL_SLICE_V27_LIVE_FLAGSHIP_NOTE_SIMPLE);
       p.setAttribute("data-testid", "live-flagship-note");
       return p;
     })(),
     (() => {
-      const p = el("p", "glass-flagship-live-framing", GLASS_FLAGSHIP_CHAIN_DOC);
+      const noteTech = document.createElement("details");
+      noteTech.className = "glass-trust-technical glass-flagship-live-note-technical";
+      noteTech.setAttribute("data-testid", "live-flagship-note-technical");
+      const noteTechSum = document.createElement("summary");
+      noteTechSum.className = "glass-trust-technical-summary";
+      noteTechSum.textContent = "Flagship session (exact)";
+      const noteTechBody = el(
+        "p",
+        "glass-flagship-live-note-body",
+        `${VERTICAL_SLICE_FLAGSHIP_V18_TITLE} (replay): ${VERTICAL_SLICE_FLAGSHIP_V18_BODY}`,
+      );
+      noteTech.append(noteTechSum, noteTechBody);
+      return noteTech;
+    })(),
+    (() => {
+      const p = el("p", "glass-flagship-live-framing", VERTICAL_SLICE_V27_FLAGSHIP_FRAMING_SIMPLE);
       p.setAttribute("data-testid", "live-flagship-framing");
       return p;
     })(),
     (() => {
-      const p = el("p", "glass-vs-reading-order-live", VERTICAL_SLICE_V20_READING_ORDER_LIVE);
-      p.setAttribute("data-testid", "live-reading-order");
-      return p;
+      const framingTech = document.createElement("details");
+      framingTech.className = "glass-trust-technical glass-flagship-live-framing-technical";
+      framingTech.setAttribute("data-testid", "live-flagship-framing-technical");
+      const framingTechSum = document.createElement("summary");
+      framingTechSum.className = "glass-trust-technical-summary";
+      framingTechSum.textContent = "Exact product framing";
+      const framingTechBody = el("p", "glass-flagship-live-framing-body", GLASS_FLAGSHIP_CHAIN_DOC);
+      framingTech.append(framingTechSum, framingTechBody);
+      return framingTech;
+    })(),
+    (() => {
+      const wrap = el("div", "glass-vs-reading-order-live-wrap");
+      wrap.setAttribute("data-testid", "live-reading-order");
+      const simple = el("p", "glass-vs-reading-order-live", VERTICAL_SLICE_V27_READING_ORDER_LIVE_SIMPLE);
+      simple.setAttribute("data-testid", "live-reading-order-simple");
+      const tech = document.createElement("details");
+      tech.className = "glass-trust-technical glass-vs-reading-order-live-technical";
+      tech.setAttribute("data-testid", "live-reading-order-technical");
+      const techSum = document.createElement("summary");
+      techSum.className = "glass-trust-technical-summary";
+      techSum.textContent = "Exact scan order & limits";
+      const techBody = el("p", "glass-vs-reading-order-live glass-vs-reading-order-live--technical", VERTICAL_SLICE_V27_READING_ORDER_LIVE_TECHNICAL);
+      tech.append(techSum, techBody);
+      wrap.append(simple, tech);
+      return wrap;
     })(),
   );
 
@@ -426,9 +462,21 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const visualIntro = el(
     "div",
     "glass-live-field",
-    "Vertical Slice v0 — same strip + trust band as replay (selection, evidence, episodes, claims, temporal lens). Canvas 2D and/or WebGPU quads + Canvas text overlay; hybrid fallback is a supported mode — not topology.",
+    "Same panels as replay: scene canvas, then evidence, story cards, claims, receipt, time context. Canvas 2D and/or WebGPU — not a drawn topology.",
   );
   visualIntro.setAttribute("id", "live-visual-surface-title");
+  const visualIntroTechnical = document.createElement("details");
+  visualIntroTechnical.className = "glass-trust-technical glass-live-visual-intro-technical";
+  visualIntroTechnical.setAttribute("data-testid", "live-visual-surface-intro-technical");
+  const visualIntroTechnicalSum = document.createElement("summary");
+  visualIntroTechnicalSum.className = "glass-trust-technical-summary";
+  visualIntroTechnicalSum.textContent = "Live visual surface (exact)";
+  const visualIntroTechnicalBody = el(
+    "p",
+    "glass-live-field glass-live-field--technical",
+    "Vertical Slice v0 — same strip + trust band as replay (selection, evidence, episodes, claims, temporal lens). Canvas 2D and/or WebGPU quads + Canvas text overlay; hybrid fallback is a supported mode — not topology.",
+  );
+  visualIntroTechnical.append(visualIntroTechnicalSum, visualIntroTechnicalBody);
   const visualGpuStatus = el("p", "glass-live-visual-gpu-status");
   visualGpuStatus.setAttribute("data-testid", "live-visual-gpu-status");
   let webGpuStatus: WebGpuLiveStatus = initialWebGpuLiveStatus(navigator);
@@ -475,42 +523,26 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   visualLegend.setAttribute("data-testid", "live-visual-legend");
   visualLegend.setAttribute("id", "live-visual-legend");
   visualLegend.textContent = formatLiveVisualLegendBlock();
-  const boundedInspectorTitle = el(
-    "h4",
-    "glass-bounded-inspector-title",
-    "Bounded scene selection (Vertical Slice v7)",
-  );
+  const boundedInspectorTitle = el("h4", "glass-bounded-inspector-title", "Selection details");
   const boundedInspectorPre = el("pre", "glass-bounded-inspector");
   boundedInspectorPre.setAttribute("data-testid", "live-bounded-inspector");
-  const boundedEvidenceTitle = el(
-    "h4",
-    "glass-bounded-evidence-heading",
-    "Bounded evidence (Vertical Slice v10)",
-  );
+  const boundedEvidenceTitle = el("h4", "glass-bounded-evidence-heading", "Evidence");
   const boundedEvidenceRoot = el("div", "glass-bounded-evidence-root");
   boundedEvidenceRoot.setAttribute("data-testid", "live-bounded-evidence");
   const boundedEvidenceCrosslinkNote = el("p", "glass-bounded-evidence-crosslink-note");
   boundedEvidenceCrosslinkNote.setAttribute("data-testid", "live-bounded-evidence-crosslink-note");
   boundedEvidenceCrosslinkNote.setAttribute("aria-live", "polite");
-  const boundedEpisodeTitle = el(
-    "h4",
-    "glass-bounded-episodes-title",
-    "Bounded episodes (Vertical Slice v12)",
-  );
+  const boundedEpisodeTitle = el("h4", "glass-bounded-episodes-title", "Story cards");
   boundedEpisodeTitle.setAttribute("data-testid", "live-bounded-episodes-heading");
   const boundedEpisodeRoot = el("div", "glass-bounded-episodes-root");
   boundedEpisodeRoot.setAttribute("data-testid", "live-bounded-episodes-root");
-  const boundedClaimTitle = el("h4", "glass-bounded-claims-title", "Bounded claims (Vertical Slice v16)");
+  const boundedClaimTitle = el("h4", "glass-bounded-claims-title", "Claims");
   boundedClaimTitle.setAttribute("data-testid", "live-bounded-claims-heading");
   const boundedClaimStripRoot = el("div", "glass-bounded-claims-strip-root");
   boundedClaimStripRoot.setAttribute("data-testid", "live-bounded-claims-strip-root");
   const boundedClaimReceiptRoot = el("div", "glass-bounded-claim-receipt-root");
   boundedClaimReceiptRoot.setAttribute("data-testid", "live-bounded-claim-receipt-root");
-  const boundedTemporalTitle = el(
-    "h4",
-    "glass-bounded-temporal-title",
-    "Bounded temporal lens (Vertical Slice v12)",
-  );
+  const boundedTemporalTitle = el("h4", "glass-bounded-temporal-title", "Time context");
   const boundedTemporalRoot = el("div", "glass-bounded-temporal-root");
   boundedTemporalRoot.setAttribute("data-testid", "live-temporal-lens-root");
   visualCanvas.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
@@ -518,6 +550,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   visualCanvasTextOverlay.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
   visualSurface.append(
     visualIntro,
+    visualIntroTechnical,
     visualGpuStatus,
     visualCanvasStack,
     visualFallback,

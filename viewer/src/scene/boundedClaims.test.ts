@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { VERTICAL_SLICE_V27_RECEIPT_EMPTY_SIMPLE } from "../app/verticalSliceV0.js";
 import { createInitialLiveSessionModelState } from "../live/applyLiveSessionMessage.js";
 import { computeBoundedEvidenceDrilldown } from "./boundedEvidenceDrilldown.js";
 import { computeBoundedSceneCompare } from "./boundedSceneCompare.js";
@@ -282,9 +283,7 @@ describe("renderBoundedClaimsInto / renderBoundedClaimReceiptInto", () => {
     const root = document.createElement("div");
     renderBoundedClaimReceiptInto(root, null, { testIdPrefix: "replay" });
     const empty = root.querySelector('[data-testid="replay-bounded-claim-receipt-empty"]');
-    expect(empty?.textContent).toBe(
-      "No active bounded receipt — select a claim chip or an episode card.",
-    );
+    expect(empty?.textContent).toBe(VERTICAL_SLICE_V27_RECEIPT_EMPTY_SIMPLE);
   });
 
   it("renders empty receipt supplement when temporal baseline handoff applies (v20)", () => {

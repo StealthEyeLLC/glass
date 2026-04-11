@@ -13,6 +13,9 @@ export const BOUNDED_TEMPORAL_RING_MAX = 5 as const;
 export const BOUNDED_TEMPORAL_STEP_NEIGHBOR_DEFAULT = 2 as const;
 
 export interface BoundedTemporalLensHonestyV0 {
+  /** Plain-language lead (Vertical Slice v27). */
+  readonly lineSimple: string;
+  /** Exact bounded semantics (technical layer). */
   readonly line: string;
 }
 
@@ -42,8 +45,14 @@ export interface BoundedTemporalLensViewV0 {
   readonly showResetBaseline: boolean;
 }
 
+const HONESTY_REPLAY_SIMPLE =
+  "Steps jump to positions in the loaded session; recent frames help pick what to compare against.";
+
 const HONESTY_REPLAY =
   "Replay: step chips are pack indices near the scrub cursor; paint ring is the last few bounded frames this viewer actually painted (not full history).";
+
+const HONESTY_LIVE_SIMPLE =
+  "Recent frames are what this tab has painted from the live feed — not a full durable log.";
 
 const HONESTY_LIVE =
   "Live: paint ring is the last few bounded frames this viewer painted (WS tail + compile — not a durable server log).";
@@ -173,7 +182,7 @@ export function buildReplayTemporalLensView(
   });
   return {
     kind: BOUNDED_TEMPORAL_LENS_KIND,
-    honesty: { line: HONESTY_REPLAY },
+    honesty: { lineSimple: HONESTY_REPLAY_SIMPLE, line: HONESTY_REPLAY },
     stepChips,
     ringEntries,
     baselineHonestyNote: honestyNote,
@@ -205,7 +214,7 @@ export function buildLiveTemporalLensView(
   });
   return {
     kind: BOUNDED_TEMPORAL_LENS_KIND,
-    honesty: { line: HONESTY_LIVE },
+    honesty: { lineSimple: HONESTY_LIVE_SIMPLE, line: HONESTY_LIVE },
     stepChips: [],
     ringEntries,
     baselineHonestyNote: honestyNote,

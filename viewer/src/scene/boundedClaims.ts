@@ -62,11 +62,17 @@ export interface BoundedClaimV0 {
 
 export interface BoundedSceneClaimsV0 {
   readonly kind: typeof BOUNDED_CLAIMS_KIND;
+  /** Plain-language lead (Vertical Slice v27). */
+  readonly honestyLineSimple: string;
+  /** Exact bounded derivation rules (technical layer). */
   readonly honestyLine: string;
   readonly claims: readonly BoundedClaimV0[];
   /** Highlight target when no explicit claim selection. */
   readonly primaryClaimId: string | null;
 }
+
+const PACK_HONESTY_SIMPLE =
+  "Claims use only what’s visible in this view — compare, selection, evidence, and story cards — not full history or intent.";
 
 const PACK_HONESTY =
   "Claims are derived only from bounded compare, scene fields, evidence drilldown, and episode cards in this viewer — not full history, not agent intent, not topology.";
@@ -426,6 +432,7 @@ export function computeBoundedSceneClaims(input: ComputeBoundedClaimsInput): Bou
 
   return {
     kind: BOUNDED_CLAIMS_KIND,
+    honestyLineSimple: PACK_HONESTY_SIMPLE,
     honestyLine: PACK_HONESTY,
     claims: claimsOut,
     primaryClaimId,

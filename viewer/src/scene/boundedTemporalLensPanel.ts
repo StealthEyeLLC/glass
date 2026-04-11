@@ -19,9 +19,21 @@ export function renderBoundedTemporalLensInto(
 ): void {
   container.replaceChildren();
 
+  const simple = document.createElement("p");
+  simple.className = "glass-bounded-temporal-honesty-simple";
+  simple.setAttribute("data-testid", "bounded-temporal-honesty-simple");
+  simple.textContent = view.honesty.lineSimple;
+
+  const tech = document.createElement("details");
+  tech.className = "glass-trust-technical";
+  tech.setAttribute("data-testid", "bounded-temporal-honesty-technical");
+  const techSum = document.createElement("summary");
+  techSum.className = "glass-trust-technical-summary";
+  techSum.textContent = "Exact time-context rules";
   const hon = document.createElement("p");
   hon.className = "glass-bounded-temporal-honesty";
   hon.textContent = view.honesty.line;
+  tech.append(techSum, hon);
 
   const note = document.createElement("p");
   note.className = "glass-bounded-temporal-baseline-note";
@@ -42,7 +54,7 @@ export function renderBoundedTemporalLensInto(
     row.setAttribute("data-testid", "bounded-temporal-step-row");
     const lab = document.createElement("span");
     lab.className = "glass-bounded-temporal-row-label";
-    lab.textContent = "Steps (bounded):";
+    lab.textContent = "Steps near your position:";
     row.appendChild(lab);
     for (const c of view.stepChips) {
       const b = document.createElement("button");
@@ -68,7 +80,7 @@ export function renderBoundedTemporalLensInto(
     row.setAttribute("data-testid", "bounded-temporal-ring-row");
     const lab = document.createElement("span");
     lab.className = "glass-bounded-temporal-row-label";
-    lab.textContent = "Recent paints:";
+    lab.textContent = "Recent frames:";
     row.appendChild(lab);
     for (const e of view.ringEntries) {
       const b = document.createElement("button");
