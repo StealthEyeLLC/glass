@@ -56,3 +56,21 @@ fn vertical_slice_v0_tier_b_pack_present() {
         p.display()
     );
 }
+
+#[test]
+fn canonical_scenarios_v15_packs_present() {
+    let root = repo_root().join("tests/fixtures/canonical_scenarios_v15");
+    for f in [
+        "canonical_v15_replace_heavy.glass_pack",
+        "canonical_v15_append_heavy.glass_pack",
+        "canonical_v15_calm_steady.glass_pack",
+        "canonical_v15_file_heavy.glass_pack",
+    ] {
+        let p = root.join(f);
+        assert!(
+            p.is_file(),
+            "missing Vertical Slice v15 scenario pack: {}",
+            p.display()
+        );
+    }
+}

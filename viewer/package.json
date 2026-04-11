@@ -13,7 +13,9 @@
     "test": "vitest run",
     "lint": "eslint src --max-warnings 0",
     "fixture:vertical-slice": "node scripts/writeVerticalSliceFixture.mjs",
-    "verify:vertical-slice-fixture": "node scripts/verifyVerticalSliceFixture.mjs"
+    "verify:vertical-slice-fixture": "node scripts/verifyVerticalSliceFixture.mjs",
+    "fixture:canonical-scenarios-v15": "node scripts/writeCanonicalScenariosV15.mjs",
+    "verify:canonical-scenarios-v15": "node scripts/verifyCanonicalScenariosV15.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
