@@ -64,9 +64,18 @@ Live: WS tail and HTTP snapshot stay **separate**. Replay: index-ordered prefix;
 
 ---
 
-## Release media (optional)
+## Screenshots (bounded showcase)
 
-Screenshots / GIFs: **[docs/media/README.md](docs/media/README.md)** — ordered filenames, capture targets, redaction checklist. **Not** required to build or test.
+**How these were taken:** Vite dev server (`npm run dev` in `viewer/`); replay frames use **`?fixture=flagship`** → `canonical_v15_append_heavy.glass_pack`; live frame uses **`?live=1`**. Synthetic committed fixtures only — not production telemetry.
+
+| | |
+|:--|:--|
+| ![01 — Replay overview (flagship pack)](docs/media/01-replay-flagship-overview.png) | **01 — Replay overview.** Reading order, flagship callout, scene strip, bounded trust band (evidence → episodes → claims → receipt → temporal lens). |
+| ![02 — Claim chain / receipt](docs/media/02-claim-chain-receipt.png) | **02 — Claim chain.** Bounded claim chips + **`glass.receipt.v0`** receipt panel. |
+| ![03 — Temporal lens](docs/media/03-temporal-lens-compare.png) | **03 — Temporal lens.** Compare baseline context (bounded ring — not a full history timeline). |
+| ![04 — Live shell](docs/media/04-live-shell-overview.png) | **04 — Live shell.** `?live=1`: bridge form, bounded visual surface, provenance strip (loopback capture; no tokens). |
+
+Naming and re-capture checklist: **[docs/media/README.md](docs/media/README.md)**. Assets are **not** required to build or test.
 
 ---
 
@@ -79,7 +88,7 @@ Screenshots / GIFs: **[docs/media/README.md](docs/media/README.md)** — ordered
 | `graph_engine/` | Graph derivation (stub crate; no presentation) |
 | `collector/` | Linux collector binary (lifecycle stub only) |
 | `bridge/` | Local loopback bridge (`glass_bridge`) + resync types — HTTP/WS per docs |
-| `viewer/` | Tier B static replay + optional **`?live=1`** — **Vertical Slice v0–v24** ([docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md)) |
+| `viewer/` | Tier B static replay + optional **`?live=1`** — **Vertical Slice v0–v25** ([docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md)) |
 | `tools/glass-pack` | CLI: validate / inspect packs; strict kinds + share-safe vs raw-dev |
 | `tools/golden_scenes/` | Golden-scene harness scaffold |
 | `docs/` | Status, boundaries, tests, contracts, **media** guidance |
@@ -147,4 +156,4 @@ Default bridge listen: `127.0.0.1:9781`. **Live-session WebSocket** (`/ws`) — 
 
 ## Vertical slice (overview)
 
-One bounded narrative through replay and live. **v18** = flagship pack; **v15** = canonical suite; **v19–v22** = trust UX and freeze verdict; **v23** = public doc surface (**VISION.md**, reading order, media stubs); **v24** = public-repo landing audit (README order, media checklist) — **not** new subsystems. Details: [docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md).
+One bounded narrative through replay and live. **v18** = flagship pack; **v15** = canonical suite; **v19–v22** = trust UX and freeze verdict; **v23** = public doc surface; **v24** = landing audit; **v25** = committed **docs/media** PNGs for README — **not** new subsystems. Details: [docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md).

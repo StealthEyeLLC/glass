@@ -1,6 +1,19 @@
 # Release media (screenshots / GIFs)
 
-**Optional.** Nothing in this directory is required to build, test, or run Glass. **Do not commit** fabricated screenshots — capture the real viewer or use **synthetic fixtures** only.
+**Optional.** Nothing here is required to build, test, or run Glass.
+
+## Committed assets (README)
+
+These **PNG** files are checked in for the bounded showcase path (see root **README**):
+
+| File | Content |
+|------|---------|
+| `01-replay-flagship-overview.png` | Full static replay with **`?fixture=flagship`** — reading order through temporal lens. |
+| `02-claim-chain-receipt.png` | Claim strip + receipt panel (`glass.receipt.v0`). |
+| `03-temporal-lens-compare.png` | Temporal lens region (bounded compare baseline). |
+| `04-live-shell-overview.png` | **`?live=1`** shell — form + visual surface + provenance. |
+
+**GIF (optional, not committed):** `05-replay-scrub-flagship.gif` — short scrub; keep **under ~15s**, same fixture as 01.
 
 ## Ordered assets (preferred filenames)
 
@@ -13,11 +26,9 @@ Use this **order** when embedding in README or release notes (flagship story fir
 | 03 | `03-temporal-lens-compare.png` | **Temporal lens** + compare baseline context (replay) — shows **change** step is bounded, not a full timeline. |
 | 04 | `04-live-shell-overview.png` | **`?live=1`** — bridge form + bounded visual surface + provenance strip; **no** tokens, **no** secrets in frame. |
 
-**GIF (optional):** `05-replay-scrub-flagship.gif` — short scrub or step through flagship pack; keep **under ~15s**, **loop-friendly**, same fixture as 01.
-
 ## Flagship capture checklist
 
-Before adding **01**:
+Before replacing **01**:
 
 - [ ] Fixture is **`canonical_v15_append_heavy.glass_pack`** (or dev `?fixture=flagship`).
 - [ ] Window wide enough to show **scene** + at least one **trust** block (evidence or claims).
