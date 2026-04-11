@@ -1,5 +1,7 @@
 # Test strategy (bootstrap)
 
+**Public doc order (for context):** [README](../README.md) → [VISION.md](../VISION.md) → [VERTICAL_SLICE_V0.md](VERTICAL_SLICE_V0.md) → [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) → this file.
+
 Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaffolded; behavior grows in Phase 5–7.
 
 ## Rust (`cargo test --workspace`)

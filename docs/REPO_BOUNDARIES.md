@@ -1,5 +1,7 @@
 # Repository boundaries
 
+**Public context:** [README](../README.md) and [VISION.md](../VISION.md) state product scope; this file is **ownership**, not positioning.
+
 **Spec §8A.1** — one role per top-level tree; no hidden coupling.
 
 ## Ownership
