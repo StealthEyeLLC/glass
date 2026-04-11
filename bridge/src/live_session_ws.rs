@@ -9,8 +9,8 @@
 //!
 //! **F-03 v0 (frozen for this module):** per-connection queue; max **events** OR max **UTF-8 bytes** (sum of
 //! queued line lengths) triggers coalesce to the **latest** `session_snapshot_replaced` payload, then a
-//! mandatory `session_resync_required` — no silent continuity. See `docs/F03_LIVE_BACKLOG_FREEZE_PROPOSAL.md`
-//! and `docs/PHASE0_FREEZE_TRACKER.md`.
+//! mandatory `session_resync_required` — no silent continuity. See `docs/history/PHASE0_FREEZE_HISTORY.md`
+//! and `docs/history/PHASE0_FREEZE_HISTORY.md`.
 //!
 //! **`session_delta` v0:** optional additive frames when `GLASS_BRIDGE_SESSION_DELTA_WIRE_V0=1` **and**
 //! the client sends `session_delta_wire: true` on subscribe — emitted **only** when a successful F-IPC poll

@@ -63,13 +63,14 @@ Capture notes and file order: **[docs/media/README.md](docs/media/README.md)**.
 
 | Doc | Use |
 |-----|-----|
+| **[docs/README.md](docs/README.md)** | Docs index: current truth vs proof vs history |
 | **[VISION.md](VISION.md)** | Product scope, strategy, honest boundary |
 | **[docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)** | What is implemented now |
 | **[docs/TEST_STRATEGY.md](docs/TEST_STRATEGY.md)** | Verification map and CI coverage |
 | **[docs/REPO_BOUNDARIES.md](docs/REPO_BOUNDARIES.md)** | Ownership and layering |
 | **[docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md)** | Milestone history behind the current surface |
 
-**Long-horizon references (not the current launch contract):** `GLASS_FULL_ENGINEERING_SPEC_v10.md` · `GLASS_V0_BUILD_PLAN.md`
+**Long-horizon references (not the current launch contract):** `docs/long-horizon/GLASS_FULL_ENGINEERING_SPEC_v10.md` · `docs/long-horizon/GLASS_V0_BUILD_PLAN.md`
 
 ## Flagship Depth vs Breadth
 

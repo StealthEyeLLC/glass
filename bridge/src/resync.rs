@@ -1,10 +1,10 @@
 //! Stale-viewer resync contract (spec §18A.3, build plan).
 //!
 //! **Bounded-era F-04 is frozen:** [`RESYNC_HINT_REASON_*`] are the single source of truth for JSON
-//! `resync_hint.reason` on `GET /sessions/:id/snapshot` — see `docs/PHASE0_FREEZE_TRACKER.md` (Closed F-04).
+//! `resync_hint.reason` on `GET /sessions/:id/snapshot` — see `docs/history/PHASE0_FREEZE_HISTORY.md` (Closed F-04).
 //! [`PROVISIONAL_BACKLOG_EVENT_THRESHOLD`] and live backlog / `ipc_gap` reasons remain **deferred** until live
 //! ingest exists. **F-03** live WS queue caps: [`crate::live_session_ws`] (`F03_V0_LIVE_WS_QUEUE_MAX_*`); this
-//! threshold is **separate** (capabilities / future ingest). Memo: `docs/F03_LIVE_BACKLOG_FREEZE_PROPOSAL.md`.
+//! threshold is **separate** (capabilities / future ingest). Memo: `docs/history/PHASE0_FREEZE_HISTORY.md`.
 //! Mapping logic: [`crate::snapshot_contract`].
 
 use serde::{Deserialize, Serialize};

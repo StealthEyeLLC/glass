@@ -38,11 +38,11 @@ pub const KNOWN_EVENT_KINDS_V0: &[&str] = &[
     "file_seen_in_poll_gap",
 ];
 
-/// Maximum JSONL line length accepted when reading packs (DoS bound; **provisional** — see F-07 in `PHASE0_FREEZE_TRACKER.md`).
+/// Maximum JSONL line length accepted when reading packs (DoS bound; **provisional** — see F-07 in `docs/history/PHASE0_FREEZE_HISTORY.md`).
 pub const PROVISIONAL_MAX_JSONL_LINE_BYTES: usize = 4 * 1024 * 1024;
 
 /// Maximum `.glass_pack` file size accepted when reading into memory (**provisional** — F-07; revisit with streaming).
-/// See `docs/PHASE0_FREEZE_TRACKER.md` F-07.
+/// See `docs/history/PHASE0_FREEZE_HISTORY.md` F-07.
 pub const PROVISIONAL_MAX_PACK_FILE_BYTES: usize = 256 * 1024 * 1024;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

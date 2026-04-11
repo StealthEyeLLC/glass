@@ -1,6 +1,6 @@
 # Visual regression policy (Phase 0 pending)
 
-**Status:** Framework not active — **F-01 open** in `PHASE0_FREEZE_TRACKER.md`.
+**Status:** Framework not active — **F-01 open** in `docs/history/PHASE0_FREEZE_HISTORY.md`.
 
 ## Decision required
 

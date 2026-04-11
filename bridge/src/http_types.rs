@@ -1,6 +1,6 @@
 //! HTTP JSON shapes for the Phase 5 bridge skeleton.
 //!
-//! **Bounded-era F-04 is frozen** — see `docs/PHASE0_FREEZE_TRACKER.md` (Closed F-04) and
+//! **Bounded-era F-04 is frozen** — see `docs/history/PHASE0_FREEZE_HISTORY.md` (Closed F-04) and
 //! `docs/contracts/bridge_session_snapshot_bounded_v0.schema.json`. Live delta / backlog extensions are not
 //! frozen here.
 
@@ -113,7 +113,7 @@ pub struct SessionSnapshotResponse {
     pub max_events_requested: Option<u32>,
 }
 
-/// Unknown session or empty per-RPC poll — same literal; disambiguate with `bounded_snapshot.snapshot_origin` (`docs/F03_F04_FREEZE_PROPOSAL.md`).
+/// Unknown session or empty per-RPC poll — same literal; disambiguate with `bounded_snapshot.snapshot_origin` (`docs/history/PHASE0_FREEZE_HISTORY.md`).
 pub const SNAPSHOT_CURSOR_EMPTY: &str = "v0:empty";
 
 impl CapabilitiesResponse {

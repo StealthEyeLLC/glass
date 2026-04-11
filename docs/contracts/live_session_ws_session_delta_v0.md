@@ -1,7 +1,7 @@
 # Live WebSocket `session_delta` v0 (additive)
 
 **Status:** v0 — **not** durable ingest, **not** bounded HTTP F-04.  
-**Authority:** `GLASS_FULL_ENGINEERING_SPEC_v10.md`, `GLASS_V0_BUILD_PLAN.md`. F-03 queue policy: `glass_bridge::live_session_ws`.
+**Authority:** `docs/long-horizon/GLASS_FULL_ENGINEERING_SPEC_v10.md`, `docs/long-horizon/GLASS_V0_BUILD_PLAN.md`. F-03 queue policy: `glass_bridge::live_session_ws`.
 
 ## When `session_delta` is allowed
 

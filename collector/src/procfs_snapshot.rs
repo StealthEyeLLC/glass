@@ -1,6 +1,6 @@
 //! Bounded `/proc` process sampling — **snapshot / poll semantics only** (not kernel spawn/exit truth).
 //!
-//! **Provisional:** max PIDs scanned and max samples per poll — see `docs/PHASE0_FREEZE_TRACKER.md`.
+//! **Provisional:** max PIDs scanned and max samples per poll — see `docs/history/PHASE0_FREEZE_HISTORY.md`.
 
 use std::fs;
 use std::path::Path;

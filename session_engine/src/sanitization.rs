@@ -1,12 +1,12 @@
 //! Pure share-safe sanitization: no I/O, no collector, no viewer.
 //!
-//! Profile `sanitize_default` is **provisional** until Phase 0 freeze (`docs/PHASE0_FREEZE_TRACKER.md`).
+//! Profile `sanitize_default` is **provisional** until Phase 0 freeze (`docs/history/PHASE0_FREEZE_HISTORY.md`).
 //!
 //! **Socket path redaction (F-05):** heuristic on `.sock`, `/run/user/`, `/var/run/` — not exhaustive; see tracker.
 //!
 //! **File-lane path redaction (F-05, provisional):** directory-poll `relative_path`, `watch_root`, and the
 //! `fs_poll_rel:` entity id suffix are replaced with fixed tokens on the **export lane only** — not a final policy;
-//! see `docs/PHASE0_FREEZE_TRACKER.md` / `docs/SANITIZATION_TRUST_CRITERIA.md`.
+//! see `docs/history/PHASE0_FREEZE_HISTORY.md` / `docs/SANITIZATION_TRUST_CRITERIA.md`.
 
 use regex::Regex;
 use serde_json::Value;

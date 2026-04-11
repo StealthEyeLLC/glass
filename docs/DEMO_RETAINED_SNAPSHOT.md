@@ -10,8 +10,8 @@ This walkthrough proves the **retained snapshot seam** end-to-end: `glass-collec
 
 ## What stays provisional
 
-- **F-IPC transport** is still **TCP loopback** (dev skeleton), not a human-frozen Unix socket / peer-cred path (`docs/PHASE0_FREEZE_TRACKER.md`).
-- **`snapshot_cursor`** and **`retained_snapshot_unix_ms`** are **telemetry / opaque v0 strings**, not a finalized resync contract (F-04 still open).
+- **F-IPC transport** is still **TCP loopback** (dev skeleton), not a human-frozen Unix socket / peer-cred path (`docs/history/PHASE0_FREEZE_HISTORY.md`).
+- **`snapshot_cursor`** and **`retained_snapshot_unix_ms`** stay **bounded-era / opaque v0** surfaces: the bounded F-04 cursor rules are closed, but live-era resync extensions and final transport semantics remain deferred.
 - Retained loop **replaces** a bounded **tail** of events each tick — not an append-only live timeline.
 
 ## Fixture
@@ -138,4 +138,4 @@ F-IPC failures are **not** part of frozen bounded F-04 — the bridge returns **
 
 ## Next implementation step
 
-Continue Glass v0 per `GLASS_V0_BUILD_PLAN.md` — e.g. optional viewer dev panel calling `GET /sessions/:id/snapshot` only; durable push ingest and F-IPC transport freeze remain separate human decisions (`docs/PHASE0_FREEZE_TRACKER.md`).
+Continue Glass v0 per `docs/long-horizon/GLASS_V0_BUILD_PLAN.md` — e.g. optional viewer dev panel calling `GET /sessions/:id/snapshot` only; durable push ingest and F-IPC transport freeze remain separate human decisions (`docs/history/PHASE0_FREEZE_HISTORY.md`).

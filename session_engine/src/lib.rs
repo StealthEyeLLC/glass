@@ -2,7 +2,7 @@
 //!
 //! **Boundary:** owns session/pack/manifest truth for replay. Does not render and does not collect host telemetry.
 //!
-//! Pack formats: `glass.pack.v0.scaffold` (ZIP + `manifest.json` + `events.jsonl`, Tier B viewer) and `glass.pack.v0.scaffold_seg` (same ZIP + `events.seg` binary). See `events_seg` and `docs/PHASE0_FREEZE_TRACKER.md` F-02.
+//! Pack formats: `glass.pack.v0.scaffold` (ZIP + `manifest.json` + `events.jsonl`, Tier B viewer) and `glass.pack.v0.scaffold_seg` (same ZIP + `events.seg` binary). See `events_seg` and `docs/history/PHASE0_FREEZE_HISTORY.md` F-02.
 
 pub mod error;
 pub mod event;

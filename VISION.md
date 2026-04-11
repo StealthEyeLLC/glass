@@ -14,8 +14,9 @@
 ## Current shipped truth vs long horizon
 
 - **Use these as the public truth for the shipped bounded showcase:** `README.md`, `VISION.md`, `docs/IMPLEMENTATION_STATUS.md`, `docs/TEST_STRATEGY.md`, `docs/REPO_BOUNDARIES.md`.
+- **Use this as the docs router between current truth, proof, and history:** `docs/README.md`.
 - **Use this as milestone history, not the front-door contract:** `docs/VERTICAL_SLICE_V0.md`.
-- **Use these as long-horizon architecture references, not the current product contract:** `GLASS_FULL_ENGINEERING_SPEC_v10.md`, `GLASS_V0_BUILD_PLAN.md`.
+- **Use these as long-horizon architecture references, not the current product contract:** `docs/long-horizon/GLASS_FULL_ENGINEERING_SPEC_v10.md`, `docs/long-horizon/GLASS_V0_BUILD_PLAN.md`.
 
 ## Strategic framing (cold)
 

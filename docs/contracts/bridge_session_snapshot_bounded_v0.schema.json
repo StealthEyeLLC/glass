@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://glass.local/schema/bridge_session_snapshot_bounded_v0.schema.json",
   "title": "Glass bridge GET /sessions/:id/snapshot — bounded-era (F-04 closed)",
-  "description": "Subset of the HTTP JSON response shape for static/bounded snapshots. Live WS deltas and live backlog semantics are out of scope. See docs/PHASE0_FREEZE_TRACKER.md (Closed F-04) and docs/F03_F04_FREEZE_PROPOSAL.md.",
+  "description": "Subset of the HTTP JSON response shape for static/bounded snapshots. Live WS deltas and live backlog semantics are out of scope. See docs/history/PHASE0_FREEZE_HISTORY.md (Closed F-04) and docs/history/PHASE0_FREEZE_HISTORY.md.",
   "type": "object",
   "additionalProperties": true,
   "properties": {

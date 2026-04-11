@@ -5,6 +5,7 @@
 **Current shipped bounded showcase truth:**
 
 - `README.md`
+- `docs/README.md`
 - `VISION.md`
 - `docs/IMPLEMENTATION_STATUS.md`
 - `docs/TEST_STRATEGY.md`
@@ -12,7 +13,7 @@
 
 **Milestone history:** `docs/VERTICAL_SLICE_V0.md`
 
-**Long-horizon architecture references, not the current launch contract:** `GLASS_FULL_ENGINEERING_SPEC_v10.md`, `GLASS_V0_BUILD_PLAN.md`
+**Long-horizon architecture references, not the current launch contract:** `docs/long-horizon/GLASS_FULL_ENGINEERING_SPEC_v10.md`, `docs/long-horizon/GLASS_V0_BUILD_PLAN.md`
 
 ## Product rules
 

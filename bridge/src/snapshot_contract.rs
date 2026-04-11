@@ -1,7 +1,7 @@
 //! Bounded snapshot cursor + [`crate::resync::ResyncHint`] mapping.
 //!
-//! **Bounded-era F-04 is frozen** — see `docs/PHASE0_FREEZE_TRACKER.md` (Closed F-04). Rationale history:
-//! `docs/F03_F04_FREEZE_PROPOSAL.md`.
+//! **Bounded-era F-04 is frozen** — see `docs/history/PHASE0_FREEZE_HISTORY.md` (Closed F-04). Rationale history:
+//! `docs/history/PHASE0_FREEZE_HISTORY.md`.
 
 use glass_collector::ipc::FipcBoundedSnapshotMeta;
 
