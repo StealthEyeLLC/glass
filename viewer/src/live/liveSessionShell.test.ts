@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { GLASS_FLAGSHIP_CHAIN_DOC } from "../app/verticalSliceV0.js";
 import { GLASS_SCENE_V0 } from "../scene/glassSceneV0.js";
 import { mountLiveSessionShell } from "./liveSessionShell.js";
 
@@ -8,6 +9,9 @@ describe("mountLiveSessionShell", () => {
     mountLiveSessionShell(root);
     expect(root.querySelector('[data-testid="live-vs-hero"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="live-flagship-note"]')).not.toBeNull();
+    const liveFraming = root.querySelector('[data-testid="live-flagship-framing"]');
+    expect(liveFraming).not.toBeNull();
+    expect(liveFraming?.textContent).toBe(GLASS_FLAGSHIP_CHAIN_DOC);
     expect(root.querySelector('[data-testid="live-reading-order"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="live-state-panel"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="live-event-list"]')).not.toBeNull();

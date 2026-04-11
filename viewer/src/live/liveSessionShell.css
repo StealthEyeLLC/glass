@@ -68,6 +68,18 @@
   line-height: 1.45;
 }
 
+/* Vertical Slice v22 — same claim-chain framing as replay flagship callout (parity, not new authority) */
+.glass-flagship-live-framing {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  color: #0f172a;
+  line-height: 1.45;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(5, 150, 105, 0.28);
+}
+
 .glass-vs-reading-order-live {
   margin: 0 0 8px;
   font-size: 0.78rem;

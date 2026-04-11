@@ -97,6 +97,7 @@ import { paintLiveVisualSurface, type PaintLiveVisualSurfaceResult } from "./liv
 import type { LiveVisualWebGpuBundle } from "./liveVisualWebGpu.js";
 import { tryInitWebGpuCanvas } from "./liveVisualWebGpu.js";
 import {
+  GLASS_FLAGSHIP_CHAIN_DOC,
   RECEIPT_EMPTY_SUPPLEMENT_AFTER_TEMPORAL_BASELINE,
   VERTICAL_SLICE_FLAGSHIP_V18_BODY,
   VERTICAL_SLICE_FLAGSHIP_V18_TITLE,
@@ -171,6 +172,11 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
         `${VERTICAL_SLICE_FLAGSHIP_V18_TITLE} (replay): ${VERTICAL_SLICE_FLAGSHIP_V18_BODY}`,
       );
       p.setAttribute("data-testid", "live-flagship-note");
+      return p;
+    })(),
+    (() => {
+      const p = el("p", "glass-flagship-live-framing", GLASS_FLAGSHIP_CHAIN_DOC);
+      p.setAttribute("data-testid", "live-flagship-framing");
       return p;
     })(),
     (() => {
