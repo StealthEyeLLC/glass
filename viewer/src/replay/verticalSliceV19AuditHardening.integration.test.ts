@@ -5,7 +5,10 @@ import { readFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 import { describe, expect, it } from "vitest";
-import { VERTICAL_SLICE_FLAGSHIP_V18_PACK_FILE } from "../app/verticalSliceV0.js";
+import {
+  RECEIPT_EMPTY_SUPPLEMENT_AFTER_TEMPORAL_BASELINE,
+  VERTICAL_SLICE_FLAGSHIP_V18_PACK_FILE,
+} from "../app/verticalSliceV0.js";
 import { loadGlassPack } from "../pack/loadPack.js";
 import { mountReplayShell } from "./replayOnlyShell.js";
 
@@ -71,5 +74,11 @@ describe("Vertical Slice v19 — compare baseline handoff (replay)", () => {
 
     expect(root.querySelector(".glass-bounded-claim-chip--selected")).toBeNull();
     expect(root.querySelector(".glass-bounded-episode-card--selected")).toBeNull();
+
+    const emptySup = root.querySelector(
+      '[data-testid="replay-bounded-claim-receipt-empty-supplement"]',
+    );
+    expect(emptySup).not.toBeNull();
+    expect(emptySup?.textContent).toBe(RECEIPT_EMPTY_SUPPLEMENT_AFTER_TEMPORAL_BASELINE);
   });
 });

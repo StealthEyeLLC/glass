@@ -44,15 +44,22 @@ export function liveHeroSubtitle(): string {
   return "Same strip, selection, compare, evidence, claims, and episodes as replay — driven by the bounded WS tail + HTTP snapshot. The flagship replay path (append-heavy canonical) defines the vocabulary; live proves the same surfaces under wire deltas.";
 }
 
+/** Freeze-candidate product framing — use sparingly (README, flagship callout, reading order). */
+export const GLASS_FLAGSHIP_CHAIN_ONE_LINER =
+  "Glass turns bounded runtime activity into an inspectable claim chain: scene, change, evidence, receipt." as const;
+
+export const GLASS_FLAGSHIP_CHAIN_DOC =
+  "Glass lets you move from bounded scene state, to what changed, to supporting evidence, to the exact bounded claim you can make — without pretending to know more than it does." as const;
+
 /**
  * Vertical Slice v20 — external-style audit: one explicit reading order reduces first-run “internal tool” confusion.
- * Not a workflow engine — copy only.
+ * Not a workflow engine — copy only. v21 weaves in freeze-candidate flagship framing (scene → change → evidence → receipt).
  */
 export const VERTICAL_SLICE_V20_READING_ORDER_REPLAY =
-  "Suggested scan: scene canvas → bounded evidence (scope + rows) → episode cards → claim chips → receipt → temporal lens (compare baseline). Replay uses an index-ordered pack prefix; receipts/evidence are viewer-derived from bounded frames — not collector certificates.";
+  `${GLASS_FLAGSHIP_CHAIN_ONE_LINER} Suggested scan: scene canvas → bounded evidence (scope + rows) → episode cards → claim chips → receipt → temporal lens (compare baseline). Replay uses an index-ordered pack prefix; receipts/evidence are viewer-derived from bounded frames — not collector certificates.`;
 
 export const VERTICAL_SLICE_V20_READING_ORDER_LIVE =
-  "Suggested scan: scene → bounded evidence → episodes → claims → receipt → temporal lens. WS tail + HTTP snapshot are distinct inputs — not one merged history; same trust surfaces as replay.";
+  `${GLASS_FLAGSHIP_CHAIN_ONE_LINER} Suggested scan: scene → bounded evidence → episodes → claims → receipt → temporal lens. WS tail + HTTP snapshot are distinct inputs — not one merged history; same trust surfaces as replay.`;
 
 /** Shown when receipt is empty after a temporal compare-baseline override (v19/v20 handoff). */
 export const RECEIPT_EMPTY_SUPPLEMENT_AFTER_TEMPORAL_BASELINE =

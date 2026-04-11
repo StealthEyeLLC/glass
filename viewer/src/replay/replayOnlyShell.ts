@@ -4,6 +4,7 @@ import {
 } from "../app/devFixtureRoute.js";
 import { getBuildMode } from "../app/mode.js";
 import {
+  GLASS_FLAGSHIP_CHAIN_DOC,
   RECEIPT_EMPTY_SUPPLEMENT_AFTER_TEMPORAL_BASELINE,
   VERTICAL_SLICE_FLAGSHIP_V18_BODY,
   VERTICAL_SLICE_FLAGSHIP_V18_DEV_QUERY_HINT,
@@ -140,9 +141,12 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
 
   const flagshipCallout = el("section", "glass-flagship-callout");
   flagshipCallout.setAttribute("data-testid", "replay-flagship-callout");
+  const flagshipFraming = el("p", "glass-flagship-callout-framing", GLASS_FLAGSHIP_CHAIN_DOC);
+  flagshipFraming.setAttribute("data-testid", "replay-flagship-framing");
   flagshipCallout.append(
     el("h2", "glass-flagship-callout-title", VERTICAL_SLICE_FLAGSHIP_V18_TITLE),
     el("p", "glass-flagship-callout-body", VERTICAL_SLICE_FLAGSHIP_V18_BODY),
+    flagshipFraming,
     el(
       "p",
       "glass-flagship-callout-meta",

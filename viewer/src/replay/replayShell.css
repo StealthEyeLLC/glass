@@ -115,6 +115,18 @@
   line-height: 1.5;
 }
 
+/* Vertical Slice v21 — flagship claim-chain framing (copy only; not new authority) */
+.glass-flagship-callout-framing {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  color: #0f172a;
+  line-height: 1.45;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(2, 132, 199, 0.22);
+}
+
 .glass-flagship-callout-meta {
   margin: 0;
   font-size: 0.72rem;

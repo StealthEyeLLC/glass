@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  GLASS_FLAGSHIP_CHAIN_DOC,
+  GLASS_FLAGSHIP_CHAIN_ONE_LINER,
   RECEIPT_EMPTY_SUPPLEMENT_AFTER_TEMPORAL_BASELINE,
   VERTICAL_SLICE_FLAGSHIP_V18_SESSION_ID,
   VERTICAL_SLICE_SCENARIO_LABEL,
@@ -21,7 +23,10 @@ describe("verticalSliceV0", () => {
     expect(liveHeroSubtitle()).toContain("Same strip");
     expect(VERTICAL_SLICE_FLAGSHIP_V18_SESSION_ID).toBe("canonical_v15_append_heavy");
     expect(VERTICAL_SLICE_V20_READING_ORDER_REPLAY).toContain("temporal lens");
+    expect(VERTICAL_SLICE_V20_READING_ORDER_REPLAY).toContain(GLASS_FLAGSHIP_CHAIN_ONE_LINER);
     expect(VERTICAL_SLICE_V20_READING_ORDER_LIVE).toContain("WS tail");
+    expect(VERTICAL_SLICE_V20_READING_ORDER_LIVE).toContain(GLASS_FLAGSHIP_CHAIN_ONE_LINER);
+    expect(GLASS_FLAGSHIP_CHAIN_DOC.length).toBeGreaterThan(40);
     expect(RECEIPT_EMPTY_SUPPLEMENT_AFTER_TEMPORAL_BASELINE.length).toBeGreaterThan(20);
   });
 });
