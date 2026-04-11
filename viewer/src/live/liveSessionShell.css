@@ -449,3 +449,79 @@
   color: #64748b;
   min-height: 1em;
 }
+
+/* Vertical Slice v11 — bounded temporal lens (shared with replay) */
+.glass-bounded-temporal-title {
+  font-size: 0.85rem;
+  margin: 0.75rem 0 0.35rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.glass-bounded-temporal-root {
+  margin: 0 0 0.75rem;
+  padding: 0.35rem 0.4rem;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 4px;
+}
+
+.glass-bounded-temporal-honesty {
+  font-size: 0.7rem;
+  color: #64748b;
+  margin: 0 0 0.35rem;
+  line-height: 1.35;
+}
+
+.glass-bounded-temporal-baseline-note {
+  font-size: 0.7rem;
+  color: #b45309;
+  margin: 0 0 0.35rem;
+}
+
+.glass-bounded-temporal-steps,
+.glass-bounded-temporal-ring {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.25rem 0;
+}
+
+.glass-bounded-temporal-row-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #334155;
+  margin-right: 0.25rem;
+}
+
+.glass-bounded-temporal-chip {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  border: 1px solid #94a3b8;
+  background: #fff;
+  cursor: pointer;
+}
+
+.glass-bounded-temporal-chip[data-current="true"] {
+  border-color: #b45309;
+  background: #fffbeb;
+  font-weight: 600;
+}
+
+.glass-bounded-temporal-chip[data-baseline="true"] {
+  outline: 2px solid #0ea5e9;
+}
+
+.glass-bounded-temporal-chip--paint {
+  max-width: 100%;
+  text-align: left;
+}
+
+.glass-bounded-temporal-reset {
+  font-size: 0.72rem;
+  margin-top: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+}

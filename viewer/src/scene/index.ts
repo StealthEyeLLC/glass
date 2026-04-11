@@ -60,6 +60,19 @@ export {
   type BoundedEvidenceRowKeyV0,
 } from "./boundedSceneCrosslink.js";
 export { boundedSelectionIdOverlay } from "./boundedSceneSelection.js";
+export {
+  BOUNDED_TEMPORAL_RING_MAX,
+  BOUNDED_TEMPORAL_STEP_NEIGHBOR_DEFAULT,
+  buildLiveTemporalLensView,
+  buildReplayTemporalLensView,
+  clampTemporalBaselineIndex,
+  computeReplayStepNeighborhood,
+  formatBoundedSceneTemporalFingerprint,
+  pushBoundedTemporalRing,
+  resolveCompareBaselineFromRing,
+  type BoundedTemporalLensViewV0,
+} from "./boundedTemporalLens.js";
+export { renderBoundedTemporalLensInto } from "./boundedTemporalLensPanel.js";
 export { liveVisualSpecFromScene } from "./sceneToLiveVisualSpec.js";
 export {
   DRAWABLE_PRIMITIVES_V0,

@@ -55,6 +55,14 @@ import { computeBoundedSceneCompare } from "../scene/boundedSceneCompare.js";
 import { computeBoundedEvidenceDrilldown } from "../scene/boundedEvidenceDrilldown.js";
 import { renderBoundedEvidenceInto } from "../scene/boundedEvidencePanel.js";
 import type { BoundedCrosslinkResolutionV0 } from "../scene/boundedSceneCrosslink.js";
+import {
+  BOUNDED_TEMPORAL_RING_MAX,
+  buildLiveTemporalLensView,
+  clampTemporalBaselineIndex,
+  pushBoundedTemporalRing,
+  resolveCompareBaselineFromRing,
+} from "../scene/boundedTemporalLens.js";
+import { renderBoundedTemporalLensInto } from "../scene/boundedTemporalLensPanel.js";
 import { compileLiveToGlassSceneV0 } from "../scene/compileLiveScene.js";
 import { computeBoundedSceneFocus } from "../scene/boundedSceneFocus.js";
 import {
@@ -426,6 +434,13 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const boundedEvidenceCrosslinkNote = el("p", "glass-bounded-evidence-crosslink-note");
   boundedEvidenceCrosslinkNote.setAttribute("data-testid", "live-bounded-evidence-crosslink-note");
   boundedEvidenceCrosslinkNote.setAttribute("aria-live", "polite");
+  const boundedTemporalTitle = el(
+    "h4",
+    "glass-bounded-temporal-title",
+    "Bounded temporal lens (Vertical Slice v11)",
+  );
+  const boundedTemporalRoot = el("div", "glass-bounded-temporal-root");
+  boundedTemporalRoot.setAttribute("data-testid", "live-temporal-lens-root");
   visualCanvas.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
   visualCanvasWebGpu.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
   visualCanvasTextOverlay.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
@@ -439,6 +454,8 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     boundedEvidenceTitle,
     boundedEvidenceRoot,
     boundedEvidenceCrosslinkNote,
+    boundedTemporalTitle,
+    boundedTemporalRoot,
     visualProvenanceHeader,
     visualProvenanceStrip,
     visualLegend,
@@ -449,6 +466,10 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   let lastPaintedLiveScene: GlassSceneV0 | null = null;
   /** Bounded frame before the latest live paint — honest compare baseline. */
   let previousPaintedLiveScene: GlassSceneV0 | null = null;
+  /** Last ≤5 bounded paints this viewer actually painted (not server history). */
+  let liveBoundedPaintRing: GlassSceneV0[] = [];
+  /** Compare vs current: null = immediate prior paint in ring; else explicit ring index. */
+  let liveCompareBaselineRingIndex: number | null = null;
   let lastLiveEmphasis: BoundedSceneEmphasisV0 | null = null;
   let selectedBoundedSelectionId: string | null = null;
 
@@ -465,16 +486,68 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     }
   }
 
-  function refreshBoundedInspectorLive(): void {
+  function effectiveCompareBaselineLive(): GlassSceneV0 | null {
+    liveCompareBaselineRingIndex = clampTemporalBaselineIndex(
+      liveBoundedPaintRing.length,
+      liveCompareBaselineRingIndex,
+    );
+    return resolveCompareBaselineFromRing(liveBoundedPaintRing, liveCompareBaselineRingIndex).baseline;
+  }
+
+  async function refreshLiveVisualAfterBaselineChange(): Promise<void> {
+    if (!lastPaintedLiveScene) {
+      return;
+    }
+    const baseline = effectiveCompareBaselineLive();
+    const result = await paintLiveVisualSurface(
+      visualCanvas,
+      visualCanvasWebGpu,
+      visualCanvasTextOverlay,
+      lastPaintedLiveScene,
+      undefined,
+      webGpuBundle,
+      { selectedSelectionId: selectedBoundedSelectionId, previousScene: baseline },
+    );
+    lastPaintResult = result;
+    visualFallback.hidden = result.fallbackTextShouldHide;
+    refreshVisualProvenanceStrip();
+    await refreshBoundedInspectorLive();
+  }
+
+  function refreshTemporalLensLive(): void {
+    if (!lastPaintedLiveScene) {
+      boundedTemporalRoot.replaceChildren();
+      return;
+    }
+    const view = buildLiveTemporalLensView(liveBoundedPaintRing, liveCompareBaselineRingIndex);
+    renderBoundedTemporalLensInto(boundedTemporalRoot, view, {
+      onSelectBaseline: (ringIndex) => {
+        liveCompareBaselineRingIndex = ringIndex;
+        void refreshLiveVisualAfterBaselineChange();
+      },
+      onResetBaseline: () => {
+        liveCompareBaselineRingIndex = null;
+        void refreshLiveVisualAfterBaselineChange();
+      },
+    });
+  }
+
+  async function refreshBoundedInspectorLive(): Promise<void> {
     if (!lastPaintedLiveScene) {
       boundedInspectorPre.textContent = "";
       boundedInspectorPre.removeAttribute("data-selected");
       boundedEvidenceRoot.replaceChildren();
       boundedEvidenceCrosslinkNote.textContent = "";
+      boundedTemporalRoot.replaceChildren();
       return;
     }
+    const baseline = effectiveCompareBaselineLive();
+    const cmp = computeBoundedSceneCompare(baseline, lastPaintedLiveScene, {
+      selectedId: selectedBoundedSelectionId,
+    });
     const spec = liveVisualSpecFromScene(lastPaintedLiveScene, selectedBoundedSelectionId, {
-      previousScene: previousPaintedLiveScene,
+      previousScene: baseline,
+      compare: cmp,
     });
     boundedInspectorPre.textContent = buildBoundedInspectorLines(
       lastPaintedLiveScene,
@@ -486,9 +559,6 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     } else {
       boundedInspectorPre.removeAttribute("data-selected");
     }
-    const cmp = computeBoundedSceneCompare(previousPaintedLiveScene, lastPaintedLiveScene, {
-      selectedId: selectedBoundedSelectionId,
-    });
     const drill = computeBoundedEvidenceDrilldown({
       scene: lastPaintedLiveScene,
       spec,
@@ -513,12 +583,14 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
         void paintLiveVisual();
       },
     });
+    refreshTemporalLensLive();
   }
 
   function buildCurrentLiveVisualSpec(): LiveVisualSpec {
     if (lastPaintedLiveScene) {
+      const baseline = effectiveCompareBaselineLive();
       return liveVisualSpecFromScene(lastPaintedLiveScene, selectedBoundedSelectionId, {
-        previousScene: previousPaintedLiveScene,
+        previousScene: baseline,
       });
     }
     return liveVisualSpecFromScene(
@@ -699,6 +771,16 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     lastLiveEmphasis = scene.emphasis;
     lastPaintedLiveScene = scene;
     previousPaintedLiveScene = prev;
+    liveBoundedPaintRing = pushBoundedTemporalRing(
+      liveBoundedPaintRing,
+      scene,
+      BOUNDED_TEMPORAL_RING_MAX,
+    );
+    liveCompareBaselineRingIndex = clampTemporalBaselineIndex(
+      liveBoundedPaintRing.length,
+      liveCompareBaselineRingIndex,
+    );
+    const baseline = effectiveCompareBaselineLive();
     const result = await paintLiveVisualSurface(
       visualCanvas,
       visualCanvasWebGpu,
@@ -706,13 +788,13 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       scene,
       undefined,
       webGpuBundle,
-      { selectedSelectionId: selectedBoundedSelectionId, previousScene: prev },
+      { selectedSelectionId: selectedBoundedSelectionId, previousScene: baseline },
     );
     lastPaintResult = result;
     visualFallback.hidden = result.fallbackTextShouldHide;
     visualLegend.textContent = formatLiveVisualLegendBlock();
     refreshVisualProvenanceStrip();
-    refreshBoundedInspectorLive();
+    await refreshBoundedInspectorLive();
   }
 
   visualCanvasStack.addEventListener("pointerdown", (ev) => {
@@ -724,8 +806,9 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     const x = ev.clientX - rect.left;
     const y = ev.clientY - rect.top;
     const lay = { widthCss: scene.bounds.widthCss, heightCss: scene.bounds.heightCss };
+    const baseline = effectiveCompareBaselineLive();
     const targets = buildBoundedSelectionHitTargetsForScene(scene, lay, selectedBoundedSelectionId, {
-      previousScene: previousPaintedLiveScene,
+      previousScene: baseline,
     });
     const id = hitTestBoundedSelection(x, y, targets);
     if (id === selectedBoundedSelectionId) {
@@ -813,6 +896,8 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     if (!activeWs) {
       return;
     }
+    liveBoundedPaintRing = [];
+    liveCompareBaselineRingIndex = null;
     pushLiveLog("operator", "Disconnect requested (closing WebSocket)", { action: "disconnect" });
     setEphemeralStatus("disconnect — closing WebSocket (operator)");
     closeActiveSocket("operator");

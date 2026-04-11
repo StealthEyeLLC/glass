@@ -24,6 +24,14 @@ import { computeBoundedSceneCompare } from "../scene/boundedSceneCompare.js";
 import { computeBoundedEvidenceDrilldown } from "../scene/boundedEvidenceDrilldown.js";
 import { renderBoundedEvidenceInto } from "../scene/boundedEvidencePanel.js";
 import type { BoundedCrosslinkResolutionV0 } from "../scene/boundedSceneCrosslink.js";
+import {
+  BOUNDED_TEMPORAL_RING_MAX,
+  buildReplayTemporalLensView,
+  clampTemporalBaselineIndex,
+  pushBoundedTemporalRing,
+  resolveCompareBaselineFromRing,
+} from "../scene/boundedTemporalLens.js";
+import { renderBoundedTemporalLensInto } from "../scene/boundedTemporalLensPanel.js";
 import { compileReplayToGlassSceneV0 } from "../scene/compileReplayScene.js";
 import {
   currentEvent,
@@ -83,6 +91,10 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   let lastReplayScene: GlassSceneV0 | null = null;
   /** Bounded frame before the latest compile — honest compare baseline for replay stepping. */
   let previousReplayScene: GlassSceneV0 | null = null;
+  /** Last ≤5 bounded paints this viewer actually painted (not full pack history). */
+  let replayBoundedPaintRing: GlassSceneV0[] = [];
+  /** Compare vs current: null = immediate prior paint in ring; else explicit ring index. */
+  let replayCompareBaselineRingIndex: number | null = null;
   let selectedBoundedSelectionId: string | null = null;
 
   const hero = el("section", "glass-vs-hero glass-replay-vs-hero");
@@ -183,6 +195,64 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   sceneCanvas.setAttribute("data-scene", GLASS_SCENE_V0);
   sceneSection.append(sceneTitle, sceneNote, sceneCanvas);
 
+  const temporalSection = el("section", "glass-bounded-temporal");
+  temporalSection.setAttribute("data-testid", "replay-temporal-lens");
+  const temporalTitle = el(
+    "h4",
+    "glass-bounded-temporal-title",
+    "Bounded temporal lens (Vertical Slice v11)",
+  );
+  const temporalRoot = el("div", "glass-bounded-temporal-root");
+  temporalRoot.setAttribute("data-testid", "replay-temporal-lens-root");
+  temporalSection.append(temporalTitle, temporalRoot);
+
+  function effectiveCompareBaselineReplay(): GlassSceneV0 | null {
+    replayCompareBaselineRingIndex = clampTemporalBaselineIndex(
+      replayBoundedPaintRing.length,
+      replayCompareBaselineRingIndex,
+    );
+    return resolveCompareBaselineFromRing(replayBoundedPaintRing, replayCompareBaselineRingIndex).baseline;
+  }
+
+  function refreshReplayVisualAfterBaselineChange(): void {
+    if (!lastReplayScene) {
+      return;
+    }
+    const baseline = effectiveCompareBaselineReplay();
+    void renderLiveVisualOnCanvas(sceneCanvas, lastReplayScene, {
+      selectedSelectionId: selectedBoundedSelectionId,
+      previousScene: baseline,
+    });
+    refreshBoundedInspectorReplay();
+    refreshTemporalLensReplay();
+  }
+
+  function refreshTemporalLensReplay(): void {
+    if (!lastReplayScene || state.loadStatus !== "ready" || state.events.length === 0) {
+      temporalRoot.replaceChildren();
+      return;
+    }
+    const view = buildReplayTemporalLensView(
+      replayBoundedPaintRing,
+      state.cursorIndex,
+      state.events.length,
+      replayCompareBaselineRingIndex,
+    );
+    renderBoundedTemporalLensInto(temporalRoot, view, {
+      onSeekReplayStep: (eventIndex) => {
+        dispatch({ type: "seek_index", index: eventIndex });
+      },
+      onSelectBaseline: (ringIndex) => {
+        replayCompareBaselineRingIndex = ringIndex;
+        refreshReplayVisualAfterBaselineChange();
+      },
+      onResetBaseline: () => {
+        replayCompareBaselineRingIndex = null;
+        refreshReplayVisualAfterBaselineChange();
+      },
+    });
+  }
+
   sceneCanvas.addEventListener("pointerdown", (ev) => {
     const scene = lastReplayScene;
     if (!scene) {
@@ -192,8 +262,9 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     const x = ev.clientX - rect.left;
     const y = ev.clientY - rect.top;
     const lay = { widthCss: scene.bounds.widthCss, heightCss: scene.bounds.heightCss };
+    const baseline = effectiveCompareBaselineReplay();
     const targets = buildBoundedSelectionHitTargetsForScene(scene, lay, selectedBoundedSelectionId, {
-      previousScene: previousReplayScene,
+      previousScene: baseline,
     });
     const id = hitTestBoundedSelection(x, y, targets);
     if (id === selectedBoundedSelectionId) {
@@ -262,6 +333,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     metaSection,
     sanitizedSection,
     sceneSection,
+    temporalSection,
     controls,
     scrub,
     positionLine,
@@ -309,10 +381,16 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
       boundedInspectorPre.removeAttribute("data-selected");
       boundedEvidenceRoot.replaceChildren();
       boundedEvidenceCrosslinkNote.textContent = "";
+      temporalRoot.replaceChildren();
       return;
     }
+    const baseline = effectiveCompareBaselineReplay();
+    const cmp = computeBoundedSceneCompare(baseline, lastReplayScene, {
+      selectedId: selectedBoundedSelectionId,
+    });
     const spec = liveVisualSpecFromScene(lastReplayScene, selectedBoundedSelectionId, {
-      previousScene: previousReplayScene,
+      previousScene: baseline,
+      compare: cmp,
     });
     boundedInspectorPre.textContent = buildBoundedInspectorLines(
       lastReplayScene,
@@ -324,9 +402,6 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     } else {
       boundedInspectorPre.removeAttribute("data-selected");
     }
-    const cmp = computeBoundedSceneCompare(previousReplayScene, lastReplayScene, {
-      selectedId: selectedBoundedSelectionId,
-    });
     const drill = computeBoundedEvidenceDrilldown({
       scene: lastReplayScene,
       spec,
@@ -351,6 +426,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
         paintReplayScene();
       },
     });
+    refreshTemporalLensReplay();
   }
 
   function paintReplayScene(): void {
@@ -359,9 +435,24 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     lastReplayEmphasis = scene.emphasis;
     lastReplayScene = scene;
     previousReplayScene = prev;
+    if (state.loadStatus === "ready" && state.events.length > 0) {
+      replayBoundedPaintRing = pushBoundedTemporalRing(
+        replayBoundedPaintRing,
+        scene,
+        BOUNDED_TEMPORAL_RING_MAX,
+      );
+      replayCompareBaselineRingIndex = clampTemporalBaselineIndex(
+        replayBoundedPaintRing.length,
+        replayCompareBaselineRingIndex,
+      );
+    } else {
+      replayBoundedPaintRing = [];
+      replayCompareBaselineRingIndex = null;
+    }
+    const baseline = effectiveCompareBaselineReplay();
     void renderLiveVisualOnCanvas(sceneCanvas, scene, {
       selectedSelectionId: selectedBoundedSelectionId,
-      previousScene: prev,
+      previousScene: baseline,
     });
     refreshBoundedInspectorReplay();
   }
@@ -476,6 +567,15 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   });
 
   function render(): void {
+    if (
+      state.loadStatus === "reading" ||
+      state.loadStatus === "idle" ||
+      state.loadStatus === "error" ||
+      (state.loadStatus === "ready" && state.events.length === 0)
+    ) {
+      replayBoundedPaintRing = [];
+      replayCompareBaselineRingIndex = null;
+    }
     errorBox.style.display = "none";
     readingLine.textContent = "";
     metaSection.style.display = "none";
