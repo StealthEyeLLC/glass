@@ -50,7 +50,9 @@ const HTTP_CHIP_H = 14;
 export function buildLiveVisualMarkersLayout(
   spec: LiveVisualSpec,
   widthCss: number,
+  options?: { bandOriginY?: number },
 ): LiveVisualMarkersLayout {
+  const bandY = options?.bandOriginY ?? LIVE_VISUAL_BAND_LAYOUT.originY;
   const bandX = LIVE_VISUAL_BAND_LAYOUT.originX;
   const bandInnerW = widthCss - 32;
   const third = bandInnerW / 3;
@@ -69,7 +71,7 @@ export function buildLiveVisualMarkersLayout(
     httpReconcile: {
       show: spec.reconcileSummary !== null,
       x: widthCss - bandX - HTTP_CHIP_W,
-      y: LIVE_VISUAL_BAND_LAYOUT.originY + 2,
+      y: bandY + 2,
       width: HTTP_CHIP_W,
       height: HTTP_CHIP_H,
     },

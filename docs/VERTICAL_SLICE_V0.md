@@ -1,6 +1,18 @@
-# Glass Vertical Slice v0 / v1 / v2 / v3 / v4 / v5 / v6
+# Glass Vertical Slice v0 / v1 / v2 / v3 / v4 / v5 / v6 / v7
 
-**Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier). **Vertical Slice v1** added a richer bounded scene; **v2** adds **bounded actor/sample clusters** from real event kinds only; **v3** adds **bounded regions** (membership + compositional drawable layers); **v4** adds **bounded scene emphasis** and **pulse/flash overlays** driven only by real basis changes between compiles; **v5** adds **bounded scene selection** and **inspector coupling** (same ids + hit map for replay and live); **v6** adds **bounded focus mode** — selection reshapes **dim/emphasis** and overlay/provenance copy from **grouping-only** scene facts — still **no** wire contract changes.
+**Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier). **Vertical Slice v1** added a richer bounded scene; **v2** adds **bounded actor/sample clusters** from real event kinds only; **v3** adds **bounded regions** (membership + compositional drawable layers); **v4** adds **bounded scene emphasis** and **pulse/flash overlays** driven only by real basis changes between compiles; **v5** adds **bounded scene selection** and **inspector coupling** (same ids + hit map for replay and live); **v6** adds **bounded focus mode** — selection reshapes **dim/emphasis** and overlay/provenance copy from **grouping-only** scene facts; **v7** adds **bounded focus reflow** — the same selection **re-allocates vertical space** and (when applicable) **lane width fractions** for the primary band, state rail, and actor cluster strip — still **no** wire contract changes.
+
+## Vertical Slice v7 (bounded focus reflow)
+
+**What it adds (viewer-only):**
+
+- **`boundedSceneFocusReflow.ts`:** **`BoundedStripLayoutV0`** (`glass.strip_layout.v0`) + **`computeBoundedStripLayoutFromFocus(scene, focus, selectionId)`** — pure, deterministic; adjusts **primary band height**, **state rail height**, **cluster strip height**, optional **live** three-lane rail fractions (snapshot / resync / warning) when the selection id targets a rail lane, and optional **cluster lane width fractions** when a cluster is focused and **more than one** lane exists. **Not** graph layout; **not** inferred relationships.
+- **Drawable Primitives v0** consumes **`stripLayout`** in **`buildBoundedVisualGeometryPrimitives`**, **`appendVerticalSliceStateRail`**, **`appendBoundedActorClusterStrip`**, **`applyBoundedSceneComposition`**, **`applyBoundedEmphasisOverlays`**, and **`applyBoundedSceneFocusToPrimitives`** (focus frames use reflowed geometry). Canvas **text overlay** uses **`stripPrimaryY`**, **`stripContentBottomY`**, and a **`reflow: …`** line from **`boundedStripReflowLine`** on **`LiveVisualSpec`**. WebGPU draws the **same** reflowed primitive stream as Canvas (still **no** GPU text — captions remain on the overlay).
+- **Inspector** adds **`Strip reflow (spatial): …`** when reflow copy is present; **live provenance** can merge focus + reflow fragments into the bounded focus summary line.
+
+**What it does *not* imply:** drill-down pages, a second “detail” scene, process tree expansion, or edges you do not already have in Scene v0. **F-IPC transport** remains **provisional**. This is still **not** the Phase-6 full runtime scene.
+
+**Next major step:** durable push ingest and/or additive live-era HTTP/WS fields **without** breaking frozen bounded-era HTTP — see `docs/IMPLEMENTATION_STATUS.md`. Reflow stays bounded to the **current** compile.
 
 ## Vertical Slice v6 (bounded focus mode)
 
@@ -12,8 +24,6 @@
 - **Shells:** **`replayOnlyShell`** / **`liveSessionShell`** already drive selection; v6 **refreshes** inspector and scene paint with **focus-aware** spec + primitives.
 
 **What it does *not* imply:** drill-down graph, hidden navigation, edges between processes, or “related” structures beyond **explicit** region membership and **known** cluster/rail/wire roles in Scene v0. **F-IPC transport** remains **provisional**. This is still **not** the Phase-6 full runtime scene.
-
-**Next major step:** durable push ingest and/or additive live-era HTTP/WS fields **without** breaking frozen bounded-era HTTP — see `docs/IMPLEMENTATION_STATUS.md`. Focus mode stays bounded to the **current** compile; it does **not** replace durable ingest or an eventual honest topology surface when data exists.
 
 ## Vertical Slice v5 (bounded selection + inspector)
 

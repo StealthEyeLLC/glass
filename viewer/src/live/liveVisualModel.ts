@@ -42,6 +42,12 @@ export interface LiveVisualSpec {
   boundedEmphasisSummaryLine: string | null;
   /** Vertical Slice v6 — bounded focus caption from selection (grouping-only; not graph navigation). */
   boundedFocusCaptionLine: string | null;
+  /** Vertical Slice v7 — one-line strip reflow summary (spatial allocation; not topology). */
+  boundedStripReflowLine: string | null;
+  /** Scene path: primary band top Y (CSS px) when strip reflow is active; overlay aligns markers. */
+  stripPrimaryY: number | null;
+  /** Scene path: bottom Y of the last strip block (rail or cluster) for text stacking. */
+  stripContentBottomY: number | null;
 }
 
 /** Fill colors for primary band (deterministic, sRGB hex). */
@@ -95,6 +101,9 @@ export function buildLiveVisualSpec(
     boundedCompositionCaption: null as string | null,
     boundedEmphasisSummaryLine: null as string | null,
     boundedFocusCaptionLine: null as string | null,
+    boundedStripReflowLine: null as string | null,
+    stripPrimaryY: null as number | null,
+    stripContentBottomY: null as number | null,
   };
 
   if (model.lastWarning) {

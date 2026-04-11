@@ -20,7 +20,7 @@ import {
 } from "../scene/drawablePrimitivesV0.js";
 import { sceneToDrawablePrimitives } from "../scene/sceneToDrawablePrimitives.js";
 import { liveVisualSpecFromScene } from "../scene/sceneToLiveVisualSpec.js";
-import { buildLiveVisualMarkersLayout } from "./liveVisualMarkers.js";
+import { buildLiveVisualMarkersLayout, LIVE_VISUAL_BAND_LAYOUT } from "./liveVisualMarkers.js";
 import type { LiveVisualSpec } from "./liveVisualModel.js";
 
 export interface LiveVisualCanvasLayout {
@@ -75,7 +75,8 @@ export function drawLiveVisualTextLabelsIntoContext(
   const w = widthCss;
   const h = heightCss;
 
-  const markers = buildLiveVisualMarkersLayout(spec, w);
+  const bandOriginY = spec.stripPrimaryY ?? LIVE_VISUAL_BAND_LAYOUT.originY;
+  const markers = buildLiveVisualMarkersLayout(spec, w, { bandOriginY });
 
   const chip = markers.httpReconcile;
   if (chip.show) {
@@ -85,11 +86,12 @@ export function drawLiveVisualTextLabelsIntoContext(
   }
 
   const railBottom = LIVE_VISUAL_STATE_RAIL_LAYOUT.originY + LIVE_VISUAL_STATE_RAIL_LAYOUT.height;
-  const clusterBottom =
+  const clusterBottomDefault =
     spec.actorClusterSummaryLine !== null && spec.actorClusterSummaryLine.length > 0
       ? LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.originY + LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.height
       : railBottom;
-  let lineY = clusterBottom + 8;
+  const stripBottom = spec.stripContentBottomY ?? clusterBottomDefault;
+  let lineY = stripBottom + 8;
 
   if (spec.boundedCompositionCaption) {
     ctx.font = "600 10px system-ui, sans-serif";
@@ -117,6 +119,13 @@ export function drawLiveVisualTextLabelsIntoContext(
     ctx.font = "600 10px system-ui, sans-serif";
     ctx.fillStyle = "#b45309";
     ctx.fillText(truncate(`focus: ${spec.boundedFocusCaptionLine}`, 58), 16, lineY);
+    lineY += 14;
+  }
+
+  if (spec.boundedStripReflowLine) {
+    ctx.font = "600 10px system-ui, sans-serif";
+    ctx.fillStyle = "#0e7490";
+    ctx.fillText(truncate(`reflow: ${spec.boundedStripReflowLine}`, 62), 16, lineY);
     lineY += 14;
   }
 

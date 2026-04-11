@@ -82,7 +82,7 @@ describe("static replay shell", () => {
     expect(cv?.getAttribute("data-scene")).toBe(GLASS_SCENE_V0);
   });
 
-  it("mounts Vertical Slice v6 bounded selection inspector", () => {
+  it("mounts Vertical Slice v7 bounded selection inspector", () => {
     const root = document.createElement("div");
     mountReplayShell(root);
     const bi = root.querySelector('[data-testid="replay-bounded-inspector"]');

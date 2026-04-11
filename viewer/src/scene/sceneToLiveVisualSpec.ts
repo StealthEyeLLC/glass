@@ -5,6 +5,10 @@
 import type { LiveVisualSpec } from "../live/liveVisualModel.js";
 import { formatActorClusterSummaryLine } from "./boundedActorClusters.js";
 import { computeBoundedSceneFocus } from "./boundedSceneFocus.js";
+import {
+  computeBoundedStripLayoutFromFocus,
+  formatBoundedStripReflowSummary,
+} from "./boundedSceneFocusReflow.js";
 import { formatBoundedEmphasisSummary } from "./boundedSceneEmphasis.js";
 import { formatBoundedCompositionCaption } from "./boundedSceneRegions.js";
 import type { GlassSceneV0 } from "./glassSceneV0.js";
@@ -15,6 +19,10 @@ export function liveVisualSpecFromScene(
   focusedSelectionId?: string | null,
 ): LiveVisualSpec {
   const focus = computeBoundedSceneFocus(scene, focusedSelectionId ?? null);
+  const strip = computeBoundedStripLayoutFromFocus(scene, focus, focusedSelectionId ?? null);
+  const reflowLine = formatBoundedStripReflowSummary(strip);
+  const stripContentBottomY =
+    scene.clusters.length > 0 ? strip.clusterY + strip.clusterH : strip.systemY + strip.systemH;
   return {
     mode: scene.wireMode,
     eventTailCount: scene.boundedSampleCount,
@@ -41,5 +49,8 @@ export function liveVisualSpecFromScene(
       return s.length > 0 ? s : null;
     })(),
     boundedFocusCaptionLine: focus.captionLine,
+    boundedStripReflowLine: reflowLine,
+    stripPrimaryY: strip.primaryY,
+    stripContentBottomY,
   };
 }

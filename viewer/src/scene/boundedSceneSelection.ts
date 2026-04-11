@@ -1,5 +1,5 @@
 /**
- * Vertical Slice v5–v6 — bounded scene selection ids + hit targets + inspector copy (+ focus mode).
+ * Vertical Slice v5–v7 — bounded scene selection ids + hit targets + inspector copy (+ focus + reflow).
  * Pure, DOM-free, renderer-agnostic (uses the same DrawablePrimitive stream as Canvas/WebGPU).
  */
 
@@ -356,6 +356,9 @@ export function buildBoundedInspectorLines(
     if (focus.relatedRegionIds.length > 0) {
       lines.push(`Related regions (grouping only): ${focus.relatedRegionIds.join(", ")}`);
     }
+  }
+  if (spec.boundedStripReflowLine) {
+    lines.push(`Strip reflow (spatial): ${spec.boundedStripReflowLine}`);
   }
 
   const pushHonesty = () => {

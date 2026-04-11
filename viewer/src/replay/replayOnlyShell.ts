@@ -215,7 +215,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   const boundedInspectorTitle = el(
     "h4",
     "glass-bounded-inspector-title",
-    "Bounded scene selection (Vertical Slice v6)",
+    "Bounded scene selection (Vertical Slice v7)",
   );
   const boundedInspectorPre = el("pre", "glass-bounded-inspector");
   boundedInspectorPre.setAttribute("data-testid", "replay-bounded-inspector");

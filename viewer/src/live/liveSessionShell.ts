@@ -408,7 +408,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const boundedInspectorTitle = el(
     "h4",
     "glass-bounded-inspector-title",
-    "Bounded scene selection (Vertical Slice v6)",
+    "Bounded scene selection (Vertical Slice v7)",
   );
   const boundedInspectorPre = el("pre", "glass-bounded-inspector");
   boundedInspectorPre.setAttribute("data-testid", "live-bounded-inspector");
@@ -470,7 +470,15 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     const spec = buildCurrentLiveVisualSpec();
     const boundedFocusSummary =
       lastPaintedLiveScene !== null
-        ? computeBoundedSceneFocus(lastPaintedLiveScene, selectedBoundedSelectionId).provenanceFocusLine
+        ? (() => {
+            const fp = computeBoundedSceneFocus(lastPaintedLiveScene, selectedBoundedSelectionId)
+              .provenanceFocusLine;
+            const rf = spec.boundedStripReflowLine;
+            if (fp && rf) {
+              return `${fp} · ${rf}`;
+            }
+            return rf ?? fp ?? null;
+          })()
         : null;
     return buildLiveVisualProvenanceStrip({
       webGpuProbeStatus: webGpuStatus,

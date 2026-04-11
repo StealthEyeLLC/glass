@@ -3,10 +3,14 @@
  * No graph traversal, no inferred topology — dim/emphasis tiers are explainable from regions/zones/clusters.
  */
 
-import { LIVE_VISUAL_BAND_LAYOUT } from "../live/liveVisualMarkers.js";
 import type { GlassSceneV0, SceneBoundedRegion, SceneBoundedRegionRole } from "./glassSceneV0.js";
 import type { DrawablePrimitive } from "./drawablePrimitivesV0.js";
-import { LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT, LIVE_VISUAL_STATE_RAIL_LAYOUT } from "./drawablePrimitivesV0.js";
+import type { BoundedStripLayoutV0 } from "./boundedSceneFocusReflow.js";
+import {
+  clusterSegmentBoundsFromLayout,
+  defaultBoundedStripLayout,
+  focusRectForRegionRoleWithLayout,
+} from "./boundedSceneFocusReflow.js";
 
 /** Must match `BOUNDED_SELECTION_ID_PREFIX` in `boundedSceneSelection.ts` (no import — avoids cycle). */
 const SEL_PREFIX = "glass.sel.v0" as const;
@@ -448,33 +452,6 @@ function isEvidenceTag(tag: string): boolean {
   );
 }
 
-function clusterSegmentBounds(
-  scene: GlassSceneV0,
-  clusterIndex: number,
-  widthCss: number,
-): { x: number; y: number; width: number; height: number } | null {
-  const clusters = scene.clusters;
-  if (clusterIndex < 0 || clusterIndex >= clusters.length) {
-    return null;
-  }
-  const inset = LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.insetX;
-  const y = LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.originY;
-  const h = LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.height;
-  const innerW = widthCss - 2 * inset;
-  const pad = 2;
-  const gap = 2;
-  const n = clusters.length;
-  const innerW2 = innerW - 2 * pad;
-  const segW = (innerW2 - (n - 1) * gap) / n;
-  const innerY = y + pad;
-  const innerH = h - 2 * pad;
-  let x = inset + pad;
-  for (let i = 0; i < clusterIndex; i++) {
-    x += segW + gap;
-  }
-  return { x, y: innerY, width: segW, height: innerH };
-}
-
 /**
  * Mutates primitive list: dims non-focused bands and adds focus strokes (Canvas/WebGPU same stream).
  */
@@ -484,6 +461,7 @@ export function applyBoundedSceneFocusToPrimitives(
   widthCss: number,
   heightCss: number,
   out: DrawablePrimitive[],
+  stripLayout: BoundedStripLayoutV0,
 ): void {
   void heightCss;
   if (!focus.active) {
@@ -556,7 +534,7 @@ export function applyBoundedSceneFocusToPrimitives(
   if (focus.focusedRegionId) {
     const reg = scene.regions.find((r) => r.id === focus.focusedRegionId);
     if (reg) {
-      const r = focusRectForRegionRole(scene, reg.role, widthCss);
+      const r = focusRectForRegionRoleWithLayout(scene, reg.role, widthCss, stripLayout);
       if (r) {
         strokes.push({
           kind: "stroke_rect",
@@ -575,7 +553,7 @@ export function applyBoundedSceneFocusToPrimitives(
   if (focus.focusedClusterId) {
     const ci = scene.clusters.findIndex((c) => c.id === focus.focusedClusterId);
     if (ci >= 0) {
-      const b = clusterSegmentBounds(scene, ci, widthCss);
+      const b = clusterSegmentBoundsFromLayout(scene, ci, widthCss, stripLayout);
       if (b) {
         strokes.push({
           kind: "stroke_rect",
@@ -596,40 +574,11 @@ export function applyBoundedSceneFocusToPrimitives(
   }
 }
 
-/** Rectangle for region role in CSS px — for focus stroke overlays. */
+/** Rectangle for region role in CSS px — idle strip layout (no reflow). */
 export function focusRectForRegionRole(
   scene: GlassSceneV0,
   role: SceneBoundedRegionRole,
   widthCss: number,
 ): { x: number; y: number; width: number; height: number } | null {
-  if (scene.regions.length === 0) {
-    return null;
-  }
-  const inset = 16;
-  const innerW = widthCss - 2 * inset;
-  switch (role) {
-    case "primary_wire_sample":
-      return {
-        x: inset,
-        y: LIVE_VISUAL_BAND_LAYOUT.originY,
-        width: innerW,
-        height: LIVE_VISUAL_BAND_LAYOUT.height,
-      };
-    case "system_integrity_rail":
-      return {
-        x: inset,
-        y: LIVE_VISUAL_STATE_RAIL_LAYOUT.originY,
-        width: innerW,
-        height: LIVE_VISUAL_STATE_RAIL_LAYOUT.height,
-      };
-    case "bounded_sample_evidence":
-      return {
-        x: inset,
-        y: LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.originY,
-        width: innerW,
-        height: LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.height,
-      };
-    default:
-      return null;
-  }
+  return focusRectForRegionRoleWithLayout(scene, role, widthCss, defaultBoundedStripLayout());
 }

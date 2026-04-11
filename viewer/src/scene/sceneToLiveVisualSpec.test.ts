@@ -56,5 +56,8 @@ describe("liveVisualSpecFromScene (renderer boundary)", () => {
     expect(spec.boundedCompositionCaption).toBe("Wire · System · Evidence");
     expect(spec.boundedEmphasisSummaryLine).toBeNull();
     expect(spec.boundedFocusCaptionLine).toBeNull();
+    expect(spec.boundedStripReflowLine).toBeNull();
+    expect(spec.stripPrimaryY).toBe(16);
+    expect(spec.stripContentBottomY).toBeGreaterThan(90);
   });
 });

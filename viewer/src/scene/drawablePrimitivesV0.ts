@@ -10,7 +10,6 @@
 import type { LiveVisualTickKind } from "../live/liveVisualMarkers.js";
 import {
   buildLiveVisualMarkersLayout,
-  LIVE_VISUAL_BAND_LAYOUT,
   LIVE_VISUAL_TICK_GEOMETRY,
   LIVE_VISUAL_TICK_INACTIVE,
   liveVisualTickActiveFill,
@@ -21,6 +20,10 @@ import {
   liveVisualDensity01,
 } from "../live/liveVisualModel.js";
 import type { GlassSceneV0, SceneActorCluster, SceneActorClusterLane } from "./glassSceneV0.js";
+import {
+  defaultBoundedStripLayout,
+  type BoundedStripLayoutV0,
+} from "./boundedSceneFocusReflow.js";
 
 export const DRAWABLE_PRIMITIVES_V0 = "glass.drawable_primitives.v0" as const;
 
@@ -215,11 +218,16 @@ export function edgeFrameTagsForStroke(
  * optional `http_chip_fill` + `http_chip_frame` → 6. `band_frame` → 7+. Vertical Slice v1 state rail
  * (`state_rail_*`, `replay_*` lanes, `state_rail_frame`).
  */
-function appendVerticalSliceStateRail(spec: LiveVisualSpec, widthCss: number, out: DrawablePrimitive[]): void {
+function appendVerticalSliceStateRail(
+  spec: LiveVisualSpec,
+  widthCss: number,
+  out: DrawablePrimitive[],
+  stripLayout: BoundedStripLayoutV0,
+): void {
   const inset = LIVE_VISUAL_STATE_RAIL_LAYOUT.insetX;
   const innerW = widthCss - 2 * inset;
-  const y = LIVE_VISUAL_STATE_RAIL_LAYOUT.originY;
-  const h = LIVE_VISUAL_STATE_RAIL_LAYOUT.height;
+  const y = stripLayout.systemY;
+  const h = stripLayout.systemH;
   const gap = 2;
 
   out.push({
@@ -276,10 +284,21 @@ function appendVerticalSliceStateRail(spec: LiveVisualSpec, widthCss: number, ou
       });
     }
   } else {
-    const third = (innerW2 - 2 * gap) / 3;
-    const w1 = third;
-    const w2 = third;
-    const w3 = innerW2 - w1 - w2 - 2 * gap;
+    const innerTracks = innerW2 - 2 * gap;
+    const laneFr = stripLayout.stateRailLaneFractions;
+    let w1: number;
+    let w2: number;
+    let w3: number;
+    if (laneFr) {
+      w1 = innerTracks * laneFr[0];
+      w2 = innerTracks * laneFr[1];
+      w3 = innerTracks * laneFr[2];
+    } else {
+      const third = innerTracks / 3;
+      w1 = third;
+      w2 = third;
+      w3 = innerW2 - w1 - w2 - 2 * gap;
+    }
 
     const hasOrigin =
       spec.snapshotOriginLabel !== null &&
@@ -388,19 +407,25 @@ export function appendBoundedActorClusterStrip(
   clusters: readonly SceneActorCluster[],
   widthCss: number,
   out: DrawablePrimitive[],
+  stripLayout: BoundedStripLayoutV0 = defaultBoundedStripLayout(),
 ): void {
   if (clusters.length === 0) {
     return;
   }
   const inset = LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.insetX;
-  const y = LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.originY;
-  const h = LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.height;
+  const y = stripLayout.clusterY;
+  const h = stripLayout.clusterH;
   const innerW = widthCss - 2 * inset;
   const pad = 2;
   const gap = 2;
   const n = clusters.length;
   const innerW2 = innerW - 2 * pad;
-  const segW = (innerW2 - (n - 1) * gap) / n;
+  const fr = stripLayout.clusterLaneFractions;
+  const innerTracks = innerW2 - (n - 1) * gap;
+  const segWidths =
+    fr && fr.length === n
+      ? fr.map((f) => innerTracks * f)
+      : clusters.map(() => (innerW2 - (n - 1) * gap) / n);
   const innerY = y + pad;
   const innerH = h - 2 * pad;
 
@@ -415,7 +440,12 @@ export function appendBoundedActorClusterStrip(
   });
 
   let x = inset + pad;
-  for (const c of clusters) {
+  for (let i = 0; i < clusters.length; i++) {
+    const c = clusters[i];
+    const segW = segWidths[i];
+    if (c === undefined || segW === undefined) {
+      continue;
+    }
     const tag = actorClusterLaneSemanticTag(c.lane);
     out.push({
       kind: "fill_rect",
@@ -525,6 +555,7 @@ export function applyBoundedSceneComposition(
   widthCss: number,
   heightCss: number,
   out: DrawablePrimitive[],
+  stripLayout: BoundedStripLayoutV0 = defaultBoundedStripLayout(),
 ): void {
   if (scene.regions.length === 0) {
     return;
@@ -533,12 +564,12 @@ export function applyBoundedSceneComposition(
   const innerW = w - 2 * COMPOSITION_INSET;
   const em = scene.emphasis;
 
-  const primaryY = LIVE_VISUAL_BAND_LAYOUT.originY;
-  const primaryH = LIVE_VISUAL_BAND_LAYOUT.height;
-  const systemY = LIVE_VISUAL_STATE_RAIL_LAYOUT.originY;
-  const systemH = LIVE_VISUAL_STATE_RAIL_LAYOUT.height;
-  const evidenceY = LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.originY;
-  const evidenceH = LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.height;
+  const primaryY = stripLayout.primaryY;
+  const primaryH = stripLayout.primaryH;
+  const systemY = stripLayout.systemY;
+  const systemH = stripLayout.systemH;
+  const evidenceY = stripLayout.clusterY;
+  const evidenceH = stripLayout.clusterH;
 
   const bgIdx = out.findIndex((p) => p.semanticTag === "band_background");
   if (bgIdx >= 0) {
@@ -648,17 +679,18 @@ export function applyBoundedEmphasisOverlays(
   widthCss: number,
   heightCss: number,
   out: DrawablePrimitive[],
+  stripLayout: BoundedStripLayoutV0 = defaultBoundedStripLayout(),
 ): void {
   void heightCss;
   const e = scene.emphasis;
   const frameIdx = out.findIndex((p) => p.semanticTag === "composition_bounded_scene_frame");
   const insertAt = frameIdx >= 0 ? frameIdx : out.length;
   const w = widthCss;
-  const bandY = LIVE_VISUAL_BAND_LAYOUT.originY;
-  const bandH = LIVE_VISUAL_BAND_LAYOUT.height;
+  const bandY = stripLayout.primaryY;
+  const bandH = stripLayout.primaryH;
   const inset = LIVE_VISUAL_STATE_RAIL_LAYOUT.insetX;
-  const railY = LIVE_VISUAL_STATE_RAIL_LAYOUT.originY;
-  const railH = LIVE_VISUAL_STATE_RAIL_LAYOUT.height;
+  const railY = stripLayout.systemY;
+  const railH = stripLayout.systemH;
   const innerW = w - 2 * inset;
   const inserts: DrawablePrimitive[] = [];
 
@@ -726,6 +758,7 @@ export function buildBoundedVisualGeometryPrimitives(
   spec: LiveVisualSpec,
   widthCss: number,
   heightCss: number,
+  stripLayout: BoundedStripLayoutV0 = defaultBoundedStripLayout(),
 ): DrawablePrimitive[] {
   const w = widthCss;
   const h = heightCss;
@@ -744,8 +777,8 @@ export function buildBoundedVisualGeometryPrimitives(
   const bandColor = LIVE_VISUAL_MODE_FILL[spec.mode];
   const density = liveVisualDensity01(spec.eventTailCount);
   const bandW = 16 + density * (w - 32);
-  const bandH = LIVE_VISUAL_BAND_LAYOUT.height;
-  const bandY = LIVE_VISUAL_BAND_LAYOUT.originY;
+  const bandH = stripLayout.primaryH;
+  const bandY = stripLayout.primaryY;
   out.push({
     kind: "fill_rect",
     semanticTag: "density_band",
@@ -756,7 +789,7 @@ export function buildBoundedVisualGeometryPrimitives(
     fillColorHex: bandColor,
   });
 
-  const markers = buildLiveVisualMarkersLayout(spec, w);
+  const markers = buildLiveVisualMarkersLayout(spec, w, { bandOriginY: bandY });
   const tickTop = bandY + LIVE_VISUAL_TICK_GEOMETRY.insetTop;
   const tickBot = bandY + bandH - LIVE_VISUAL_TICK_GEOMETRY.insetBottom;
   const tw = LIVE_VISUAL_TICK_GEOMETRY.widthPx;
@@ -807,7 +840,7 @@ export function buildBoundedVisualGeometryPrimitives(
     lineWidthCss: 1,
   });
 
-  appendVerticalSliceStateRail(spec, w, out);
+  appendVerticalSliceStateRail(spec, w, out, stripLayout);
 
   return out;
 }

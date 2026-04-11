@@ -69,25 +69,29 @@ describe("bounded inspector lines", () => {
   it("describes region selection when region id present", () => {
     const model = createInitialLiveSessionModelState("sid");
     const scene = compileLiveToGlassSceneV0({ model, lastReconcile: null });
-    const spec = liveVisualSpecFromScene(scene);
     const rid = scene.regions.find((r) => r.role === "primary_wire_sample")?.id;
     expect(rid).toBeTruthy();
     if (!rid) {
       return;
     }
-    const lines = buildBoundedInspectorLines(scene, spec, boundedSelectionIdRegion(rid));
+    const sel = boundedSelectionIdRegion(rid);
+    const spec = liveVisualSpecFromScene(scene, sel);
+    const lines = buildBoundedInspectorLines(scene, spec, sel);
     expect(lines.join("\n")).toContain("Region:");
+    expect(lines.join("\n")).toContain("Strip reflow (spatial):");
   });
 
   it("describes cluster selection", () => {
     const model = createInitialLiveSessionModelState("sid");
     const scene = compileLiveToGlassSceneV0({ model, lastReconcile: null });
-    const spec = liveVisualSpecFromScene(scene);
     const first = scene.clusters[0];
     if (!first) {
       return;
     }
-    const lines = buildBoundedInspectorLines(scene, spec, boundedSelectionIdCluster(first.id));
+    const sel = boundedSelectionIdCluster(first.id);
+    const spec = liveVisualSpecFromScene(scene, sel);
+    const lines = buildBoundedInspectorLines(scene, spec, sel);
     expect(lines.join("\n")).toContain("Cluster lane:");
+    expect(lines.join("\n")).toContain("Strip reflow (spatial):");
   });
 });

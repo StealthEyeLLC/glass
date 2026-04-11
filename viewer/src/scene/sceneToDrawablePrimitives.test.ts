@@ -15,6 +15,7 @@ import {
   buildBoundedVisualGeometryPrimitives,
 } from "./drawablePrimitivesV0.js";
 import { applyBoundedSceneFocusToPrimitives, computeBoundedSceneFocus } from "./boundedSceneFocus.js";
+import { computeBoundedStripLayoutFromFocus } from "./boundedSceneFocusReflow.js";
 import { liveVisualSpecFromScene } from "./sceneToLiveVisualSpec.js";
 import { sceneToDrawablePrimitives } from "./sceneToDrawablePrimitives.js";
 import { listSemanticTagsForScene } from "./semanticTagSummaryV0.js";
@@ -55,16 +56,18 @@ describe("sceneToDrawablePrimitives", () => {
       lastReconcile: null,
     });
     const a = sceneToDrawablePrimitives(scene);
+    const focus = computeBoundedSceneFocus(scene, null);
+    const strip = computeBoundedStripLayoutFromFocus(scene, focus, null);
     const b = buildBoundedVisualGeometryPrimitives(
       liveVisualSpecFromScene(scene),
       scene.bounds.widthCss,
       scene.bounds.heightCss,
+      strip,
     );
-    appendBoundedActorClusterStrip(scene.clusters, scene.bounds.widthCss, b);
-    applyBoundedSceneComposition(scene, scene.bounds.widthCss, scene.bounds.heightCss, b);
-    applyBoundedEmphasisOverlays(scene, scene.bounds.widthCss, scene.bounds.heightCss, b);
-    const focus = computeBoundedSceneFocus(scene, null);
-    applyBoundedSceneFocusToPrimitives(scene, focus, scene.bounds.widthCss, scene.bounds.heightCss, b);
+    appendBoundedActorClusterStrip(scene.clusters, scene.bounds.widthCss, b, strip);
+    applyBoundedSceneComposition(scene, scene.bounds.widthCss, scene.bounds.heightCss, b, strip);
+    applyBoundedEmphasisOverlays(scene, scene.bounds.widthCss, scene.bounds.heightCss, b, strip);
+    applyBoundedSceneFocusToPrimitives(scene, focus, scene.bounds.widthCss, scene.bounds.heightCss, b, strip);
     expect(a).toEqual(b);
   });
 
@@ -74,16 +77,13 @@ describe("sceneToDrawablePrimitives", () => {
       lastReconcile: null,
     });
     const withLayout = sceneToDrawablePrimitives(scene, { widthCss: 400, heightCss: 200 });
-    const direct = buildBoundedVisualGeometryPrimitives(
-      liveVisualSpecFromScene(scene),
-      400,
-      200,
-    );
-    appendBoundedActorClusterStrip(scene.clusters, 400, direct);
-    applyBoundedSceneComposition(scene, 400, 200, direct);
-    applyBoundedEmphasisOverlays(scene, 400, 200, direct);
     const focus400 = computeBoundedSceneFocus(scene, null);
-    applyBoundedSceneFocusToPrimitives(scene, focus400, 400, 200, direct);
+    const strip400 = computeBoundedStripLayoutFromFocus(scene, focus400, null);
+    const direct = buildBoundedVisualGeometryPrimitives(liveVisualSpecFromScene(scene), 400, 200, strip400);
+    appendBoundedActorClusterStrip(scene.clusters, 400, direct, strip400);
+    applyBoundedSceneComposition(scene, 400, 200, direct, strip400);
+    applyBoundedEmphasisOverlays(scene, 400, 200, direct, strip400);
+    applyBoundedSceneFocusToPrimitives(scene, focus400, 400, 200, direct, strip400);
     expect(withLayout).toEqual(direct);
   });
 

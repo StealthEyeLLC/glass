@@ -3,6 +3,7 @@
  */
 
 import { applyBoundedSceneFocusToPrimitives, computeBoundedSceneFocus } from "./boundedSceneFocus.js";
+import { computeBoundedStripLayoutFromFocus } from "./boundedSceneFocusReflow.js";
 import type { GlassSceneV0, SceneBounds } from "./glassSceneV0.js";
 import {
   appendBoundedActorClusterStrip,
@@ -25,12 +26,13 @@ export function sceneToDrawablePrimitives(
 ): DrawablePrimitive[] {
   const w = layout?.widthCss ?? scene.bounds.widthCss;
   const h = layout?.heightCss ?? scene.bounds.heightCss;
-  const spec = liveVisualSpecFromScene(scene, options?.focusedSelectionId ?? null);
-  const out = buildBoundedVisualGeometryPrimitives(spec, w, h);
-  appendBoundedActorClusterStrip(scene.clusters, w, out);
-  applyBoundedSceneComposition(scene, w, h, out);
-  applyBoundedEmphasisOverlays(scene, w, h, out);
   const focus = computeBoundedSceneFocus(scene, options?.focusedSelectionId ?? null);
-  applyBoundedSceneFocusToPrimitives(scene, focus, w, h, out);
+  const strip = computeBoundedStripLayoutFromFocus(scene, focus, options?.focusedSelectionId ?? null);
+  const spec = liveVisualSpecFromScene(scene, options?.focusedSelectionId ?? null);
+  const out = buildBoundedVisualGeometryPrimitives(spec, w, h, strip);
+  appendBoundedActorClusterStrip(scene.clusters, w, out, strip);
+  applyBoundedSceneComposition(scene, w, h, out, strip);
+  applyBoundedEmphasisOverlays(scene, w, h, out, strip);
+  applyBoundedSceneFocusToPrimitives(scene, focus, w, h, out, strip);
   return out;
 }

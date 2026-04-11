@@ -3,6 +3,7 @@ import { createInitialLiveSessionModelState } from "./applyLiveSessionMessage.js
 import { buildLiveVisualSpec } from "./liveVisualModel.js";
 import { compileLiveToGlassSceneV0 } from "../scene/compileLiveScene.js";
 import { applyBoundedSceneFocusToPrimitives, computeBoundedSceneFocus } from "../scene/boundedSceneFocus.js";
+import { computeBoundedStripLayoutFromFocus } from "../scene/boundedSceneFocusReflow.js";
 import { sceneToDrawablePrimitives } from "../scene/sceneToDrawablePrimitives.js";
 import {
   appendBoundedActorClusterStrip,
@@ -65,12 +66,13 @@ describe("buildDrawablePrimitivesWebGpuVertexData", () => {
       layout,
     );
     const spec = liveVisualSpecFromScene(scene);
-    const manual = buildBoundedVisualGeometryPrimitives(spec, layout.widthCss, layout.heightCss);
-    appendBoundedActorClusterStrip(scene.clusters, layout.widthCss, manual);
-    applyBoundedSceneComposition(scene, layout.widthCss, layout.heightCss, manual);
-    applyBoundedEmphasisOverlays(scene, layout.widthCss, layout.heightCss, manual);
     const focus = computeBoundedSceneFocus(scene, null);
-    applyBoundedSceneFocusToPrimitives(scene, focus, layout.widthCss, layout.heightCss, manual);
+    const strip = computeBoundedStripLayoutFromFocus(scene, focus, null);
+    const manual = buildBoundedVisualGeometryPrimitives(spec, layout.widthCss, layout.heightCss, strip);
+    appendBoundedActorClusterStrip(scene.clusters, layout.widthCss, manual, strip);
+    applyBoundedSceneComposition(scene, layout.widthCss, layout.heightCss, manual, strip);
+    applyBoundedEmphasisOverlays(scene, layout.widthCss, layout.heightCss, manual, strip);
+    applyBoundedSceneFocusToPrimitives(scene, focus, layout.widthCss, layout.heightCss, manual, strip);
     const fromManual = buildDrawablePrimitivesWebGpuVertexData(manual, layout);
     expect(fromScene.length).toBe(fromManual.length);
     expect([...fromScene]).toEqual([...fromManual]);
