@@ -2,6 +2,17 @@
 
 **Optional.** Nothing here is required to build, test, or run Glass.
 
+## Regenerating captures
+
+With the viewer dev server running (`npm run dev` in `viewer/`), from `viewer/`:
+
+```bash
+npx playwright install chromium
+npm run capture:showcase-media -- http://127.0.0.1:5173
+```
+
+Use the port Vite prints (defaults to `5173` if free). Outputs **`01`–`04`** PNGs in this folder (`1280×720` viewport; **`01`** is full-page).
+
 ## Committed assets (README)
 
 These **PNG** files are checked in for the bounded showcase path (see root **README**):

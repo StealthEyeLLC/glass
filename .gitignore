@@ -4,6 +4,7 @@
 
 # Node / viewer
 viewer/node_modules/
+viewer/_node_modules_*/
 viewer/dist/
 viewer/.vite/
 *.tsbuildinfo

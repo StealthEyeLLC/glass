@@ -15,13 +15,15 @@
     "fixture:vertical-slice": "node scripts/writeVerticalSliceFixture.mjs",
     "verify:vertical-slice-fixture": "node scripts/verifyVerticalSliceFixture.mjs",
     "fixture:canonical-scenarios-v15": "node scripts/writeCanonicalScenariosV15.mjs",
-    "verify:canonical-scenarios-v15": "node scripts/verifyCanonicalScenariosV15.mjs"
+    "verify:canonical-scenarios-v15": "node scripts/verifyCanonicalScenariosV15.mjs",
+    "capture:showcase-media": "node scripts/captureShowcaseMedia.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
     "@webgpu/types": "^0.1.64",
     "eslint": "^9.17.0",
     "jsdom": "^25.0.1",
+    "playwright": "^1.49.1",
     "typescript": "~5.7.2",
     "typescript-eslint": "^8.18.0",
     "vite": "^6.0.3",

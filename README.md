@@ -69,7 +69,7 @@ Live: WS tail and HTTP snapshot stay **separate**. Replay: index-ordered prefix;
 
 ## Screenshots (bounded showcase)
 
-**How these were taken:** Vite dev server (`npm run dev` in `viewer/`); replay frames use **`?fixture=flagship`** → `canonical_v15_append_heavy.glass_pack`; live frame uses **`?live=1`**. Synthetic committed fixtures only — not production telemetry.
+**How these were taken:** Vite dev server (`npm run dev` in `viewer/`); replay frames use **`?fixture=flagship`** → `canonical_v15_append_heavy.glass_pack`; live frame uses **`?live=1`**. Regenerate with **`npm run capture:showcase-media -- http://127.0.0.1:<port>`** (dev server URL, e.g. `5173`) after `npx playwright install chromium` once. Synthetic committed fixtures only — not production telemetry.
 
 | | |
 |:--|:--|
