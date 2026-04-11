@@ -1,77 +1,72 @@
 # Glass (v0)
 
-**Bounded investigation surface above runtime telemetry** — open-source monorepo: packs, sanitization, Tier B static replay (default), optional loopback live shell.
+**Glass turns bounded runtime activity into an inspectable claim chain: scene, change, evidence, receipt.**
 
-**Product hook:** Glass turns bounded runtime activity into an inspectable claim chain: scene, change, evidence, receipt.
-
----
-
-## Where to start (doc order)
-
-| Order | Doc | Why |
-|-------|-----|-----|
-| 1 | **[VISION.md](VISION.md)** | Boundaries, strategy, standalone-first / ingest-agnostic framing, out-of-scope |
-| 2 | **This README** | Layout, fastest run, verify commands |
-| 3 | **[docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md)** | Flagship path, slice history, canonical scenarios |
-| 4 | **[docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)** | What exists vs scaffold |
-| 5 | **[docs/REPO_BOUNDARIES.md](docs/REPO_BOUNDARIES.md)** | Crate ownership |
-| 6 | **[docs/TEST_STRATEGY.md](docs/TEST_STRATEGY.md)** | How CI maps to behavior |
-
-**Authority:** `GLASS_FULL_ENGINEERING_SPEC_v10.md` (locked product spec). **Plan:** `GLASS_V0_BUILD_PLAN.md`.
+**What this is:** A **bounded investigation surface** above runtime telemetry — `.glass_pack` I/O, Tier B **static replay** (default), optional loopback **`?live=1`**. **Freeze-candidate in-repo for the bounded showcase path only** — not production ingest at scale, not **F-IPC** finality, not Phase-6 full topology (see **[VISION.md](VISION.md)**).
 
 ---
 
-## Product (one paragraph)
+## Standout interaction (the real product)
 
-Glass ships a **real** **`.glass_pack`** path, **pure** sanitization for export, a **Tier B** static replay viewer (`loadGlassPack`, bounded Scene System v0, claims/receipts/evidence/compare), and an optional **`?live=1`** session UI against a **loopback** bridge (bounded HTTP snapshot + WebSocket — contracts frozen where documented). There is **no** fake collector feed and **no** fake graph: the UI states what the **bounded** prefix/tail supports. **Freeze-candidate in-repo** applies to this **bounded showcase path** only — not to production-scale ingest, **F-IPC** finality, or Phase-6 full topology (see **VISION.md**).
+| | |
+|--|--|
+| **scene** | Current bounded **Glass Scene v0** — prefix/tail honest, not full history. |
+| **change** | **Compare** vs a declared baseline — not causal inference. |
+| **evidence** | Drilldown **rows/facts** from the bounded window — not a complete trace. |
+| **receipt** | **Viewer-derived** claim text; **weak** / **unavailable** when support is thin — not a collector certificate. |
 
----
-
-## Flagship bounded path
-
-- **Pack:** `tests/fixtures/canonical_scenarios_v15/canonical_v15_append_heavy.glass_pack` — session `canonical_v15_append_heavy`, append-heavy Tier B depth (compare, evidence, episodes, receipts, temporal lens).
-- **Minimal smoke:** `tests/fixtures/vertical_slice_v0/glass_vertical_slice_v0_tier_b.glass_pack` (3 events) — fast CI.
-- **Breadth:** four scenario packs under `tests/fixtures/canonical_scenarios_v15/` — replace, append, calm/steady, file-heavy (see that folder’s `README.md`).
-
----
-
-## Claim chain and bounded honesty
-
-| Step | Meaning |
-|------|---------|
-| **Scene** | Compiled **Glass Scene v0** strip from bounded prefix/tail — not full history. |
-| **Change** | **Compare** vs an honest baseline (immediate prior or temporal ring) — not a causal graph. |
-| **Evidence** | Drilldown **rows/facts** from the current bounded window — not a complete trace. |
-| **Receipt** | **Viewer-derived** bounded claim text; **weak** / **unavailable** when support is thin — **not** a collector certificate. |
-
-Live: WebSocket tail and HTTP snapshot stay **distinct** (not merged into one pretend log). Replay: index-ordered pack prefix; receipts/evidence from bounded frames only.
+Live: WS tail and HTTP snapshot stay **separate**. Replay: index-ordered prefix; same compilers.
 
 ---
 
-## Fastest first run (replay)
+## Try the flagship (fastest)
 
 1. `cd viewer && npm ci && npm run dev`
 2. **Open file** → `tests/fixtures/canonical_scenarios_v15/canonical_v15_append_heavy.glass_pack`  
-   Or **dev-only:** append **`?fixture=flagship`** (see `docs/VERTICAL_SLICE_V0.md`). Static **`dist/`** does not auto-load fixtures.
-3. Follow **How to read this surface** in the shell: scene → evidence → episodes → claims → receipt → temporal lens.
+   **Dev-only:** `?fixture=flagship` — static **`dist/`** does not auto-load fixtures ([details](docs/VERTICAL_SLICE_V0.md)).
+3. Read **How to read this surface** in the shell; scan top-to-bottom: scene canvas → evidence → episodes → claims → receipt → temporal lens.
 
-**Verify scenarios from `viewer/`:** `npm run verify:canonical-scenarios-v15` · `npm run verify:vertical-slice-fixture`
-
----
-
-## Showcase path vs future full system
-
-| Bounded showcase (v0) | Not claimed here |
-|------------------------|-------------------|
-| Tier B replay + optional `?live=1` + canonical suite + green CI | Production collector/bridge at scale |
-| Freeze-candidate **for this path** in-repo | **F-IPC** transport freeze |
-| Scene System v0 + Drawable Primitives + bounded claims | Phase-6 **full topology runtime** |
+**Verify (from `viewer/`):** `npm run verify:canonical-scenarios-v15` · `npm run verify:vertical-slice-fixture`
 
 ---
 
-## Screenshots / GIFs
+## Flagship depth vs scenario breadth
 
-Optional assets: **[docs/media/README.md](docs/media/README.md)** (placeholders and naming suggestions). Not required to build or test.
+| | Pack / role |
+|--|-------------|
+| **Flagship (depth)** | `canonical_v15_append_heavy.glass_pack` — session `canonical_v15_append_heavy`, append-heavy Tier B: compare, evidence, episodes, claims, receipts, temporal lens. **Primary** demo. |
+| **Smoke (CI)** | `tests/fixtures/vertical_slice_v0/glass_vertical_slice_v0_tier_b.glass_pack` — 3 events, fast checks. |
+| **Breadth (suite)** | Four packs under `tests/fixtures/canonical_scenarios_v15/` — replace, append, calm/steady, file-heavy ([folder README](tests/fixtures/canonical_scenarios_v15/README.md)). **Supporting** proof, not a second product. |
+
+---
+
+## Where to read next
+
+| Doc | Use |
+|-----|-----|
+| **[VISION.md](VISION.md)** | Strategy, standalone-first, ingest-agnostic, explicit out-of-scope |
+| **[docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md)** | Slice history, flagship naming |
+| **[docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)** | Implemented vs scaffold |
+| **[docs/REPO_BOUNDARIES.md](docs/REPO_BOUNDARIES.md)** | Crate ownership |
+| **[docs/TEST_STRATEGY.md](docs/TEST_STRATEGY.md)** | CI ↔ behavior map |
+
+**Authority:** `GLASS_FULL_ENGINEERING_SPEC_v10.md` · **Plan:** `GLASS_V0_BUILD_PLAN.md`
+
+---
+
+## Showcase vs what this repo does not claim
+
+| In scope (bounded showcase) | Out of scope (honest) |
+|-------------------------------|------------------------|
+| Tier B replay + optional `?live=1` + canonical suite + green CI | Production collector/bridge operations at scale |
+| Scene System v0 + bounded claims/receipts | **F-IPC** transport freeze |
+| | Phase-6 **full topology runtime** |
+
+---
+
+## Release media (optional)
+
+Screenshots / GIFs: **[docs/media/README.md](docs/media/README.md)** — ordered filenames, capture targets, redaction checklist. **Not** required to build or test.
 
 ---
 
@@ -84,11 +79,11 @@ Optional assets: **[docs/media/README.md](docs/media/README.md)** (placeholders 
 | `graph_engine/` | Graph derivation (stub crate; no presentation) |
 | `collector/` | Linux collector binary (lifecycle stub only) |
 | `bridge/` | Local loopback bridge (`glass_bridge`) + resync types — HTTP/WS per docs |
-| `viewer/` | Tier B static replay + optional **`?live=1`** live shell — **Vertical Slice v0–v23** (see `docs/VERTICAL_SLICE_V0.md`) |
+| `viewer/` | Tier B static replay + optional **`?live=1`** — **Vertical Slice v0–v24** ([docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md)) |
 | `tools/glass-pack` | CLI: validate / inspect packs; strict kinds + share-safe vs raw-dev |
 | `tools/golden_scenes/` | Golden-scene harness scaffold |
-| `docs/` | Status, boundaries, tests, contracts, **media** placeholders |
-| `scripts/retained_snapshot_demo/` | Retained collector ↔ bridge snapshot demo (`docs/DEMO_RETAINED_SNAPSHOT.md`) |
+| `docs/` | Status, boundaries, tests, contracts, **media** guidance |
+| `scripts/retained_snapshot_demo/` | Retained collector ↔ bridge snapshot demo ([docs/DEMO_RETAINED_SNAPSHOT.md](docs/DEMO_RETAINED_SNAPSHOT.md)) |
 | `tests/fixtures/` | **`vertical_slice_v0/`**, **`canonical_scenarios_v15/`** |
 
 ---
@@ -152,4 +147,4 @@ Default bridge listen: `127.0.0.1:9781`. **Live-session WebSocket** (`/ws`) — 
 
 ## Vertical slice (overview)
 
-One bounded narrative through replay and live: same Scene System v0 strip, honest wire semantics. Slice **v18** names the **flagship** append-heavy pack; **v15** adds the **canonical scenario suite**; **v19–v22** tighten trust handoff, reading order, framing parity, and freeze verdict. **v23** adds **public release prep**: **VISION.md**, README **reading order**, **docs/media** placeholders — **not** new product subsystems. Details: [docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md).
+One bounded narrative through replay and live. **v18** = flagship pack; **v15** = canonical suite; **v19–v22** = trust UX and freeze verdict; **v23** = public doc surface (**VISION.md**, reading order, media stubs); **v24** = public-repo landing audit (README order, media checklist) — **not** new subsystems. Details: [docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md).

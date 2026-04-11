@@ -9,6 +9,7 @@ labels: []
 
 - Repository root: `VISION.md`
 - `docs/VERTICAL_SLICE_V0.md`
+- Optional media guidance: `docs/media/README.md`
 
 ## What happened?
 
