@@ -39,4 +39,5 @@
 ## Static vs live
 
 - `viewer` build shipped as static pages is **replay-only** (`getBuildMode()` returns `static_replay`).
-- Live WebSocket client will be a separate code path when `bridge` server exists; do not pretend live data exists in the static build.
+- The repo also ships an optional local **`?live=1`** shell for bridge-backed sessions; it is secondary to replay and does **not** make the static build self-sufficient or cloud-hosted.
+- Do not pretend live data exists without a real bridge session, preflight, and bounded wire inputs.

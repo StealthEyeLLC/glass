@@ -32,6 +32,8 @@
 powershell -ExecutionPolicy Bypass -File scripts/bootstrap_check.ps1
 ```
 
+Those bootstrap scripts are intended to match the bounded-showcase proof that viewer CI runs: `build`, `test`, `lint`, `verify:vertical-slice-fixture`, and `verify:canonical-scenarios-v15`. They prefer `npm ci` and fall back to `npm install` if a local file lock blocks a clean reinstall.
+
 Or run the full gates manually:
 
 ```bash
@@ -41,9 +43,9 @@ cargo test --workspace
 
 cd viewer
 npm ci
+npm run build
 npm test
 npm run lint
-npm run build
 npm run verify:vertical-slice-fixture
 npm run verify:canonical-scenarios-v15
 ```

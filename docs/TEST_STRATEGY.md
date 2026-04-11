@@ -1,6 +1,6 @@
 # Test strategy (bounded showcase)
 
-**Public doc order (for context):** [README](../README.md) → [VISION.md](../VISION.md) → [VERTICAL_SLICE_V0.md](VERTICAL_SLICE_V0.md) → [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) → this file.
+**Public doc order (for context):** [README](../README.md) → [VISION.md](../VISION.md) → [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) → this file. Use [VERTICAL_SLICE_V0.md](VERTICAL_SLICE_V0.md) as milestone history, not the front-door contract.
 
 Maps the current bounded showcase to concrete verification. Use this file as the proof surface for what the repo actually ships today; long-horizon topology work is separate.
 

@@ -94,10 +94,12 @@ Capture notes and file order: **[docs/media/README.md](docs/media/README.md)**.
 powershell -ExecutionPolicy Bypass -File scripts/bootstrap_check.ps1
 ```
 
+Those bootstrap scripts run the same bounded-showcase viewer gates as CI: `build`, `test`, `lint`, `verify:vertical-slice-fixture`, and `verify:canonical-scenarios-v15`. They prefer `npm ci` and fall back to `npm install` if a local file lock blocks a clean reinstall.
+
 Or manually:
 
 ```bash
-cargo fmt --check
+cargo fmt --all -- --check
 cargo clippy --workspace --all-targets -- -D warnings
 cargo test --workspace
 cd viewer

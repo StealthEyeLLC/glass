@@ -13,8 +13,8 @@ if (!root) {
 const uiSurface = getUiSurface();
 document.title =
   uiSurface === "live_session"
-    ? "Glass — live session showcase"
-    : "Glass — replay showcase";
+    ? "Glass — bounded live session showcase"
+    : "Glass — bounded replay showcase";
 
 if (uiSurface === "live_session") {
   mountLiveSessionShell(root);

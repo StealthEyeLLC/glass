@@ -15,6 +15,16 @@ const outDir = path.join(repoRoot, "docs/media");
 const base =
   process.argv[2]?.replace(/\/$/, "") ?? "http://127.0.0.1:5173";
 
+async function waitForReplayShowcaseReady(page) {
+  await page.waitForSelector('[data-testid="replay-scene-v0"]', { timeout: 60_000 });
+  await page.waitForSelector('[data-testid="replay-position"]', { timeout: 60_000 });
+}
+
+async function waitForReplayTrustState(page) {
+  await page.waitForSelector('[data-testid="replay-bounded-claim-chip"]', { timeout: 60_000 });
+  await page.waitForSelector('[data-testid="replay-bounded-evidence"]', { timeout: 60_000 });
+}
+
 async function main() {
   fs.mkdirSync(outDir, { recursive: true });
 
@@ -27,9 +37,9 @@ async function main() {
 
   const flagship = `${base}/?fixture=flagship`;
   await page.goto(flagship, { waitUntil: "load", timeout: 60_000 });
-  await page.waitForSelector('[data-testid="replay-scene-v0"]', { timeout: 60_000 });
+  await waitForReplayShowcaseReady(page);
   await page.locator('[data-testid="replay-jump-end"]').click();
-  await page.waitForTimeout(250);
+  await waitForReplayTrustState(page);
 
   await page.screenshot({
     path: path.join(outDir, "01-replay-flagship-overview.png"),
@@ -38,29 +48,27 @@ async function main() {
 
   const flagshipTechnical = `${base}/?fixture=flagship&surface=technical`;
   await page.goto(flagshipTechnical, { waitUntil: "load", timeout: 60_000 });
-  await page.waitForSelector('[data-testid="replay-scene-v0"]', { timeout: 60_000 });
+  await waitForReplayShowcaseReady(page);
   await page.locator('[data-testid="replay-jump-end"]').click();
-  await page.waitForTimeout(250);
+  await waitForReplayTrustState(page);
   await page.locator('[data-testid="replay-bounded-claim-chip"]').first().click();
-  await page.waitForTimeout(200);
+  await page.waitForSelector('[data-testid="replay-bounded-claim-receipt"]', { timeout: 60_000 });
   await page.locator('[data-testid="replay-bounded-claim-receipt-ids"] summary').click();
-  await page.waitForTimeout(150);
   const receipt = page.locator('[data-testid="replay-bounded-claim-receipt-root"]');
   await receipt.scrollIntoViewIfNeeded();
-  await page.waitForTimeout(200);
+  await page.waitForSelector('[data-testid="replay-bounded-claim-receipt-identity"]', { timeout: 60_000 });
   await receipt.screenshot({
     path: path.join(outDir, "02-claim-chain-receipt.png"),
   });
 
   await page.goto(flagship, { waitUntil: "load", timeout: 60_000 });
-  await page.waitForSelector('[data-testid="replay-scene-v0"]', { timeout: 60_000 });
+  await waitForReplayShowcaseReady(page);
   await page.locator('[data-testid="replay-jump-end"]').click();
-  await page.waitForTimeout(250);
+  await waitForReplayTrustState(page);
   await page.locator('[data-testid="bounded-temporal-paint-chip"]:not([data-current="true"])').first().click();
-  await page.waitForTimeout(200);
+  await page.waitForSelector('[data-testid="bounded-temporal-reset-baseline"]', { timeout: 60_000 });
   const temporal = page.locator('[data-testid="replay-temporal-lens-root"]');
   await temporal.scrollIntoViewIfNeeded();
-  await page.waitForTimeout(200);
   await temporal.screenshot({
     path: path.join(outDir, "03-temporal-lens-compare.png"),
   });
@@ -68,7 +76,7 @@ async function main() {
   const live = `${base}/?live=1`;
   await page.goto(live, { waitUntil: "load", timeout: 60_000 });
   await page.waitForSelector('[data-testid="live-vs-hero"]', { timeout: 60_000 });
-  await page.waitForTimeout(300);
+  await page.waitForSelector('[data-testid="live-trust-setup"]', { timeout: 60_000 });
   await page.screenshot({
     path: path.join(outDir, "04-live-shell-overview.png"),
     fullPage: true,

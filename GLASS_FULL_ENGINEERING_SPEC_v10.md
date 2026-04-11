@@ -9,7 +9,7 @@
 **Primary audience:** developers, systems engineers, security-minded engineers, AI-agent users, open-source reviewers, technical testers, future contributors  
 **Status target:** build-ready specification  
 **Scope:** Glass v0 breakout build, with explicit vNext ceiling and deferred lanes  
-**Revision status:** v8 final launch-surface and adoption-friction hardening pass incorporating zero-install static replay viewing, optional disciplined sonification, lightweight known-agent signature hints, X-Ray causality focus mode, and final README/demo/share-surface polish on top of inode-first identity, stale-viewer resync, headless exit-code passthrough, ephemeral-zone modeling, privilege separation, edge bundling, session-relative time translation, and network-aware sanitization
+**Revision status:** v10 long-horizon reference snapshot, carrying forward the earlier launch-surface and adoption-friction hardening language while remaining broader than the current shipped bounded showcase
 
 **Launch posture:** This file is a long-horizon architecture reference. It is **not** the current shipped contract for the public bounded showcase in this repo. For current product truth, start with `README.md`, `VISION.md`, and `docs/IMPLEMENTATION_STATUS.md`.
 
