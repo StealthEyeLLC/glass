@@ -455,7 +455,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   boundedEpisodeTitle.setAttribute("data-testid", "live-bounded-episodes-heading");
   const boundedEpisodeRoot = el("div", "glass-bounded-episodes-root");
   boundedEpisodeRoot.setAttribute("data-testid", "live-bounded-episodes-root");
-  const boundedClaimTitle = el("h4", "glass-bounded-claims-title", "Bounded claims (Vertical Slice v13)");
+  const boundedClaimTitle = el("h4", "glass-bounded-claims-title", "Bounded claims (Vertical Slice v14)");
   boundedClaimTitle.setAttribute("data-testid", "live-bounded-claims-heading");
   const boundedClaimStripRoot = el("div", "glass-bounded-claims-strip-root");
   boundedClaimStripRoot.setAttribute("data-testid", "live-bounded-claims-strip-root");
@@ -648,7 +648,12 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     }
     const highlightClaimId = selectedBoundedClaimId ?? claimsPack.primaryClaimId;
     const activeClaim = claimsPack.claims.find((c) => c.id === highlightClaimId) ?? null;
-    const receipt = buildBoundedClaimReceipt(activeClaim, drill, lastPaintedLiveScene);
+    const receipt = buildBoundedClaimReceipt(activeClaim, drill, lastPaintedLiveScene, {
+      compare: cmp,
+      selectedSelectionId: selectedBoundedSelectionId,
+      selectedEpisodeId: selectedBoundedEpisodeId,
+      episodes,
+    });
     const claimUi = boundedClaimEvidenceUiLines(receipt);
     renderBoundedClaimsInto(boundedClaimStripRoot, claimsPack, {
       testIdPrefix: "live",
@@ -672,6 +677,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       episodeHonestyNote: evEp.honestyNote,
       claimContextLine: claimUi.contextLine,
       claimDoesNotImplyLine: claimUi.doesNotImplyLine,
+      supportingEvidenceRowIndices: receipt?.evidenceRowIndices ?? null,
       onActivateRow: (_row, res) => {
         applyCrosslinkResolutionLive(res);
         void paintLiveVisual();

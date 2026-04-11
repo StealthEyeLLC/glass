@@ -26,6 +26,8 @@ export interface RenderBoundedEvidenceOptions {
   /** Vertical Slice v13 — active bounded claim (receipt summary lines). */
   claimContextLine?: string | null;
   claimDoesNotImplyLine?: string | null;
+  /** Vertical Slice v14 — highlight evidence rows that mechanically support the active claim. */
+  supportingEvidenceRowIndices?: readonly number[] | null;
   /** Replace-selection on row; toggle off when activating the same mapped id as current. */
   onActivateRow?: (rowIndex: number, resolution: BoundedCrosslinkResolutionV0) => void;
   onActivateCompare?: (resolution: BoundedCrosslinkResolutionV0) => void;
@@ -140,10 +142,19 @@ export function renderBoundedEvidenceInto(
   if (drilldown.rows.length > 0) {
     const wrap = document.createElement("div");
     wrap.className = "glass-bounded-evidence-rows";
+    const supportSet =
+      options?.supportingEvidenceRowIndices !== undefined && options.supportingEvidenceRowIndices !== null
+        ? new Set(options.supportingEvidenceRowIndices)
+        : null;
+
     drilldown.rows.forEach((r, rowIndex) => {
       const card = document.createElement("div");
       card.className = "glass-bounded-evidence-card";
       card.dataset.evidenceRowIndex = String(rowIndex);
+      if (supportSet?.has(rowIndex)) {
+        card.classList.add("glass-bounded-evidence-card--claim-support");
+        card.dataset.claimSupport = "true";
+      }
 
       let resolution: BoundedCrosslinkResolutionV0 | null = null;
       if (options) {

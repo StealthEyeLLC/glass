@@ -88,16 +88,19 @@ export { renderBoundedEpisodesInto } from "./boundedEpisodesPanel.js";
 export {
   BOUNDED_CLAIMS_KIND,
   BOUNDED_CLAIM_CARD_MAX,
+  BOUNDED_RECEIPT_SCHEMA_VERSION,
   boundedClaimEvidenceUiLines,
   boundedClaimSelectionStillValid,
   buildBoundedClaimReceipt,
   computeBoundedSceneClaims,
   resolvePrimaryClaimId,
+  serializeBoundedEvidenceRowKeyForReceipt,
   type BoundedClaimKindV0,
   type BoundedClaimReceiptV0,
   type BoundedClaimStatusV0,
   type BoundedClaimV0,
   type BoundedSceneClaimsV0,
+  type BuildBoundedClaimReceiptContext,
   type ComputeBoundedClaimsInput,
 } from "./boundedClaims.js";
 export { renderBoundedClaimReceiptInto, renderBoundedClaimsInto } from "./boundedClaimsPanel.js";

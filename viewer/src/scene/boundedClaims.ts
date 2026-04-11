@@ -1,14 +1,19 @@
 /**
- * Vertical Slice v13 — bounded claims (pure, deterministic).
+ * Vertical Slice v13–v14 — bounded claims (pure, deterministic).
  * Explicit, evidence-stated claims from compare + drilldown + episodes — not AI, not causal topology.
+ * v14: bounded receipt record (`glass.receipt.v0`) with mechanical claim↔evidence↔focus coupling.
  */
 
-import type { BoundedSceneCompareV0 } from "./boundedSceneCompare.js";
+import { BOUNDED_SCENE_COMPARE_KIND, type BoundedSceneCompareV0 } from "./boundedSceneCompare.js";
 import type { BoundedEvidenceDrilldownV0 } from "./boundedEvidenceDrilldown.js";
+import type { BoundedEvidenceRowLabel } from "./boundedEvidenceDrilldown.js";
 import type { BoundedSceneEpisodesV0, BoundedEpisodeKindV0, BoundedEpisodeV0 } from "./boundedEpisodes.js";
 import type { GlassSceneV0 } from "./glassSceneV0.js";
+import type { BoundedEvidenceRowKeyV0 } from "./boundedSceneCrosslink.js";
 
 export const BOUNDED_CLAIMS_KIND = "glass.claims.v0" as const;
+
+export const BOUNDED_RECEIPT_SCHEMA_VERSION = "glass.receipt.v0" as const;
 
 export const BOUNDED_CLAIM_CARD_MAX = 6 as const;
 
@@ -41,6 +46,12 @@ export interface BoundedClaimV0 {
   readonly status: BoundedClaimStatusV0;
   /** Hooks into compare line, facts, episode — short strings only. */
   readonly evidenceRefs: readonly string[];
+  /** v14 — drilldown row indices that honestly support this claim kind. */
+  readonly supportingEvidenceRowIndices: readonly number[];
+  /** v14 — drilldown fact line indices used for support bullets. */
+  readonly supportingFactIndices: readonly number[];
+  /** v14 — deterministic ref tokens (`fact:n`, `row:n:…`) for receipts and tests. */
+  readonly evidenceRefKeys: readonly string[];
   /** What this claim does not imply (bounded honesty). */
   readonly doesNotImply: string;
   /** Source episode card when claim is episode-derived. */
@@ -115,6 +126,155 @@ function statusForEpisodeKind(
   return "observed";
 }
 
+/** Deterministic serial for evidence row keys — no hidden authority. */
+export function serializeBoundedEvidenceRowKeyForReceipt(key: BoundedEvidenceRowKeyV0): string {
+  if (key.kind === "none") {
+    return "none";
+  }
+  if (key.kind === "live_tail_event") {
+    return `live_tail:${key.tailIndex}`;
+  }
+  return `replay:${key.seq}:${key.event_id}`;
+}
+
+function fnv1a32Hex(input: string): string {
+  let h = 2166136261;
+  for (let i = 0; i < input.length; i++) {
+    h ^= input.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0).toString(16).padStart(8, "0");
+}
+
+function computeSupportingRowIndices(
+  claimKind: BoundedClaimKindV0,
+  rows: readonly { rowLabel: BoundedEvidenceRowLabel }[],
+): number[] {
+  if (claimKind === "no_compare_baseline") {
+    return [];
+  }
+  const scored: { i: number; score: number }[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    const rl = rows[i].rowLabel;
+    let score = 0;
+    switch (claimKind) {
+      case "replay_step_change":
+        if (rl === "current_step") {
+          score = 3;
+        } else if (rl === "replay_prefix") {
+          score = 2;
+        }
+        break;
+      case "replace_tail":
+      case "append_growth":
+      case "density_shift":
+        if (rl === "changed") {
+          score = 3;
+        } else if (rl === "live_tail" || rl === "replay_prefix") {
+          score = 2;
+        }
+        break;
+      case "selection_linked_change":
+      case "cluster_lanes_change":
+        if (rl === "sampled") {
+          score = 3;
+        } else if (rl === "changed") {
+          score = 2;
+        } else if (rl === "live_tail") {
+          score = 1;
+        }
+        break;
+      case "warning_onset":
+      case "reconcile_resync":
+        if (rl === "live_tail" || rl === "replay_prefix") {
+          score = 2;
+        }
+        break;
+      case "wire_mode_change":
+        if (rl === "current_step") {
+          score = 3;
+        } else if (rl === "live_tail" || rl === "replay_prefix") {
+          score = 2;
+        }
+        break;
+      case "no_material_change":
+        if (rl === "changed") {
+          score = 2;
+        } else if (rl === "live_tail" || rl === "replay_prefix") {
+          score = 1;
+        }
+        break;
+      default:
+        score = 0;
+    }
+    if (score > 0) {
+      scored.push({ i, score });
+    }
+  }
+  scored.sort((a, b) => b.score - a.score || a.i - b.i);
+  let picked = scored.map((s) => s.i).slice(0, 6);
+  if (picked.length === 0 && rows.length > 0) {
+    picked = [rows.length - 1];
+  }
+  return picked;
+}
+
+function computeSupportingFactIndices(
+  claimKind: BoundedClaimKindV0,
+  facts: readonly string[],
+  claimStatus: BoundedClaimStatusV0,
+): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < facts.length; i++) {
+    const f = facts[i];
+    if (!f) {
+      continue;
+    }
+    if (claimKind === "warning_onset" && /warning|resync|reconcile/i.test(f)) {
+      out.push(i);
+    } else if (
+      claimKind === "reconcile_resync" &&
+      /reconcile|resync|snapshot_origin|HTTP/i.test(f)
+    ) {
+      out.push(i);
+    } else if (claimKind === "wire_mode_change" && /wire|mode|lane/i.test(f)) {
+      out.push(i);
+    } else if (
+      claimKind === "no_compare_baseline" &&
+      /sample scope|compare|prior|bounded/i.test(f)
+    ) {
+      out.push(i);
+    }
+  }
+  if (out.length === 0) {
+    if (claimKind === "no_compare_baseline" || claimStatus === "unavailable") {
+      return facts.length > 0 ? [0] : [];
+    }
+    for (let i = 0; i < Math.min(3, facts.length); i++) {
+      out.push(i);
+    }
+  }
+  return [...new Set(out)].sort((a, b) => a - b).slice(0, 6);
+}
+
+function buildEvidenceRefKeys(
+  drilldown: BoundedEvidenceDrilldownV0,
+  rowIdx: readonly number[],
+  factIdx: readonly number[],
+): string[] {
+  const keys: string[] = [];
+  for (const fi of factIdx) {
+    keys.push(`fact:${fi}`);
+  }
+  for (const ri of rowIdx) {
+    const row = drilldown.rows[ri];
+    if (row) {
+      keys.push(`row:${ri}:${serializeBoundedEvidenceRowKeyForReceipt(row.rowKey)}`);
+    }
+  }
+  return keys;
+}
+
 function mapEpisodeToClaim(
   ep: BoundedEpisodeV0,
   index: number,
@@ -122,6 +282,7 @@ function mapEpisodeToClaim(
   liveMut: "none" | "replace" | "append" | null,
   selectedSelectionId: string | null,
   compareLine: string | null,
+  drilldown: BoundedEvidenceDrilldownV0,
 ): BoundedClaimV0 {
   const baseRefs: string[] = [];
   if (compareLine) {
@@ -131,7 +292,7 @@ function mapEpisodeToClaim(
     baseRefs.push(ep.compareHookLine);
   }
 
-  const id = `claim-v13:${ep.kind}:${index}`;
+  const id = `claim-v14:${ep.kind}:${index}`;
 
   const kindMap: Record<BoundedEpisodeKindV0, BoundedClaimKindV0> = {
     insufficient_history: "no_compare_baseline",
@@ -164,6 +325,10 @@ function mapEpisodeToClaim(
       "Claim is shallow — bounded compare shows little or no selection-scoped delta.";
   }
 
+  const rowIdx = computeSupportingRowIndices(ck, drilldown.rows);
+  const factIdx = computeSupportingFactIndices(ck, drilldown.facts, status);
+  const evidenceRefKeys = buildEvidenceRefKeys(drilldown, rowIdx, factIdx);
+
   return {
     id,
     kind: ck,
@@ -171,6 +336,9 @@ function mapEpisodeToClaim(
     statement,
     status,
     evidenceRefs: baseRefs,
+    supportingEvidenceRowIndices: rowIdx,
+    supportingFactIndices: factIdx,
+    evidenceRefKeys,
     doesNotImply: DOES_NOT[ck],
     relatedEpisodeId: ep.id,
     suggestedSelectionId: ep.suggestedSelectionId,
@@ -245,6 +413,7 @@ export function computeBoundedSceneClaims(input: ComputeBoundedClaimsInput): Bou
       liveEventTailMutation,
       selectedSelectionId,
       compare.available ? compare.summaryLine : null,
+      drilldown,
     );
     const mergedRefs = mergeEvidenceRefs(c.evidenceRefs, drillRefs, 5);
     claimsOut.push({
@@ -253,7 +422,7 @@ export function computeBoundedSceneClaims(input: ComputeBoundedClaimsInput): Bou
     });
   }
 
-  const primaryClaimId = resolvePrimaryClaimId(claimsOut, selectedEpisodeId);
+  const primaryClaimId = resolvePrimaryClaimId(claimsOut, selectedEpisodeId, selectedSelectionId);
 
   return {
     kind: BOUNDED_CLAIMS_KIND,
@@ -263,9 +432,14 @@ export function computeBoundedSceneClaims(input: ComputeBoundedClaimsInput): Bou
   };
 }
 
+/**
+ * Primary claim: selected episode wins; then cluster selection may prefer selection/cluster claims;
+ * else first claim.
+ */
 export function resolvePrimaryClaimId(
   claims: readonly BoundedClaimV0[],
   selectedEpisodeId: string | null,
+  selectedSelectionId: string | null = null,
 ): string | null {
   if (claims.length === 0) {
     return null;
@@ -274,6 +448,14 @@ export function resolvePrimaryClaimId(
     const m = claims.find((c) => c.relatedEpisodeId === selectedEpisodeId);
     if (m) {
       return m.id;
+    }
+  }
+  if (selectedSelectionId?.includes(":cluster:")) {
+    const selLinked = claims.find(
+      (c) => c.kind === "selection_linked_change" || c.kind === "cluster_lanes_change",
+    );
+    if (selLinked) {
+      return selLinked.id;
     }
   }
   return claims[0]?.id ?? null;
@@ -287,19 +469,6 @@ export function boundedClaimSelectionStillValid(
     return true;
   }
   return claims.some((c) => c.id === selectedId);
-}
-
-/** Receipt-style view for the selected claim — deterministic. */
-export interface BoundedClaimReceiptV0 {
-  readonly title: string;
-  readonly statement: string;
-  readonly statusLabel: string;
-  readonly evidenceBullets: readonly string[];
-  readonly doesNotImply: string;
-  readonly scopeNote: string;
-  /** Scene honesty line — same authority as Scene v0 footer. */
-  readonly boundedSourceLine: string;
-  readonly honestyNote: string | null;
 }
 
 function statusLabel(s: BoundedClaimStatusV0): string {
@@ -317,30 +486,168 @@ function statusLabel(s: BoundedClaimStatusV0): string {
   }
 }
 
+function buildSupportBullets(
+  claim: BoundedClaimV0,
+  drilldown: BoundedEvidenceDrilldownV0,
+  compare: BoundedSceneCompareV0,
+): string[] {
+  const out: string[] = [];
+  if (compare.available && compare.summaryLine) {
+    out.push(`Compare: ${compare.summaryLine}`);
+  }
+  for (const fi of claim.supportingFactIndices) {
+    const f = drilldown.facts[fi];
+    if (f) {
+      out.push(`Fact[${fi}]: ${f}`);
+    }
+  }
+  for (const ri of claim.supportingEvidenceRowIndices) {
+    const r = drilldown.rows[ri];
+    if (r) {
+      const line = r.detailLine ? `${r.titleLine} — ${r.detailLine}` : r.titleLine;
+      out.push(`Evidence row[${ri}] (${r.rowLabel}): ${line}`);
+    }
+  }
+  if (out.length === 0) {
+    if (claim.status === "unavailable") {
+      out.push(
+        "No compare baseline on this path — bounded evidence rows do not support material claims yet.",
+      );
+    } else {
+      out.push("No matching bounded evidence rows in this drilldown — see scope and facts above.");
+    }
+  }
+  return out.slice(0, 8);
+}
+
+function buildFocusContextLine(
+  drilldown: BoundedEvidenceDrilldownV0,
+  selectedEpisodeId: string | null,
+  episodes: BoundedSceneEpisodesV0 | null,
+): string | null {
+  const parts: string[] = [];
+  if (drilldown.selectedTargetSummary) {
+    parts.push(`Selection: ${drilldown.selectedTargetSummary}`);
+  }
+  if (selectedEpisodeId && episodes) {
+    const ep = episodes.episodes.find((e) => e.id === selectedEpisodeId);
+    if (ep) {
+      parts.push(`Episode: ${ep.title}`);
+    }
+  }
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
+function receiptFingerprint(
+  claim: BoundedClaimV0,
+  drilldown: BoundedEvidenceDrilldownV0,
+  scene: GlassSceneV0,
+): string {
+  return [
+    claim.id,
+    claim.kind,
+    drilldown.scopeLine,
+    scene.honesty.sampleScope,
+    claim.supportingEvidenceRowIndices.join(","),
+    claim.supportingFactIndices.join(","),
+  ].join("|");
+}
+
+/** Receipt-style bounded record — deterministic, evidence-coupled (v14). */
+export interface BoundedClaimReceiptV0 {
+  readonly schemaVersion: typeof BOUNDED_RECEIPT_SCHEMA_VERSION;
+  readonly receiptId: string;
+  readonly claimId: string;
+  readonly claimKind: BoundedClaimKindV0;
+  readonly title: string;
+  readonly statement: string;
+  readonly statusLabel: string;
+  /** Ordered support lines tied to compare, facts, and evidence rows. */
+  readonly supportBullets: readonly string[];
+  readonly evidenceFactIndices: readonly number[];
+  readonly evidenceRowIndices: readonly number[];
+  readonly evidenceRefKeys: readonly string[];
+  readonly compareAnchorLine: string | null;
+  readonly scopeNote: string;
+  /** Scene honesty line — same authority as Scene v0 footer. */
+  readonly boundedSourceLine: string;
+  readonly focusContextLine: string | null;
+  readonly doesNotImply: string;
+  readonly weaknessOrUnavailableNote: string | null;
+}
+
+export interface BuildBoundedClaimReceiptContext {
+  compare: BoundedSceneCompareV0;
+  selectedSelectionId: string | null;
+  selectedEpisodeId: string | null;
+  episodes: BoundedSceneEpisodesV0 | null;
+}
+
 export function buildBoundedClaimReceipt(
   claim: BoundedClaimV0 | null,
   drilldown: BoundedEvidenceDrilldownV0,
   scene: GlassSceneV0,
+  ctx?: BuildBoundedClaimReceiptContext,
 ): BoundedClaimReceiptV0 | null {
   if (!claim) {
     return null;
   }
-  const bullets = [...claim.evidenceRefs];
-  for (const r of drilldown.rows.slice(0, 2)) {
-    const line = r.detailLine ? `${r.titleLine} — ${r.detailLine}` : r.titleLine;
-    if (bullets.length < 6 && !bullets.includes(line)) {
-      bullets.push(line);
-    }
+  const compareStub: BoundedSceneCompareV0 = ctx?.compare ?? {
+    kind: BOUNDED_SCENE_COMPARE_KIND,
+    available: false,
+    unavailableReason: null,
+    summaryLine: null,
+    detailLines: [],
+    hints: {
+      wireModeChanged: false,
+      densityOrTailChanged: false,
+      snapshotOriginChanged: false,
+      reconcileChanged: false,
+      resyncReasonChanged: false,
+      warningChanged: false,
+      replayPrefixChanged: false,
+      railSignalsChanged: false,
+      clusterIdsWithBoundedDelta: [],
+      regionWeightsChanged: false,
+      emphasisStepsChanged: false,
+      focusTargetChanged: false,
+    },
+    selectionCompareLine: null,
+  };
+  const supportBullets = buildSupportBullets(claim, drilldown, compareStub);
+  const fp = receiptFingerprint(claim, drilldown, scene);
+  const receiptId = `receipt-v14:${claim.id}:${fnv1a32Hex(fp)}`;
+  const compareAnchorLine = compareStub.available ? compareStub.summaryLine : null;
+  const focusContextLine = buildFocusContextLine(
+    drilldown,
+    ctx?.selectedEpisodeId ?? null,
+    ctx?.episodes ?? null,
+  );
+
+  let weaknessOrUnavailableNote: string | null = claim.honestyNote;
+  if (!weaknessOrUnavailableNote && claim.status === "unavailable") {
+    weaknessOrUnavailableNote =
+      "Compare baseline is missing — this receipt cannot assert material bounded change.";
   }
+
   return {
+    schemaVersion: BOUNDED_RECEIPT_SCHEMA_VERSION,
+    receiptId,
+    claimId: claim.id,
+    claimKind: claim.kind,
     title: claim.title,
     statement: claim.statement,
     statusLabel: statusLabel(claim.status),
-    evidenceBullets: bullets.slice(0, 6),
-    doesNotImply: claim.doesNotImply,
+    supportBullets,
+    evidenceFactIndices: claim.supportingFactIndices,
+    evidenceRowIndices: claim.supportingEvidenceRowIndices,
+    evidenceRefKeys: claim.evidenceRefKeys,
+    compareAnchorLine,
     scopeNote: drilldown.scopeLine,
     boundedSourceLine: scene.honesty.line,
-    honestyNote: claim.honestyNote,
+    focusContextLine,
+    doesNotImply: claim.doesNotImply,
+    weaknessOrUnavailableNote,
   };
 }
 
@@ -351,7 +658,7 @@ export function boundedClaimEvidenceUiLines(
     return { contextLine: null, doesNotImplyLine: null };
   }
   return {
-    contextLine: `Bounded claim: ${receipt.title} — ${receipt.statement} (${receipt.statusLabel})`,
+    contextLine: `${receipt.receiptId} · Bounded claim: ${receipt.title} — ${receipt.statement} (${receipt.statusLabel})`,
     doesNotImplyLine: `Does not imply: ${receipt.doesNotImply}`,
   };
 }

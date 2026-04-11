@@ -220,7 +220,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   episodeTitle.setAttribute("data-testid", "replay-bounded-episodes-heading");
   const episodeRoot = el("div", "glass-bounded-episodes-root");
   episodeRoot.setAttribute("data-testid", "replay-bounded-episodes-root");
-  const claimTitle = el("h4", "glass-bounded-claims-title", "Bounded claims (Vertical Slice v13)");
+  const claimTitle = el("h4", "glass-bounded-claims-title", "Bounded claims (Vertical Slice v14)");
   claimTitle.setAttribute("data-testid", "replay-bounded-claims-heading");
   const claimStripRoot = el("div", "glass-bounded-claims-strip-root");
   claimStripRoot.setAttribute("data-testid", "replay-bounded-claims-strip-root");
@@ -493,7 +493,12 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     }
     const highlightClaimId = selectedBoundedClaimId ?? claimsPack.primaryClaimId;
     const activeClaim = claimsPack.claims.find((c) => c.id === highlightClaimId) ?? null;
-    const receipt = buildBoundedClaimReceipt(activeClaim, drill, lastReplayScene);
+    const receipt = buildBoundedClaimReceipt(activeClaim, drill, lastReplayScene, {
+      compare: cmp,
+      selectedSelectionId: selectedBoundedSelectionId,
+      selectedEpisodeId: selectedBoundedEpisodeId,
+      episodes,
+    });
     const claimUi = boundedClaimEvidenceUiLines(receipt);
     renderBoundedClaimsInto(claimStripRoot, claimsPack, {
       testIdPrefix: "replay",
@@ -517,6 +522,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
       episodeHonestyNote: evEp.honestyNote,
       claimContextLine: claimUi.contextLine,
       claimDoesNotImplyLine: claimUi.doesNotImplyLine,
+      supportingEvidenceRowIndices: receipt?.evidenceRowIndices ?? null,
       onActivateRow: (_row, res) => {
         applyCrosslinkResolution(res);
         paintReplayScene();

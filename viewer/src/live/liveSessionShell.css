@@ -436,6 +436,11 @@
   outline: 1px solid #f59e0b;
 }
 
+.glass-bounded-evidence-card--claim-support {
+  border-left: 3px solid #0ea5e9;
+  background: #f0f9ff;
+}
+
 .glass-bounded-evidence-compare--linked {
   cursor: pointer;
   text-decoration: underline;
