@@ -49,6 +49,17 @@ export {
   type BoundedEvidenceRowV0,
 } from "./boundedEvidenceDrilldown.js";
 export { renderBoundedEvidenceInto } from "./boundedEvidencePanel.js";
+export {
+  evidenceRowLinkedToSelection,
+  honestBoundedClusterIdFromEvent,
+  resolveBoundedEvidenceRegionSelection,
+  resolveCompareEvidenceCrosslink,
+  resolveEvidenceRowKeyToSelection,
+  resolveSystemIntegrityRegionSelection,
+  type BoundedCrosslinkResolutionV0,
+  type BoundedEvidenceRowKeyV0,
+} from "./boundedSceneCrosslink.js";
+export { boundedSelectionIdOverlay } from "./boundedSceneSelection.js";
 export { liveVisualSpecFromScene } from "./sceneToLiveVisualSpec.js";
 export {
   DRAWABLE_PRIMITIVES_V0,

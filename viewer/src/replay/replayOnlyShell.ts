@@ -23,6 +23,7 @@ import type { BoundedSceneEmphasisV0 } from "../scene/boundedSceneEmphasis.js";
 import { computeBoundedSceneCompare } from "../scene/boundedSceneCompare.js";
 import { computeBoundedEvidenceDrilldown } from "../scene/boundedEvidenceDrilldown.js";
 import { renderBoundedEvidenceInto } from "../scene/boundedEvidencePanel.js";
+import type { BoundedCrosslinkResolutionV0 } from "../scene/boundedSceneCrosslink.js";
 import { compileReplayToGlassSceneV0 } from "../scene/compileReplayScene.js";
 import {
   currentEvent,
@@ -229,10 +230,13 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   const boundedEvidenceTitle = el(
     "h4",
     "glass-bounded-evidence-heading",
-    "Bounded evidence (Vertical Slice v9)",
+    "Bounded evidence (Vertical Slice v10)",
   );
   const boundedEvidenceRoot = el("div", "glass-bounded-evidence-root");
   boundedEvidenceRoot.setAttribute("data-testid", "replay-bounded-evidence");
+  const boundedEvidenceCrosslinkNote = el("p", "glass-bounded-evidence-crosslink-note");
+  boundedEvidenceCrosslinkNote.setAttribute("data-testid", "replay-bounded-evidence-crosslink-note");
+  boundedEvidenceCrosslinkNote.setAttribute("aria-live", "polite");
   const eventInspectorTitle = el("h4", "glass-event-inspector-title", "Current event (debug)");
   const inspectorPre = el("pre");
   inspector.append(
@@ -240,6 +244,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     boundedInspectorPre,
     boundedEvidenceTitle,
     boundedEvidenceRoot,
+    boundedEvidenceCrosslinkNote,
     eventInspectorTitle,
     inspectorPre,
   );
@@ -285,11 +290,25 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     }
   }
 
+  function applyCrosslinkResolution(res: BoundedCrosslinkResolutionV0): void {
+    if (res.targetSelectionId) {
+      if (res.targetSelectionId === selectedBoundedSelectionId) {
+        selectedBoundedSelectionId = null;
+      } else {
+        selectedBoundedSelectionId = res.targetSelectionId;
+      }
+      boundedEvidenceCrosslinkNote.textContent = "";
+    } else {
+      boundedEvidenceCrosslinkNote.textContent = res.honestyNote ?? "";
+    }
+  }
+
   function refreshBoundedInspectorReplay(): void {
     if (!lastReplayScene) {
       boundedInspectorPre.textContent = "";
       boundedInspectorPre.removeAttribute("data-selected");
       boundedEvidenceRoot.replaceChildren();
+      boundedEvidenceCrosslinkNote.textContent = "";
       return;
     }
     const spec = liveVisualSpecFromScene(lastReplayScene, selectedBoundedSelectionId, {
@@ -317,7 +336,21 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
       liveEventTail: null,
       replay: { events: state.events, cursorIndex: state.cursorIndex },
     });
-    renderBoundedEvidenceInto(boundedEvidenceRoot, drill);
+    renderBoundedEvidenceInto(boundedEvidenceRoot, drill, {
+      scene: lastReplayScene,
+      selectedSelectionId: selectedBoundedSelectionId,
+      liveEventTail: null,
+      replayEvents: state.events,
+      liveVisualSpec: spec,
+      onActivateRow: (_row, res) => {
+        applyCrosslinkResolution(res);
+        paintReplayScene();
+      },
+      onActivateCompare: (res) => {
+        applyCrosslinkResolution(res);
+        paintReplayScene();
+      },
+    });
   }
 
   function paintReplayScene(): void {

@@ -239,7 +239,7 @@
   background: #fffbeb;
 }
 
-/* Vertical Slice v9 — bounded evidence drilldown */
+/* Vertical Slice v9–v10 — bounded evidence drilldown + cross-link */
 .glass-bounded-evidence-heading {
   font-size: 0.85rem;
   margin: 0.75rem 0 0.25rem;
@@ -309,6 +309,35 @@
   font-size: 0.68rem;
   color: #64748b;
   margin-top: 0.15rem;
+}
+
+.glass-bounded-evidence-card--linked {
+  cursor: pointer;
+}
+
+.glass-bounded-evidence-card--linked:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.glass-bounded-evidence-card[data-selected="true"] {
+  border-color: #b45309;
+  background: #fffbeb;
+  outline: 1px solid #f59e0b;
+}
+
+.glass-bounded-evidence-compare--linked {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+
+.glass-bounded-evidence-crosslink-note {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  color: #64748b;
+  min-height: 1em;
 }
 
 .glass-event-inspector-title {

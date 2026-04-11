@@ -7,6 +7,7 @@ import type { GlassEvent } from "../pack/types.js";
 import type { LiveVisualSpec } from "../live/liveVisualModel.js";
 import { eventKindFromUnknown, countBoundedKindBuckets } from "./boundedActorClusters.js";
 import type { BoundedSceneCompareV0 } from "./boundedSceneCompare.js";
+import type { BoundedEvidenceRowKeyV0 } from "./boundedSceneCrosslink.js";
 import type { GlassSceneV0 } from "./glassSceneV0.js";
 
 export const BOUNDED_EVIDENCE_DRILLDOWN_KIND = "glass.evidence.v0" as const;
@@ -27,6 +28,8 @@ export interface BoundedEvidenceRowV0 {
   rowLabel: BoundedEvidenceRowLabel;
   titleLine: string;
   detailLine: string | null;
+  /** v10 — anchor for bounded cross-linking to `glass.sel.v0:*` selection ids. */
+  rowKey: BoundedEvidenceRowKeyV0;
 }
 
 export interface BoundedEvidenceDrilldownV0 {
@@ -132,6 +135,21 @@ function formatSelectionTargetSummary(scene: GlassSceneV0, selectedId: string | 
   return "Selected scene target";
 }
 
+/** One bounded line for evidence + compare; appends selection-scoped compare when honestly available. */
+function formatEvidenceCompareSummaryLine(
+  compare: BoundedSceneCompareV0,
+  spec: LiveVisualSpec,
+): string | null {
+  if (!compare.available) {
+    return spec.boundedCompareUnavailableReason;
+  }
+  const base = compare.summaryLine;
+  if (compare.selectionCompareLine) {
+    return base ? `${base} · ${compare.selectionCompareLine}` : compare.selectionCompareLine;
+  }
+  return base;
+}
+
 function buildFacts(
   scene: GlassSceneV0,
   spec: LiveVisualSpec,
@@ -217,7 +235,7 @@ export function computeBoundedEvidenceDrilldown(input: BoundedEvidenceDrilldownI
         scopeLine,
         honestyLine: scene.honesty.line,
         selectedTargetSummary,
-        compareSummaryLine: compare.available ? compare.summaryLine : spec.boundedCompareUnavailableReason,
+        compareSummaryLine: formatEvidenceCompareSummaryLine(compare, spec),
         compareEvidenceNote,
         facts:
           tail.length === 0
@@ -267,6 +285,7 @@ export function computeBoundedEvidenceDrilldown(input: BoundedEvidenceDrilldownI
         rowLabel: rl,
         titleLine: formatUnknownTailEvent(ev, tailIndex),
         detailLine: null,
+        rowKey: { kind: "live_tail_event", tailIndex },
       };
     });
 
@@ -285,7 +304,7 @@ export function computeBoundedEvidenceDrilldown(input: BoundedEvidenceDrilldownI
       scopeLine,
       honestyLine: scene.honesty.line,
       selectedTargetSummary,
-      compareSummaryLine: compare.available ? compare.summaryLine : spec.boundedCompareUnavailableReason,
+      compareSummaryLine: formatEvidenceCompareSummaryLine(compare, spec),
       compareEvidenceNote,
       facts: extraFacts,
       rows,
@@ -301,7 +320,7 @@ export function computeBoundedEvidenceDrilldown(input: BoundedEvidenceDrilldownI
       scopeLine,
       honestyLine: scene.honesty.line,
       selectedTargetSummary,
-      compareSummaryLine: compare.available ? compare.summaryLine : spec.boundedCompareUnavailableReason,
+      compareSummaryLine: formatEvidenceCompareSummaryLine(compare, spec),
       compareEvidenceNote,
       facts: [...facts, "No replay events loaded — open a pack with events."],
       rows: [],
@@ -345,6 +364,7 @@ export function computeBoundedEvidenceDrilldown(input: BoundedEvidenceDrilldownI
       rowLabel: rl,
       titleLine: formatGlassEventOneLine(ev),
       detailLine: `actor ${ev.actor.entity_type}:${ev.actor.entity_id}`,
+      rowKey: { kind: "replay_prefix_event", seq: ev.seq, event_id: ev.event_id },
     };
   });
 
@@ -365,7 +385,7 @@ export function computeBoundedEvidenceDrilldown(input: BoundedEvidenceDrilldownI
     scopeLine,
     honestyLine: scene.honesty.line,
     selectedTargetSummary,
-    compareSummaryLine: compare.available ? compare.summaryLine : spec.boundedCompareUnavailableReason,
+    compareSummaryLine: formatEvidenceCompareSummaryLine(compare, spec),
     compareEvidenceNote,
     facts: extraFacts,
     rows,

@@ -54,6 +54,7 @@ import type { BoundedSceneEmphasisV0 } from "../scene/boundedSceneEmphasis.js";
 import { computeBoundedSceneCompare } from "../scene/boundedSceneCompare.js";
 import { computeBoundedEvidenceDrilldown } from "../scene/boundedEvidenceDrilldown.js";
 import { renderBoundedEvidenceInto } from "../scene/boundedEvidencePanel.js";
+import type { BoundedCrosslinkResolutionV0 } from "../scene/boundedSceneCrosslink.js";
 import { compileLiveToGlassSceneV0 } from "../scene/compileLiveScene.js";
 import { computeBoundedSceneFocus } from "../scene/boundedSceneFocus.js";
 import {
@@ -418,10 +419,13 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const boundedEvidenceTitle = el(
     "h4",
     "glass-bounded-evidence-heading",
-    "Bounded evidence (Vertical Slice v9)",
+    "Bounded evidence (Vertical Slice v10)",
   );
   const boundedEvidenceRoot = el("div", "glass-bounded-evidence-root");
   boundedEvidenceRoot.setAttribute("data-testid", "live-bounded-evidence");
+  const boundedEvidenceCrosslinkNote = el("p", "glass-bounded-evidence-crosslink-note");
+  boundedEvidenceCrosslinkNote.setAttribute("data-testid", "live-bounded-evidence-crosslink-note");
+  boundedEvidenceCrosslinkNote.setAttribute("aria-live", "polite");
   visualCanvas.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
   visualCanvasWebGpu.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
   visualCanvasTextOverlay.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
@@ -434,6 +438,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     boundedInspectorPre,
     boundedEvidenceTitle,
     boundedEvidenceRoot,
+    boundedEvidenceCrosslinkNote,
     visualProvenanceHeader,
     visualProvenanceStrip,
     visualLegend,
@@ -447,11 +452,25 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   let lastLiveEmphasis: BoundedSceneEmphasisV0 | null = null;
   let selectedBoundedSelectionId: string | null = null;
 
+  function applyCrosslinkResolutionLive(res: BoundedCrosslinkResolutionV0): void {
+    if (res.targetSelectionId) {
+      if (res.targetSelectionId === selectedBoundedSelectionId) {
+        selectedBoundedSelectionId = null;
+      } else {
+        selectedBoundedSelectionId = res.targetSelectionId;
+      }
+      boundedEvidenceCrosslinkNote.textContent = "";
+    } else {
+      boundedEvidenceCrosslinkNote.textContent = res.honestyNote ?? "";
+    }
+  }
+
   function refreshBoundedInspectorLive(): void {
     if (!lastPaintedLiveScene) {
       boundedInspectorPre.textContent = "";
       boundedInspectorPre.removeAttribute("data-selected");
       boundedEvidenceRoot.replaceChildren();
+      boundedEvidenceCrosslinkNote.textContent = "";
       return;
     }
     const spec = liveVisualSpecFromScene(lastPaintedLiveScene, selectedBoundedSelectionId, {
@@ -479,7 +498,21 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       liveEventTail: model.eventTail,
       replay: null,
     });
-    renderBoundedEvidenceInto(boundedEvidenceRoot, drill);
+    renderBoundedEvidenceInto(boundedEvidenceRoot, drill, {
+      scene: lastPaintedLiveScene,
+      selectedSelectionId: selectedBoundedSelectionId,
+      liveEventTail: model.eventTail,
+      replayEvents: null,
+      liveVisualSpec: spec,
+      onActivateRow: (_row, res) => {
+        applyCrosslinkResolutionLive(res);
+        void paintLiveVisual();
+      },
+      onActivateCompare: (res) => {
+        applyCrosslinkResolutionLive(res);
+        void paintLiveVisual();
+      },
+    });
   }
 
   function buildCurrentLiveVisualSpec(): LiveVisualSpec {

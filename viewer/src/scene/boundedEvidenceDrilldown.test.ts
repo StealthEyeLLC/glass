@@ -70,6 +70,7 @@ describe("computeBoundedEvidenceDrilldown (live)", () => {
     });
     expect(d.rows.length).toBeGreaterThan(0);
     expect(d.rows.every((r) => r.rowLabel === "live_tail")).toBe(true);
+    expect(d.rows[0]?.rowKey).toEqual({ kind: "live_tail_event", tailIndex: 0 });
     expect(d.scopeLine).toContain("WebSocket tail");
   });
 
@@ -143,6 +144,8 @@ describe("computeBoundedEvidenceDrilldown (replay)", () => {
       replay: { events: st.events, cursorIndex: st.cursorIndex },
     });
     expect(d.rows.some((r) => r.rowLabel === "current_step")).toBe(true);
+    const cur = d.rows.find((r) => r.rowLabel === "current_step");
+    expect(cur?.rowKey.kind).toBe("replay_prefix_event");
     expect(d.scopeLine).toContain("pack prefix");
   });
 

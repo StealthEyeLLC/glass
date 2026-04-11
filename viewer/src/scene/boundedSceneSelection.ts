@@ -50,9 +50,14 @@ export function boundedSelectionIdNode(nodeId: string): string {
   return makeId("node", nodeId);
 }
 
+/** Overlay line ids aligned with `buildBoundedSelectionTextOverlayHitTargets` (compare, captions, etc.). */
+export function boundedSelectionIdOverlay(overlayKey: string): string {
+  return makeId("overlay", overlayKey);
+}
+
 function mapEmphasisOverlay(tag: DrawablePrimitiveSemanticTag, scene: GlassSceneV0): string | null {
   const primary = regionIdForRole(scene, "primary_wire_sample");
-  const system = regionIdForRole(scene, "system_integrity");
+  const system = regionIdForRole(scene, "system_integrity_rail");
   if (
     tag === "emphasis_wire_pulse_overlay" ||
     tag === "emphasis_sample_pulse_overlay" ||
@@ -79,7 +84,7 @@ function mapCompositionTag(tag: DrawablePrimitiveSemanticTag, scene: GlassSceneV
     tag === "composition_accent_system" ||
     tag === "composition_separator_system_evidence"
   ) {
-    const id = regionIdForRole(scene, "system_integrity");
+    const id = regionIdForRole(scene, "system_integrity_rail");
     return id ? boundedSelectionIdRegion(id) : null;
   }
   if (tag === "composition_panel_evidence" || tag === "composition_accent_evidence") {
