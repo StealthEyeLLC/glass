@@ -63,6 +63,12 @@ import {
   resolveCompareBaselineFromRing,
 } from "../scene/boundedTemporalLens.js";
 import { renderBoundedTemporalLensInto } from "../scene/boundedTemporalLensPanel.js";
+import {
+  boundedEpisodeEvidenceUiLines,
+  boundedEpisodeSelectionStillValid,
+  computeBoundedSceneEpisodes,
+} from "../scene/boundedEpisodes.js";
+import { renderBoundedEpisodesInto } from "../scene/boundedEpisodesPanel.js";
 import { compileLiveToGlassSceneV0 } from "../scene/compileLiveScene.js";
 import { computeBoundedSceneFocus } from "../scene/boundedSceneFocus.js";
 import {
@@ -434,10 +440,18 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const boundedEvidenceCrosslinkNote = el("p", "glass-bounded-evidence-crosslink-note");
   boundedEvidenceCrosslinkNote.setAttribute("data-testid", "live-bounded-evidence-crosslink-note");
   boundedEvidenceCrosslinkNote.setAttribute("aria-live", "polite");
+  const boundedEpisodeTitle = el(
+    "h4",
+    "glass-bounded-episodes-title",
+    "Bounded episodes (Vertical Slice v12)",
+  );
+  boundedEpisodeTitle.setAttribute("data-testid", "live-bounded-episodes-heading");
+  const boundedEpisodeRoot = el("div", "glass-bounded-episodes-root");
+  boundedEpisodeRoot.setAttribute("data-testid", "live-bounded-episodes-root");
   const boundedTemporalTitle = el(
     "h4",
     "glass-bounded-temporal-title",
-    "Bounded temporal lens (Vertical Slice v11)",
+    "Bounded temporal lens (Vertical Slice v12)",
   );
   const boundedTemporalRoot = el("div", "glass-bounded-temporal-root");
   boundedTemporalRoot.setAttribute("data-testid", "live-temporal-lens-root");
@@ -454,6 +468,8 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     boundedEvidenceTitle,
     boundedEvidenceRoot,
     boundedEvidenceCrosslinkNote,
+    boundedEpisodeTitle,
+    boundedEpisodeRoot,
     boundedTemporalTitle,
     boundedTemporalRoot,
     visualProvenanceHeader,
@@ -472,6 +488,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   let liveCompareBaselineRingIndex: number | null = null;
   let lastLiveEmphasis: BoundedSceneEmphasisV0 | null = null;
   let selectedBoundedSelectionId: string | null = null;
+  let selectedBoundedEpisodeId: string | null = null;
 
   function applyCrosslinkResolutionLive(res: BoundedCrosslinkResolutionV0): void {
     if (res.targetSelectionId) {
@@ -538,6 +555,8 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       boundedInspectorPre.removeAttribute("data-selected");
       boundedEvidenceRoot.replaceChildren();
       boundedEvidenceCrosslinkNote.textContent = "";
+      boundedEpisodeRoot.replaceChildren();
+      selectedBoundedEpisodeId = null;
       boundedTemporalRoot.replaceChildren();
       return;
     }
@@ -545,6 +564,32 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     const cmp = computeBoundedSceneCompare(baseline, lastPaintedLiveScene, {
       selectedId: selectedBoundedSelectionId,
     });
+    const liveTailMutation = model.lastAppliedWire?.eventTailMutation ?? null;
+    const episodes = computeBoundedSceneEpisodes({
+      path: "live",
+      currentScene: lastPaintedLiveScene,
+      baselineScene: baseline,
+      immediatePriorScene: previousPaintedLiveScene,
+      compare: cmp,
+      selectedSelectionId: selectedBoundedSelectionId,
+      liveEventTailMutation: liveTailMutation,
+      compareBaselineIsImmediatePrior: liveCompareBaselineRingIndex === null,
+    });
+    if (!boundedEpisodeSelectionStillValid(episodes.episodes, selectedBoundedEpisodeId)) {
+      selectedBoundedEpisodeId = null;
+    }
+    renderBoundedEpisodesInto(boundedEpisodeRoot, episodes, {
+      testIdPrefix: "live",
+      selectedEpisodeId: selectedBoundedEpisodeId,
+      onSelectEpisode: (nextId, ep) => {
+        selectedBoundedEpisodeId = nextId;
+        if (nextId !== null && ep.suggestedSelectionId) {
+          selectedBoundedSelectionId = ep.suggestedSelectionId;
+        }
+        void paintLiveVisual();
+      },
+    });
+    const evEp = boundedEpisodeEvidenceUiLines(episodes.episodes, selectedBoundedEpisodeId);
     const spec = liveVisualSpecFromScene(lastPaintedLiveScene, selectedBoundedSelectionId, {
       previousScene: baseline,
       compare: cmp,
@@ -574,6 +619,8 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       liveEventTail: model.eventTail,
       replayEvents: null,
       liveVisualSpec: spec,
+      episodeContextLine: evEp.contextLine,
+      episodeHonestyNote: evEp.honestyNote,
       onActivateRow: (_row, res) => {
         applyCrosslinkResolutionLive(res);
         void paintLiveVisual();

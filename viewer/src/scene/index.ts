@@ -73,6 +73,18 @@ export {
   type BoundedTemporalLensViewV0,
 } from "./boundedTemporalLens.js";
 export { renderBoundedTemporalLensInto } from "./boundedTemporalLensPanel.js";
+export {
+  BOUNDED_EPISODE_CARD_MAX,
+  BOUNDED_EPISODES_KIND,
+  boundedEpisodeEvidenceUiLines,
+  boundedEpisodeSelectionStillValid,
+  computeBoundedSceneEpisodes,
+  type BoundedEpisodeKindV0,
+  type BoundedEpisodeV0,
+  type BoundedSceneEpisodesV0,
+  type ComputeBoundedEpisodesInput,
+} from "./boundedEpisodes.js";
+export { renderBoundedEpisodesInto } from "./boundedEpisodesPanel.js";
 export { liveVisualSpecFromScene } from "./sceneToLiveVisualSpec.js";
 export {
   DRAWABLE_PRIMITIVES_V0,

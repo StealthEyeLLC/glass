@@ -450,6 +450,83 @@
   min-height: 1em;
 }
 
+/* Vertical Slice v12 — bounded episodes (shared with replay) */
+.glass-bounded-episodes-title {
+  font-size: 0.85rem;
+  margin: 0.75rem 0 0.35rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.glass-bounded-episodes-root {
+  margin-bottom: 0.5rem;
+}
+
+.glass-bounded-episodes-honesty {
+  font-size: 0.68rem;
+  color: #64748b;
+  margin: 0 0 0.35rem;
+  line-height: 1.35;
+}
+
+.glass-bounded-episodes-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: stretch;
+}
+
+.glass-bounded-episode-card {
+  flex: 1 1 140px;
+  max-width: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 0.2rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 4px;
+  border: 1px solid #94a3b8;
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+}
+
+.glass-bounded-episode-card--primary {
+  border-color: #64748b;
+}
+
+.glass-bounded-episode-card--selected {
+  border-color: #2563eb;
+  background: #eff6ff;
+  outline: 1px solid #3b82f6;
+}
+
+.glass-bounded-episode-card-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.glass-bounded-episode-card-summary {
+  font-size: 0.68rem;
+  color: #475569;
+  line-height: 1.35;
+}
+
+.glass-bounded-evidence-episode {
+  font-size: 0.75rem;
+  color: #1e40af;
+  margin: 0.25rem 0 0;
+}
+
+.glass-bounded-evidence-episode-honesty {
+  font-size: 0.72rem;
+  color: #64748b;
+  margin: 0.15rem 0 0;
+  font-style: italic;
+}
+
 /* Vertical Slice v11 — bounded temporal lens (shared with replay) */
 .glass-bounded-temporal-title {
   font-size: 0.85rem;

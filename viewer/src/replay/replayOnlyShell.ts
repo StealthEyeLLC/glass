@@ -32,6 +32,12 @@ import {
   resolveCompareBaselineFromRing,
 } from "../scene/boundedTemporalLens.js";
 import { renderBoundedTemporalLensInto } from "../scene/boundedTemporalLensPanel.js";
+import {
+  boundedEpisodeEvidenceUiLines,
+  boundedEpisodeSelectionStillValid,
+  computeBoundedSceneEpisodes,
+} from "../scene/boundedEpisodes.js";
+import { renderBoundedEpisodesInto } from "../scene/boundedEpisodesPanel.js";
 import { compileReplayToGlassSceneV0 } from "../scene/compileReplayScene.js";
 import {
   currentEvent,
@@ -96,6 +102,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   /** Compare vs current: null = immediate prior paint in ring; else explicit ring index. */
   let replayCompareBaselineRingIndex: number | null = null;
   let selectedBoundedSelectionId: string | null = null;
+  let selectedBoundedEpisodeId: string | null = null;
 
   const hero = el("section", "glass-vs-hero glass-replay-vs-hero");
   hero.setAttribute("data-testid", "replay-vs-hero");
@@ -197,14 +204,22 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
 
   const temporalSection = el("section", "glass-bounded-temporal");
   temporalSection.setAttribute("data-testid", "replay-temporal-lens");
+  const episodeTitle = el(
+    "h4",
+    "glass-bounded-episodes-title",
+    "Bounded episodes (Vertical Slice v12)",
+  );
+  episodeTitle.setAttribute("data-testid", "replay-bounded-episodes-heading");
+  const episodeRoot = el("div", "glass-bounded-episodes-root");
+  episodeRoot.setAttribute("data-testid", "replay-bounded-episodes-root");
   const temporalTitle = el(
     "h4",
     "glass-bounded-temporal-title",
-    "Bounded temporal lens (Vertical Slice v11)",
+    "Bounded temporal lens (Vertical Slice v12)",
   );
   const temporalRoot = el("div", "glass-bounded-temporal-root");
   temporalRoot.setAttribute("data-testid", "replay-temporal-lens-root");
-  temporalSection.append(temporalTitle, temporalRoot);
+  temporalSection.append(episodeTitle, episodeRoot, temporalTitle, temporalRoot);
 
   function effectiveCompareBaselineReplay(): GlassSceneV0 | null {
     replayCompareBaselineRingIndex = clampTemporalBaselineIndex(
@@ -381,6 +396,8 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
       boundedInspectorPre.removeAttribute("data-selected");
       boundedEvidenceRoot.replaceChildren();
       boundedEvidenceCrosslinkNote.textContent = "";
+      episodeRoot.replaceChildren();
+      selectedBoundedEpisodeId = null;
       temporalRoot.replaceChildren();
       return;
     }
@@ -388,6 +405,31 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     const cmp = computeBoundedSceneCompare(baseline, lastReplayScene, {
       selectedId: selectedBoundedSelectionId,
     });
+    const episodes = computeBoundedSceneEpisodes({
+      path: "replay",
+      currentScene: lastReplayScene,
+      baselineScene: baseline,
+      immediatePriorScene: previousReplayScene,
+      compare: cmp,
+      selectedSelectionId: selectedBoundedSelectionId,
+      liveEventTailMutation: null,
+      compareBaselineIsImmediatePrior: replayCompareBaselineRingIndex === null,
+    });
+    if (!boundedEpisodeSelectionStillValid(episodes.episodes, selectedBoundedEpisodeId)) {
+      selectedBoundedEpisodeId = null;
+    }
+    renderBoundedEpisodesInto(episodeRoot, episodes, {
+      testIdPrefix: "replay",
+      selectedEpisodeId: selectedBoundedEpisodeId,
+      onSelectEpisode: (nextId, ep) => {
+        selectedBoundedEpisodeId = nextId;
+        if (nextId !== null && ep.suggestedSelectionId) {
+          selectedBoundedSelectionId = ep.suggestedSelectionId;
+        }
+        paintReplayScene();
+      },
+    });
+    const evEp = boundedEpisodeEvidenceUiLines(episodes.episodes, selectedBoundedEpisodeId);
     const spec = liveVisualSpecFromScene(lastReplayScene, selectedBoundedSelectionId, {
       previousScene: baseline,
       compare: cmp,
@@ -417,6 +459,8 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
       liveEventTail: null,
       replayEvents: state.events,
       liveVisualSpec: spec,
+      episodeContextLine: evEp.contextLine,
+      episodeHonestyNote: evEp.honestyNote,
       onActivateRow: (_row, res) => {
         applyCrosslinkResolution(res);
         paintReplayScene();

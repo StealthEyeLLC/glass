@@ -20,6 +20,9 @@ export interface RenderBoundedEvidenceOptions {
   replayEvents: readonly GlassEvent[] | null;
   /** Latest spec — used only for compare-line cross-link targets. */
   liveVisualSpec: LiveVisualSpec;
+  /** Vertical Slice v12 — selected bounded episode context (rule-based, not causal history). */
+  episodeContextLine?: string | null;
+  episodeHonestyNote?: string | null;
   /** Replace-selection on row; toggle off when activating the same mapped id as current. */
   onActivateRow?: (rowIndex: number, resolution: BoundedCrosslinkResolutionV0) => void;
   onActivateCompare?: (resolution: BoundedCrosslinkResolutionV0) => void;
@@ -87,6 +90,21 @@ export function renderBoundedEvidenceInto(
     const p = document.createElement("p");
     p.className = "glass-bounded-evidence-compare-note";
     p.textContent = drilldown.compareEvidenceNote;
+    container.appendChild(p);
+  }
+
+  if (options?.episodeContextLine) {
+    const p = document.createElement("p");
+    p.className = "glass-bounded-evidence-episode";
+    p.setAttribute("data-testid", "bounded-evidence-episode-context");
+    p.textContent = options.episodeContextLine;
+    container.appendChild(p);
+  }
+  if (options?.episodeHonestyNote) {
+    const p = document.createElement("p");
+    p.className = "glass-bounded-evidence-episode-honesty";
+    p.setAttribute("data-testid", "bounded-evidence-episode-honesty");
+    p.textContent = options.episodeHonestyNote;
     container.appendChild(p);
   }
 

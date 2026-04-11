@@ -73,6 +73,13 @@ describe("static replay shell", () => {
     expect(root.querySelector('[data-testid="replay-file-input"]')).toBeTruthy();
   });
 
+  it("mounts bounded episodes + temporal lens roots (Vertical Slice v12)", () => {
+    const root = document.createElement("div");
+    mountReplayShell(root);
+    expect(root.querySelector('[data-testid="replay-bounded-episodes-root"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="replay-temporal-lens-root"]')).toBeTruthy();
+  });
+
   it("mounts Scene System v0 bounded canvas", () => {
     const root = document.createElement("div");
     mountReplayShell(root);
