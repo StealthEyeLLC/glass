@@ -59,5 +59,8 @@ describe("liveVisualSpecFromScene (renderer boundary)", () => {
     expect(spec.boundedStripReflowLine).toBeNull();
     expect(spec.stripPrimaryY).toBe(16);
     expect(spec.stripContentBottomY).toBeGreaterThan(90);
+    expect(spec.boundedCompareUnavailableReason).toMatch(/prior/i);
+    expect(spec.boundedCompareSummaryLine).toBeNull();
+    expect(spec.boundedCompareDetailLines.length).toBe(0);
   });
 });

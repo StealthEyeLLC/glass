@@ -114,7 +114,15 @@ export type DrawablePrimitiveSemanticTag =
   | "emphasis_state_rail_attention_overlay"
   /** Vertical Slice v6 — bounded focus highlight strokes (grouping, not graph edges). */
   | "focus_region_selection_frame"
-  | "focus_cluster_selection_frame";
+  | "focus_cluster_selection_frame"
+  /** Vertical Slice v8 — bounded compare hints (prior vs current frame; not history). */
+  | "compare_overlay_wire_delta"
+  | "compare_overlay_density_delta"
+  | "compare_overlay_http_delta"
+  | "compare_overlay_rail_delta"
+  | "compare_overlay_cluster_delta"
+  | "compare_overlay_region_delta"
+  | "compare_overlay_focus_delta";
 
 export type DrawablePrimitiveKind = "fill_rect" | "stroke_rect";
 

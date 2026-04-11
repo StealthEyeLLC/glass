@@ -77,6 +77,8 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   let playTimer: ReturnType<typeof setInterval> | null = null;
   let lastReplayEmphasis: BoundedSceneEmphasisV0 | null = null;
   let lastReplayScene: GlassSceneV0 | null = null;
+  /** Bounded frame before the latest compile — honest compare baseline for replay stepping. */
+  let previousReplayScene: GlassSceneV0 | null = null;
   let selectedBoundedSelectionId: string | null = null;
 
   const hero = el("section", "glass-vs-hero glass-replay-vs-hero");
@@ -186,7 +188,9 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     const x = ev.clientX - rect.left;
     const y = ev.clientY - rect.top;
     const lay = { widthCss: scene.bounds.widthCss, heightCss: scene.bounds.heightCss };
-    const targets = buildBoundedSelectionHitTargetsForScene(scene, lay, selectedBoundedSelectionId);
+    const targets = buildBoundedSelectionHitTargetsForScene(scene, lay, selectedBoundedSelectionId, {
+      previousScene: previousReplayScene,
+    });
     const id = hitTestBoundedSelection(x, y, targets);
     if (id === selectedBoundedSelectionId) {
       selectedBoundedSelectionId = null;
@@ -270,7 +274,9 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
       boundedInspectorPre.removeAttribute("data-selected");
       return;
     }
-    const spec = liveVisualSpecFromScene(lastReplayScene, selectedBoundedSelectionId);
+    const spec = liveVisualSpecFromScene(lastReplayScene, selectedBoundedSelectionId, {
+      previousScene: previousReplayScene,
+    });
     boundedInspectorPre.textContent = buildBoundedInspectorLines(
       lastReplayScene,
       spec,
@@ -284,11 +290,14 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   }
 
   function paintReplayScene(): void {
+    const prev = lastReplayScene;
     const scene = compileReplayToGlassSceneV0(state, { previousEmphasis: lastReplayEmphasis });
     lastReplayEmphasis = scene.emphasis;
     lastReplayScene = scene;
+    previousReplayScene = prev;
     void renderLiveVisualOnCanvas(sceneCanvas, scene, {
       selectedSelectionId: selectedBoundedSelectionId,
+      previousScene: prev,
     });
     refreshBoundedInspectorReplay();
   }

@@ -129,6 +129,24 @@ export function drawLiveVisualTextLabelsIntoContext(
     lineY += 14;
   }
 
+  if (spec.boundedCompareUnavailableReason) {
+    ctx.font = "500 10px system-ui, sans-serif";
+    ctx.fillStyle = "#64748b";
+    ctx.fillText(truncate(`compare: ${spec.boundedCompareUnavailableReason}`, 64), 16, lineY);
+    lineY += 14;
+  } else if (spec.boundedCompareSummaryLine) {
+    ctx.font = "600 10px system-ui, sans-serif";
+    ctx.fillStyle = "#b45309";
+    ctx.fillText(truncate(`compare: ${spec.boundedCompareSummaryLine}`, 64), 16, lineY);
+    lineY += 14;
+  }
+  if (spec.boundedCompareSelectionLine) {
+    ctx.font = "500 10px system-ui, sans-serif";
+    ctx.fillStyle = "#92400e";
+    ctx.fillText(truncate(`selection compare: ${spec.boundedCompareSelectionLine}`, 62), 16, lineY);
+    lineY += 14;
+  }
+
   if (spec.actorClusterSummaryLine) {
     ctx.font = "500 10px system-ui, sans-serif";
     ctx.fillStyle = "#475569";
@@ -188,11 +206,14 @@ function drawBoundedSelectionHighlightIntoContext(
   scene: GlassSceneV0,
   layout: LiveVisualCanvasLayout,
   selectedSelectionId: string | null,
+  previousScene?: GlassSceneV0 | null,
 ): void {
   if (selectedSelectionId === null || selectedSelectionId.length === 0) {
     return;
   }
-  const targets = buildBoundedSelectionHitTargetsForScene(scene, layout, selectedSelectionId);
+  const targets = buildBoundedSelectionHitTargetsForScene(scene, layout, selectedSelectionId, {
+    previousScene: previousScene ?? null,
+  });
   const r = unionBoundingRectForSelectionId(selectedSelectionId, targets);
   if (!r || r.width <= 0 || r.height <= 0) {
     return;
@@ -300,6 +321,8 @@ function layoutForScene(
 export interface RenderLiveVisualOnCanvasOptions {
   layout?: LiveVisualCanvasLayout;
   selectedSelectionId?: string | null;
+  /** Prior bounded frame for honest compare overlays (replay step / live paint). */
+  previousScene?: GlassSceneV0 | null;
 }
 
 /**
@@ -322,7 +345,8 @@ export function renderLiveVisualOnCanvas(
 
   const lay = layoutForScene(scene, options?.layout);
   const sel = options?.selectedSelectionId ?? null;
-  const spec = liveVisualSpecFromScene(scene, sel);
+  const prev = options?.previousScene ?? null;
+  const spec = liveVisualSpecFromScene(scene, sel, { previousScene: prev });
   const dpr = typeof window !== "undefined" && window.devicePixelRatio ? window.devicePixelRatio : 1;
   const w = lay.widthCss;
   const h = lay.heightCss;
@@ -332,10 +356,13 @@ export function renderLiveVisualOnCanvas(
   canvas.height = Math.floor(h * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  const primitives = sceneToDrawablePrimitives(scene, lay, { focusedSelectionId: sel });
+  const primitives = sceneToDrawablePrimitives(scene, lay, {
+    focusedSelectionId: sel,
+    previousScene: prev,
+  });
   renderDrawablePrimitivesToCanvas2D(ctx, primitives);
   drawLiveVisualTextLabelsIntoContext(ctx, spec, w, h);
-  drawBoundedSelectionHighlightIntoContext(ctx, scene, lay, sel);
+  drawBoundedSelectionHighlightIntoContext(ctx, scene, lay, sel, prev);
 
   return true;
 }

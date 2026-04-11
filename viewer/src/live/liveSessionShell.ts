@@ -430,6 +430,8 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   let webGpuBundle: LiveVisualWebGpuBundle | null = null;
   let lastPaintResult: PaintLiveVisualSurfaceResult | null = null;
   let lastPaintedLiveScene: GlassSceneV0 | null = null;
+  /** Bounded frame before the latest live paint — honest compare baseline. */
+  let previousPaintedLiveScene: GlassSceneV0 | null = null;
   let lastLiveEmphasis: BoundedSceneEmphasisV0 | null = null;
   let selectedBoundedSelectionId: string | null = null;
 
@@ -439,7 +441,9 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       boundedInspectorPre.removeAttribute("data-selected");
       return;
     }
-    const spec = liveVisualSpecFromScene(lastPaintedLiveScene, selectedBoundedSelectionId);
+    const spec = liveVisualSpecFromScene(lastPaintedLiveScene, selectedBoundedSelectionId, {
+      previousScene: previousPaintedLiveScene,
+    });
     boundedInspectorPre.textContent = buildBoundedInspectorLines(
       lastPaintedLiveScene,
       spec,
@@ -454,7 +458,9 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
 
   function buildCurrentLiveVisualSpec(): LiveVisualSpec {
     if (lastPaintedLiveScene) {
-      return liveVisualSpecFromScene(lastPaintedLiveScene, selectedBoundedSelectionId);
+      return liveVisualSpecFromScene(lastPaintedLiveScene, selectedBoundedSelectionId, {
+        previousScene: previousPaintedLiveScene,
+      });
     }
     return liveVisualSpecFromScene(
       compileLiveToGlassSceneV0({
@@ -463,6 +469,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
         httpSnapshotOrigin: lastHttp?.bounded_snapshot?.snapshot_origin ?? null,
       }),
       selectedBoundedSelectionId,
+      { previousScene: null },
     );
   }
 
@@ -623,6 +630,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   }
 
   async function paintLiveVisual(): Promise<void> {
+    const prev = lastPaintedLiveScene;
     const scene = compileLiveToGlassSceneV0({
       model,
       lastReconcile,
@@ -631,6 +639,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     });
     lastLiveEmphasis = scene.emphasis;
     lastPaintedLiveScene = scene;
+    previousPaintedLiveScene = prev;
     const result = await paintLiveVisualSurface(
       visualCanvas,
       visualCanvasWebGpu,
@@ -638,7 +647,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       scene,
       undefined,
       webGpuBundle,
-      { selectedSelectionId: selectedBoundedSelectionId },
+      { selectedSelectionId: selectedBoundedSelectionId, previousScene: prev },
     );
     lastPaintResult = result;
     visualFallback.hidden = result.fallbackTextShouldHide;
@@ -656,7 +665,9 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     const x = ev.clientX - rect.left;
     const y = ev.clientY - rect.top;
     const lay = { widthCss: scene.bounds.widthCss, heightCss: scene.bounds.heightCss };
-    const targets = buildBoundedSelectionHitTargetsForScene(scene, lay, selectedBoundedSelectionId);
+    const targets = buildBoundedSelectionHitTargetsForScene(scene, lay, selectedBoundedSelectionId, {
+      previousScene: previousPaintedLiveScene,
+    });
     const id = hitTestBoundedSelection(x, y, targets);
     if (id === selectedBoundedSelectionId) {
       selectedBoundedSelectionId = null;

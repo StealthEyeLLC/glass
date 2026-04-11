@@ -32,15 +32,17 @@ export async function paintLiveVisualSurface(
   scene: GlassSceneV0,
   layout: LiveVisualCanvasLayout | undefined,
   webGpuBundle: LiveVisualWebGpuBundle | null,
-  selection?: { selectedSelectionId: string | null },
+  selection?: { selectedSelectionId: string | null; previousScene?: GlassSceneV0 | null },
 ): Promise<PaintLiveVisualSurfaceResult> {
   const lay =
     layout ?? { widthCss: scene.bounds.widthCss, heightCss: scene.bounds.heightCss };
   const sel = selection?.selectedSelectionId ?? null;
-  const spec = liveVisualSpecFromScene(scene, sel);
+  const prev = selection?.previousScene ?? null;
+  const spec = liveVisualSpecFromScene(scene, sel, { previousScene: prev });
   if (webGpuBundle) {
     const okGpu = await renderLiveVisualWebGpuFrame(canvasWebGpu, scene, lay, webGpuBundle, {
       focusedSelectionId: sel,
+      previousScene: prev,
     });
     if (okGpu) {
       const okText = renderLiveVisualTextOverlayOnCanvas(canvasTextOverlay, spec, lay, {
@@ -63,6 +65,7 @@ export async function paintLiveVisualSurface(
       const ok2d = renderLiveVisualOnCanvas(canvas2dFull, scene, {
         layout: lay,
         selectedSelectionId: sel,
+        previousScene: prev,
       });
       return {
         fallbackTextShouldHide: ok2d,
@@ -77,6 +80,7 @@ export async function paintLiveVisualSurface(
   const ok2d = renderLiveVisualOnCanvas(canvas2dFull, scene, {
     layout: lay,
     selectedSelectionId: sel,
+    previousScene: prev,
   });
   return {
     fallbackTextShouldHide: ok2d,

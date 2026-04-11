@@ -48,6 +48,14 @@ export interface LiveVisualSpec {
   stripPrimaryY: number | null;
   /** Scene path: bottom Y of the last strip block (rail or cluster) for text stacking. */
   stripContentBottomY: number | null;
+  /** Vertical Slice v8 — honest compare vs immediately prior bounded frame (null when no prior). */
+  boundedCompareSummaryLine: string | null;
+  /** Extra compare lines for inspector / provenance (empty when no prior). */
+  boundedCompareDetailLines: readonly string[];
+  /** Short reason when compare is unavailable (replay/live first frame). */
+  boundedCompareUnavailableReason: string | null;
+  /** Selection-scoped compare when the same bounded id exists on both sides. */
+  boundedCompareSelectionLine: string | null;
 }
 
 /** Fill colors for primary band (deterministic, sRGB hex). */
@@ -104,6 +112,10 @@ export function buildLiveVisualSpec(
     boundedStripReflowLine: null as string | null,
     stripPrimaryY: null as number | null,
     stripContentBottomY: null as number | null,
+    boundedCompareSummaryLine: null as string | null,
+    boundedCompareDetailLines: [] as readonly string[],
+    boundedCompareUnavailableReason: null as string | null,
+    boundedCompareSelectionLine: null as string | null,
   };
 
   if (model.lastWarning) {

@@ -220,11 +220,12 @@ export function buildBoundedSelectionTextOverlayHitTargets(
   const w = widthCss;
   const h = heightCss;
   const railBottom = LIVE_VISUAL_STATE_RAIL_LAYOUT.originY + LIVE_VISUAL_STATE_RAIL_LAYOUT.height;
-  const clusterBottom =
+  const clusterBottomDefault =
     spec.actorClusterSummaryLine !== null && spec.actorClusterSummaryLine.length > 0
       ? LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.originY + LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT.height
       : railBottom;
-  let lineY = clusterBottom + 8;
+  const stripBottom = spec.stripContentBottomY ?? clusterBottomDefault;
+  let lineY = stripBottom + 8;
   const left = 16;
   const lineW = w - 32;
   const lineH = 14;
@@ -243,6 +244,17 @@ export function buildBoundedSelectionTextOverlayHitTargets(
   }
   if (spec.boundedFocusCaptionLine) {
     pushLine(makeId("overlay", "focus_caption"));
+  }
+  if (spec.boundedStripReflowLine) {
+    pushLine(makeId("overlay", "strip_reflow"));
+  }
+  if (spec.boundedCompareUnavailableReason) {
+    pushLine(makeId("overlay", "compare_unavailable"));
+  } else if (spec.boundedCompareSummaryLine) {
+    pushLine(makeId("overlay", "compare_summary"));
+  }
+  if (spec.boundedCompareSelectionLine) {
+    pushLine(makeId("overlay", "compare_selection"));
   }
   if (spec.actorClusterSummaryLine) {
     pushLine(makeId("overlay", "cluster_summary"));
@@ -285,9 +297,14 @@ export function buildBoundedSelectionHitTargetsForScene(
   scene: GlassSceneV0,
   layout?: Pick<SceneBounds, "widthCss" | "heightCss">,
   focusedSelectionId?: string | null,
+  options?: { previousScene?: GlassSceneV0 | null },
 ): BoundedSelectionHitTarget[] {
-  const primitives = sceneToDrawablePrimitives(scene, layout, { focusedSelectionId });
-  const spec = liveVisualSpecFromScene(scene, focusedSelectionId);
+  const prev = options?.previousScene ?? null;
+  const primitives = sceneToDrawablePrimitives(scene, layout, {
+    focusedSelectionId,
+    previousScene: prev,
+  });
+  const spec = liveVisualSpecFromScene(scene, focusedSelectionId, { previousScene: prev });
   const w = layout?.widthCss ?? scene.bounds.widthCss;
   const h = layout?.heightCss ?? scene.bounds.heightCss;
   const geo = buildBoundedSelectionHitTargetsFromPrimitives(scene, primitives);
@@ -342,11 +359,17 @@ export function buildBoundedInspectorLines(
   selectedId: string | null,
 ): string[] {
   if (selectedId === null) {
-    return [
+    const out = [
       "Selection: (none)",
       "Click a scene band, region panel, rail lane, cluster segment, or an overlay line.",
       "This does not imply topology, process history, or causal graph edges.",
     ];
+    if (spec.boundedCompareUnavailableReason) {
+      out.splice(1, 0, `Compare: ${spec.boundedCompareUnavailableReason}`);
+    } else if (spec.boundedCompareSummaryLine) {
+      out.splice(1, 0, `Compare: ${spec.boundedCompareSummaryLine}`);
+    }
+    return out;
   }
 
   const lines: string[] = [`Selected: ${selectedId}`];
@@ -359,6 +382,17 @@ export function buildBoundedInspectorLines(
   }
   if (spec.boundedStripReflowLine) {
     lines.push(`Strip reflow (spatial): ${spec.boundedStripReflowLine}`);
+  }
+  if (spec.boundedCompareUnavailableReason) {
+    lines.push(`Compare: ${spec.boundedCompareUnavailableReason}`);
+  } else if (spec.boundedCompareSummaryLine) {
+    lines.push(`Compare: ${spec.boundedCompareSummaryLine}`);
+  }
+  if (spec.boundedCompareSelectionLine) {
+    lines.push(`Selection compare: ${spec.boundedCompareSelectionLine}`);
+  }
+  for (const d of spec.boundedCompareDetailLines.slice(0, 8)) {
+    lines.push(`  ${d}`);
   }
 
   const pushHonesty = () => {
@@ -479,6 +513,18 @@ export function buildBoundedInspectorLines(
     }
     if (selectedId.endsWith(":focus_caption")) {
       lines.push(`Bounded focus caption: ${spec.boundedFocusCaptionLine ?? "—"}`);
+    }
+    if (selectedId.endsWith(":strip_reflow")) {
+      lines.push(`Strip reflow: ${spec.boundedStripReflowLine ?? "—"}`);
+    }
+    if (selectedId.endsWith(":compare_summary")) {
+      lines.push(`Compare: ${spec.boundedCompareSummaryLine ?? "—"}`);
+    }
+    if (selectedId.endsWith(":compare_unavailable")) {
+      lines.push(`Compare unavailable: ${spec.boundedCompareUnavailableReason ?? "—"}`);
+    }
+    if (selectedId.endsWith(":compare_selection")) {
+      lines.push(`Selection compare: ${spec.boundedCompareSelectionLine ?? "—"}`);
     }
     pushHonesty();
     return lines;

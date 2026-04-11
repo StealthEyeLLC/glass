@@ -1,6 +1,20 @@
-# Glass Vertical Slice v0 / v1 / v2 / v3 / v4 / v5 / v6 / v7
+# Glass Vertical Slice v0 / v1 / v2 / v3 / v4 / v5 / v6 / v7 / v8
 
-**Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier). **Vertical Slice v1** added a richer bounded scene; **v2** adds **bounded actor/sample clusters** from real event kinds only; **v3** adds **bounded regions** (membership + compositional drawable layers); **v4** adds **bounded scene emphasis** and **pulse/flash overlays** driven only by real basis changes between compiles; **v5** adds **bounded scene selection** and **inspector coupling** (same ids + hit map for replay and live); **v6** adds **bounded focus mode** — selection reshapes **dim/emphasis** and overlay/provenance copy from **grouping-only** scene facts; **v7** adds **bounded focus reflow** — the same selection **re-allocates vertical space** and (when applicable) **lane width fractions** for the primary band, state rail, and actor cluster strip — still **no** wire contract changes.
+**Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier). **Vertical Slice v1** added a richer bounded scene; **v2** adds **bounded actor/sample clusters** from real event kinds only; **v3** adds **bounded regions** (membership + compositional drawable layers); **v4** adds **bounded scene emphasis** and **pulse/flash overlays** driven only by real basis changes between compiles; **v5** adds **bounded scene selection** and **inspector coupling** (same ids + hit map for replay and live); **v6** adds **bounded focus mode** — selection reshapes **dim/emphasis** and overlay/provenance copy from **grouping-only** scene facts; **v7** adds **bounded focus reflow** — the same selection **re-allocates vertical space** and (when applicable) **lane width fractions** for the primary band, state rail, and actor cluster strip; **v8** adds **bounded compare mode** — honest **current vs immediately prior** bounded frame (replay step / live paint / selection-scoped cluster facts) — still **no** wire contract changes.
+
+## Vertical Slice v8 (bounded compare)
+
+**What it adds (viewer-only):**
+
+- **`boundedSceneCompare.ts`:** **`computeBoundedSceneCompare(prev, next, { selectedId })`** → **`BoundedSceneCompareV0`** (`glass.compare.v0`) — pure, deterministic; compares only fields present on **`GlassSceneV0`** (wire mode, tail/sample mass, reconcile/resync/warning/replay-prefix strings, cluster lane facts, emphasis steps/region weights, focus captions for the current selection). **No** invented timeline; **no** graph diff.
+- **`LiveVisualSpec`:** **`boundedCompareSummaryLine`**, **`boundedCompareDetailLines`**, **`boundedCompareUnavailableReason`**, **`boundedCompareSelectionLine`** — populated from **`liveVisualSpecFromScene(…, { previousScene })`**. First frame on a path shows a calm **unavailable** reason; later frames compare against the **last painted** bounded scene.
+- **`applyBoundedCompareOverlaysToPrimitives`** — small **`compare_overlay_*`** fill quads (amber) on wire/density/HTTP chip/state rail/cluster/region/focus hints; **Canvas text** adds **`compare: …`** and optional **`selection compare: …`** lines; **WebGPU** consumes the **same** primitive list (compare cues are geometry-only; full sentences stay on Canvas overlay).
+- **Shells:** **`replayOnlyShell`** / **`liveSessionShell`** capture **`previousReplayScene`** / **`previousPaintedLiveScene`** before each compile and pass **`previousScene`** into **`renderLiveVisualOnCanvas`** / **`paintLiveVisualSurface`**; hit-testing uses the same **`previousScene`** so overlay line stacks stay aligned.
+- **Inspector:** **`buildBoundedInspectorLines`** includes compare summary + up to eight detail lines; empty selection shows compare when available.
+
+**What it does *not* imply:** multi-step history, graph evolution, syscall-complete diffs, or any “before” state beyond the **single** prior bounded frame the viewer actually held. **F-IPC transport** remains **provisional**. This is still **not** the Phase-6 full runtime topology scene.
+
+**Next major step:** durable push ingest and/or additive live-era HTTP/WS fields **without** breaking frozen bounded-era HTTP — see `docs/IMPLEMENTATION_STATUS.md`. Compare stays **one-step** honest.
 
 ## Vertical Slice v7 (bounded focus reflow)
 

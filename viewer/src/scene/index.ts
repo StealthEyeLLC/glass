@@ -38,6 +38,11 @@ export {
   buildReplayBoundedRegions,
   formatBoundedCompositionCaption,
 } from "./boundedSceneRegions.js";
+export {
+  computeBoundedSceneCompare,
+  applyBoundedCompareOverlaysToPrimitives,
+  type BoundedSceneCompareV0,
+} from "./boundedSceneCompare.js";
 export { liveVisualSpecFromScene } from "./sceneToLiveVisualSpec.js";
 export {
   DRAWABLE_PRIMITIVES_V0,
