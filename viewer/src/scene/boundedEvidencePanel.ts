@@ -23,6 +23,9 @@ export interface RenderBoundedEvidenceOptions {
   /** Vertical Slice v12 — selected bounded episode context (rule-based, not causal history). */
   episodeContextLine?: string | null;
   episodeHonestyNote?: string | null;
+  /** Vertical Slice v13 — active bounded claim (receipt summary lines). */
+  claimContextLine?: string | null;
+  claimDoesNotImplyLine?: string | null;
   /** Replace-selection on row; toggle off when activating the same mapped id as current. */
   onActivateRow?: (rowIndex: number, resolution: BoundedCrosslinkResolutionV0) => void;
   onActivateCompare?: (resolution: BoundedCrosslinkResolutionV0) => void;
@@ -105,6 +108,21 @@ export function renderBoundedEvidenceInto(
     p.className = "glass-bounded-evidence-episode-honesty";
     p.setAttribute("data-testid", "bounded-evidence-episode-honesty");
     p.textContent = options.episodeHonestyNote;
+    container.appendChild(p);
+  }
+
+  if (options?.claimContextLine) {
+    const p = document.createElement("p");
+    p.className = "glass-bounded-evidence-claim";
+    p.setAttribute("data-testid", "bounded-evidence-claim-context");
+    p.textContent = options.claimContextLine;
+    container.appendChild(p);
+  }
+  if (options?.claimDoesNotImplyLine) {
+    const p = document.createElement("p");
+    p.className = "glass-bounded-evidence-claim-not";
+    p.setAttribute("data-testid", "bounded-evidence-claim-not");
+    p.textContent = options.claimDoesNotImplyLine;
     container.appendChild(p);
   }
 

@@ -32,6 +32,8 @@ describe("mountLiveSessionShell", () => {
     const boundedInsp = root.querySelector('[data-testid="live-bounded-inspector"]');
     expect(boundedInsp).not.toBeNull();
     expect(root.querySelector('[data-testid="live-bounded-episodes-root"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="live-bounded-claims-strip-root"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="live-bounded-claim-receipt-root"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="live-temporal-lens-root"]')).not.toBeNull();
     const lt = legend?.textContent ?? "";
     expect(lt).toContain("R = ");

@@ -69,6 +69,13 @@ import {
   computeBoundedSceneEpisodes,
 } from "../scene/boundedEpisodes.js";
 import { renderBoundedEpisodesInto } from "../scene/boundedEpisodesPanel.js";
+import {
+  boundedClaimEvidenceUiLines,
+  boundedClaimSelectionStillValid,
+  buildBoundedClaimReceipt,
+  computeBoundedSceneClaims,
+} from "../scene/boundedClaims.js";
+import { renderBoundedClaimReceiptInto, renderBoundedClaimsInto } from "../scene/boundedClaimsPanel.js";
 import { compileLiveToGlassSceneV0 } from "../scene/compileLiveScene.js";
 import { computeBoundedSceneFocus } from "../scene/boundedSceneFocus.js";
 import {
@@ -448,6 +455,12 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   boundedEpisodeTitle.setAttribute("data-testid", "live-bounded-episodes-heading");
   const boundedEpisodeRoot = el("div", "glass-bounded-episodes-root");
   boundedEpisodeRoot.setAttribute("data-testid", "live-bounded-episodes-root");
+  const boundedClaimTitle = el("h4", "glass-bounded-claims-title", "Bounded claims (Vertical Slice v13)");
+  boundedClaimTitle.setAttribute("data-testid", "live-bounded-claims-heading");
+  const boundedClaimStripRoot = el("div", "glass-bounded-claims-strip-root");
+  boundedClaimStripRoot.setAttribute("data-testid", "live-bounded-claims-strip-root");
+  const boundedClaimReceiptRoot = el("div", "glass-bounded-claim-receipt-root");
+  boundedClaimReceiptRoot.setAttribute("data-testid", "live-bounded-claim-receipt-root");
   const boundedTemporalTitle = el(
     "h4",
     "glass-bounded-temporal-title",
@@ -470,6 +483,9 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     boundedEvidenceCrosslinkNote,
     boundedEpisodeTitle,
     boundedEpisodeRoot,
+    boundedClaimTitle,
+    boundedClaimStripRoot,
+    boundedClaimReceiptRoot,
     boundedTemporalTitle,
     boundedTemporalRoot,
     visualProvenanceHeader,
@@ -489,6 +505,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   let lastLiveEmphasis: BoundedSceneEmphasisV0 | null = null;
   let selectedBoundedSelectionId: string | null = null;
   let selectedBoundedEpisodeId: string | null = null;
+  let selectedBoundedClaimId: string | null = null;
 
   function applyCrosslinkResolutionLive(res: BoundedCrosslinkResolutionV0): void {
     if (res.targetSelectionId) {
@@ -557,6 +574,9 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       boundedEvidenceCrosslinkNote.textContent = "";
       boundedEpisodeRoot.replaceChildren();
       selectedBoundedEpisodeId = null;
+      boundedClaimStripRoot.replaceChildren();
+      boundedClaimReceiptRoot.replaceChildren();
+      selectedBoundedClaimId = null;
       boundedTemporalRoot.replaceChildren();
       return;
     }
@@ -613,6 +633,35 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       liveEventTail: model.eventTail,
       replay: null,
     });
+    const claimsPack = computeBoundedSceneClaims({
+      path: "live",
+      scene: lastPaintedLiveScene,
+      compare: cmp,
+      episodes,
+      drilldown: drill,
+      selectedSelectionId: selectedBoundedSelectionId,
+      selectedEpisodeId: selectedBoundedEpisodeId,
+      liveEventTailMutation: liveTailMutation,
+    });
+    if (!boundedClaimSelectionStillValid(claimsPack.claims, selectedBoundedClaimId)) {
+      selectedBoundedClaimId = null;
+    }
+    const highlightClaimId = selectedBoundedClaimId ?? claimsPack.primaryClaimId;
+    const activeClaim = claimsPack.claims.find((c) => c.id === highlightClaimId) ?? null;
+    const receipt = buildBoundedClaimReceipt(activeClaim, drill, lastPaintedLiveScene);
+    const claimUi = boundedClaimEvidenceUiLines(receipt);
+    renderBoundedClaimsInto(boundedClaimStripRoot, claimsPack, {
+      testIdPrefix: "live",
+      highlightClaimId,
+      onSelectClaim: (nextId, cl) => {
+        selectedBoundedClaimId = nextId;
+        if (nextId !== null && cl.suggestedSelectionId) {
+          selectedBoundedSelectionId = cl.suggestedSelectionId;
+        }
+        void paintLiveVisual();
+      },
+    });
+    renderBoundedClaimReceiptInto(boundedClaimReceiptRoot, receipt, { testIdPrefix: "live" });
     renderBoundedEvidenceInto(boundedEvidenceRoot, drill, {
       scene: lastPaintedLiveScene,
       selectedSelectionId: selectedBoundedSelectionId,
@@ -621,6 +670,8 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       liveVisualSpec: spec,
       episodeContextLine: evEp.contextLine,
       episodeHonestyNote: evEp.honestyNote,
+      claimContextLine: claimUi.contextLine,
+      claimDoesNotImplyLine: claimUi.doesNotImplyLine,
       onActivateRow: (_row, res) => {
         applyCrosslinkResolutionLive(res);
         void paintLiveVisual();

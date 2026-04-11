@@ -38,6 +38,13 @@ import {
   computeBoundedSceneEpisodes,
 } from "../scene/boundedEpisodes.js";
 import { renderBoundedEpisodesInto } from "../scene/boundedEpisodesPanel.js";
+import {
+  boundedClaimEvidenceUiLines,
+  boundedClaimSelectionStillValid,
+  buildBoundedClaimReceipt,
+  computeBoundedSceneClaims,
+} from "../scene/boundedClaims.js";
+import { renderBoundedClaimReceiptInto, renderBoundedClaimsInto } from "../scene/boundedClaimsPanel.js";
 import { compileReplayToGlassSceneV0 } from "../scene/compileReplayScene.js";
 import {
   currentEvent,
@@ -103,6 +110,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   let replayCompareBaselineRingIndex: number | null = null;
   let selectedBoundedSelectionId: string | null = null;
   let selectedBoundedEpisodeId: string | null = null;
+  let selectedBoundedClaimId: string | null = null;
 
   const hero = el("section", "glass-vs-hero glass-replay-vs-hero");
   hero.setAttribute("data-testid", "replay-vs-hero");
@@ -212,6 +220,12 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   episodeTitle.setAttribute("data-testid", "replay-bounded-episodes-heading");
   const episodeRoot = el("div", "glass-bounded-episodes-root");
   episodeRoot.setAttribute("data-testid", "replay-bounded-episodes-root");
+  const claimTitle = el("h4", "glass-bounded-claims-title", "Bounded claims (Vertical Slice v13)");
+  claimTitle.setAttribute("data-testid", "replay-bounded-claims-heading");
+  const claimStripRoot = el("div", "glass-bounded-claims-strip-root");
+  claimStripRoot.setAttribute("data-testid", "replay-bounded-claims-strip-root");
+  const claimReceiptRoot = el("div", "glass-bounded-claim-receipt-root");
+  claimReceiptRoot.setAttribute("data-testid", "replay-bounded-claim-receipt-root");
   const temporalTitle = el(
     "h4",
     "glass-bounded-temporal-title",
@@ -219,7 +233,15 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   );
   const temporalRoot = el("div", "glass-bounded-temporal-root");
   temporalRoot.setAttribute("data-testid", "replay-temporal-lens-root");
-  temporalSection.append(episodeTitle, episodeRoot, temporalTitle, temporalRoot);
+  temporalSection.append(
+    episodeTitle,
+    episodeRoot,
+    claimTitle,
+    claimStripRoot,
+    claimReceiptRoot,
+    temporalTitle,
+    temporalRoot,
+  );
 
   function effectiveCompareBaselineReplay(): GlassSceneV0 | null {
     replayCompareBaselineRingIndex = clampTemporalBaselineIndex(
@@ -398,6 +420,9 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
       boundedEvidenceCrosslinkNote.textContent = "";
       episodeRoot.replaceChildren();
       selectedBoundedEpisodeId = null;
+      claimStripRoot.replaceChildren();
+      claimReceiptRoot.replaceChildren();
+      selectedBoundedClaimId = null;
       temporalRoot.replaceChildren();
       return;
     }
@@ -453,6 +478,35 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
       liveEventTail: null,
       replay: { events: state.events, cursorIndex: state.cursorIndex },
     });
+    const claimsPack = computeBoundedSceneClaims({
+      path: "replay",
+      scene: lastReplayScene,
+      compare: cmp,
+      episodes,
+      drilldown: drill,
+      selectedSelectionId: selectedBoundedSelectionId,
+      selectedEpisodeId: selectedBoundedEpisodeId,
+      liveEventTailMutation: null,
+    });
+    if (!boundedClaimSelectionStillValid(claimsPack.claims, selectedBoundedClaimId)) {
+      selectedBoundedClaimId = null;
+    }
+    const highlightClaimId = selectedBoundedClaimId ?? claimsPack.primaryClaimId;
+    const activeClaim = claimsPack.claims.find((c) => c.id === highlightClaimId) ?? null;
+    const receipt = buildBoundedClaimReceipt(activeClaim, drill, lastReplayScene);
+    const claimUi = boundedClaimEvidenceUiLines(receipt);
+    renderBoundedClaimsInto(claimStripRoot, claimsPack, {
+      testIdPrefix: "replay",
+      highlightClaimId,
+      onSelectClaim: (nextId, cl) => {
+        selectedBoundedClaimId = nextId;
+        if (nextId !== null && cl.suggestedSelectionId) {
+          selectedBoundedSelectionId = cl.suggestedSelectionId;
+        }
+        paintReplayScene();
+      },
+    });
+    renderBoundedClaimReceiptInto(claimReceiptRoot, receipt, { testIdPrefix: "replay" });
     renderBoundedEvidenceInto(boundedEvidenceRoot, drill, {
       scene: lastReplayScene,
       selectedSelectionId: selectedBoundedSelectionId,
@@ -461,6 +515,8 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
       liveVisualSpec: spec,
       episodeContextLine: evEp.contextLine,
       episodeHonestyNote: evEp.honestyNote,
+      claimContextLine: claimUi.contextLine,
+      claimDoesNotImplyLine: claimUi.doesNotImplyLine,
       onActivateRow: (_row, res) => {
         applyCrosslinkResolution(res);
         paintReplayScene();

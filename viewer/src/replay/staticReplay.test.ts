@@ -73,10 +73,12 @@ describe("static replay shell", () => {
     expect(root.querySelector('[data-testid="replay-file-input"]')).toBeTruthy();
   });
 
-  it("mounts bounded episodes + temporal lens roots (Vertical Slice v12)", () => {
+  it("mounts bounded episodes + claims + temporal lens roots (Vertical Slice v12–v13)", () => {
     const root = document.createElement("div");
     mountReplayShell(root);
     expect(root.querySelector('[data-testid="replay-bounded-episodes-root"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="replay-bounded-claims-strip-root"]')).toBeTruthy();
+    expect(root.querySelector('[data-testid="replay-bounded-claim-receipt-root"]')).toBeTruthy();
     expect(root.querySelector('[data-testid="replay-temporal-lens-root"]')).toBeTruthy();
   });
 
