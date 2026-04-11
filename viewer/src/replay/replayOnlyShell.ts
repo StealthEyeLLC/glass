@@ -4,6 +4,11 @@ import {
 } from "../app/devFixtureRoute.js";
 import { getBuildMode } from "../app/mode.js";
 import {
+  VERTICAL_SLICE_FLAGSHIP_V18_BODY,
+  VERTICAL_SLICE_FLAGSHIP_V18_DEV_QUERY_HINT,
+  VERTICAL_SLICE_FLAGSHIP_V18_PACK_FILE,
+  VERTICAL_SLICE_FLAGSHIP_V18_SESSION_ID,
+  VERTICAL_SLICE_FLAGSHIP_V18_TITLE,
   VERTICAL_SLICE_SCENARIO_BODY,
   VERTICAL_SLICE_SCENARIO_LABEL,
   VERTICAL_SLICE_SCENARIO_TITLE,
@@ -129,6 +134,18 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     el("p", "glass-vs-scenario", VERTICAL_SLICE_SCENARIO_BODY),
   );
 
+  const flagshipCallout = el("section", "glass-flagship-callout");
+  flagshipCallout.setAttribute("data-testid", "replay-flagship-callout");
+  flagshipCallout.append(
+    el("h2", "glass-flagship-callout-title", VERTICAL_SLICE_FLAGSHIP_V18_TITLE),
+    el("p", "glass-flagship-callout-body", VERTICAL_SLICE_FLAGSHIP_V18_BODY),
+    el(
+      "p",
+      "glass-flagship-callout-meta",
+      `Committed: tests/fixtures/canonical_scenarios_v15/${VERTICAL_SLICE_FLAGSHIP_V18_PACK_FILE} · session ${VERTICAL_SLICE_FLAGSHIP_V18_SESSION_ID}. Dev: npm run dev + ${VERTICAL_SLICE_FLAGSHIP_V18_DEV_QUERY_HINT}`,
+    ),
+  );
+
   const liveNav = el("div", "glass-live-nav");
   const liveA = document.createElement("a");
   liveA.href = "?live=1";
@@ -139,7 +156,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
 
   const dropZone = el("div", "glass-drop-zone");
   dropZone.textContent =
-    "Drop a .glass_pack here, or use Open file. Tier B: manifest.json plus events.jsonl (glass.pack.v0.scaffold) or events.seg (glass.pack.v0.scaffold_seg).";
+    "Drop a .glass_pack here, or use Open file. Prefer the flagship append-heavy pack for the full bounded demo; Tier B: manifest.json + events.jsonl (glass.pack.v0.scaffold) or events.seg (glass.pack.v0.scaffold_seg).";
 
   const fileRow = el("div", "glass-file-row");
   const fileInput = document.createElement("input");
@@ -362,6 +379,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
 
   root.append(
     hero,
+    flagshipCallout,
     liveNav,
     dropZone,
     fileRow,
@@ -599,7 +617,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
       window.location.search,
       devFixtureEnvForReplay(),
     );
-    if (plan.kind !== "load_vertical_slice_v0") {
+    if (plan.kind !== "load_dev_pack") {
       return;
     }
     dispatch({ type: "start_reading", fileName: plan.fileName });

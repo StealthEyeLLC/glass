@@ -67,6 +67,39 @@
   line-height: 1.5;
 }
 
+/* Vertical Slice v18 — flagship bounded path (one primary story; suite remains breadth proof) */
+.glass-flagship-callout {
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-left: 4px solid #0284c7;
+}
+
+.glass-flagship-callout-title {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0c4a6e;
+  letter-spacing: -0.02em;
+}
+
+.glass-flagship-callout-body {
+  margin: 0 0 8px;
+  font-size: 0.84rem;
+  color: #164e63;
+  line-height: 1.5;
+}
+
+.glass-flagship-callout-meta {
+  margin: 0;
+  font-size: 0.72rem;
+  color: #0e7490;
+  line-height: 1.45;
+  font-family: ui-monospace, monospace;
+}
+
 .glass-live-nav {
   margin-bottom: 8px;
 }

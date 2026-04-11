@@ -68,6 +68,8 @@ describe("static replay shell", () => {
     mountReplayShell(root);
     expect(root.querySelector('[data-testid="replay-vs-hero"]')).toBeTruthy();
     expect(root.textContent).toContain("static replay");
+    expect(root.querySelector('[data-testid="replay-flagship-callout"]')).toBeTruthy();
+    expect(root.textContent).toContain("canonical_v15_append_heavy");
     expect(root.querySelector(".glass-drop-zone")).toBeTruthy();
     expect(root.querySelector('[data-testid="replay-open-file"]')).toBeTruthy();
     expect(root.querySelector('[data-testid="replay-file-input"]')).toBeTruthy();

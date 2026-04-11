@@ -7,6 +7,7 @@ describe("mountLiveSessionShell", () => {
     const root = document.createElement("div");
     mountLiveSessionShell(root);
     expect(root.querySelector('[data-testid="live-vs-hero"]')).not.toBeNull();
+    expect(root.querySelector('[data-testid="live-flagship-note"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="live-state-panel"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="live-event-list"]')).not.toBeNull();
     expect(root.querySelector('[data-testid="live-tail-origin"]')).not.toBeNull();

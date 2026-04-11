@@ -61,6 +61,13 @@
   line-height: 1.5;
 }
 
+.glass-flagship-live-note {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  color: #155e75;
+  line-height: 1.45;
+}
+
 .glass-live-vs-hero {
   border-left: 4px solid #059669;
 }

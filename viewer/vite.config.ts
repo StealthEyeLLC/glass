@@ -36,6 +36,26 @@ function glassDevFixturePlugin(): Plugin {
           }).pipe(res);
           return;
         }
+        if (
+          pathname ===
+          "/__glass__/dev/canonical_scenarios_v15/canonical_v15_append_heavy.glass_pack"
+        ) {
+          const file = path.join(
+            repoRoot,
+            "tests/fixtures/canonical_scenarios_v15/canonical_v15_append_heavy.glass_pack",
+          );
+          if (!fs.existsSync(file)) {
+            res.statusCode = 404;
+            res.end("glass dev fixture missing on disk");
+            return;
+          }
+          res.setHeader("Content-Type", "application/zip");
+          fs.createReadStream(file).on("error", () => {
+            res.statusCode = 500;
+            res.end();
+          }).pipe(res);
+          return;
+        }
         next();
       });
     },

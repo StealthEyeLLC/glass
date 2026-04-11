@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  VERTICAL_SLICE_FLAGSHIP_V18_SESSION_ID,
   VERTICAL_SLICE_SCENARIO_LABEL,
   VERTICAL_SLICE_SCENARIO_TITLE,
   VERTICAL_SLICE_V0_ID,
@@ -13,7 +14,8 @@ describe("verticalSliceV0", () => {
     expect(VERTICAL_SLICE_SCENARIO_TITLE.length).toBeGreaterThan(4);
     expect(VERTICAL_SLICE_SCENARIO_LABEL.length).toBeGreaterThan(4);
     expect(replayHeroSubtitle()).toContain("static replay");
-    expect(replayHeroSubtitle()).toContain("Vertical Slice");
-    expect(liveHeroSubtitle()).toContain("Live session");
+    expect(replayHeroSubtitle()).toContain("flagship");
+    expect(liveHeroSubtitle()).toContain("Same strip");
+    expect(VERTICAL_SLICE_FLAGSHIP_V18_SESSION_ID).toBe("canonical_v15_append_heavy");
   });
 });

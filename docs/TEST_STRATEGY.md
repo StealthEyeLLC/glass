@@ -57,10 +57,11 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | Suite | Obligation |
 |-------|------------|
 | `src/app/mode.test.ts` | `getBuildMode` stays **`static_replay`**; `uiSurfaceFromSearch` for `?live=1` |
-| `src/app/verticalSliceV0.test.ts` | **Vertical Slice v0** copy exports (`VERTICAL_SLICE_V0_ID`, hero subtitle strings mention static replay / live) |
-| `src/app/devFixtureRoute.test.ts` | **`planDevFixtureLoad`**: dev vs production inert (`DEV` flag); query parse; strip `fixture=` |
+| `src/app/verticalSliceV0.test.ts` | **Vertical Slice v0** copy exports (`VERTICAL_SLICE_V0_ID`, hero subtitles; **v18** flagship session id `canonical_v15_append_heavy`) |
+| `src/app/devFixtureRoute.test.ts` | **`planDevFixtureLoad`**: dev vs production inert (`DEV` flag); **`vertical_slice_v0`** + **`flagship`** (`load_dev_pack`); strip `fixture=` |
 | `src/replay/verticalSliceFixture.integration.test.ts` | **`@vitest-environment node`**: committed **`tests/fixtures/vertical_slice_v0/glass_vertical_slice_v0_tier_b.glass_pack`** → **`loadGlassPack` strict_kinds** → **`compileReplayToGlassSceneV0`**: honesty line (not live tail / not topology), prefix sample scope, bounded counts, replace→append wire mode |
-| `src/replay/canonicalScenariosV15.integration.test.ts` | **Vertical Slice v15** — **`tests/fixtures/canonical_scenarios_v15/*.glass_pack`** load + scene assertions (replace/append/calm compare/file clusters); **live** warning + resync → **`compileLiveToGlassSceneV0`**; regression: flagship **`vertical_slice_v0`** pack still loads |
+| `src/replay/canonicalScenariosV15.integration.test.ts` | **Vertical Slice v15** — **`tests/fixtures/canonical_scenarios_v15/*.glass_pack`** load + scene assertions (replace/append/calm compare/file clusters); **live** warning + resync → **`compileLiveToGlassSceneV0`**; regression: minimal **`vertical_slice_v0`** Tier B pack still loads |
+| `src/replay/flagshipVerticalSliceV18.integration.test.ts` | **Vertical Slice v18** — flagship **`canonical_v15_append_heavy.glass_pack`**: strict load, session id, **append** at end cursor, bounded tail **14** |
 | `integration_tests::repo_layout` | **`canonical_scenarios_v15_packs_present`** — four v15 scenario packs committed |
 | `src/live/applyLiveSessionMessage.test.ts` | Live wire reducer: `session_hello`, `session_snapshot_replaced` replacement sample, non-empty `session_delta` append, empty delta no-op, `session_resync_required` reconcile counter, `session_warning`; **`lastAppliedWire`** surface (replace / append / none, resync summary, truncated sample honesty) |
 | `src/live/liveStatePresentation.test.ts` | `buildLiveStatePresentationDoc` (resync + reconcile trigger, bounded-sample honesty, HTTP snapshot_meta fallback); **`liveConnectDisabledFromPreflight`** (F-IPC not configured vs failed/missing preflight) |

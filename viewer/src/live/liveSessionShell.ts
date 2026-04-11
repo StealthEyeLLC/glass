@@ -97,6 +97,8 @@ import { paintLiveVisualSurface, type PaintLiveVisualSurfaceResult } from "./liv
 import type { LiveVisualWebGpuBundle } from "./liveVisualWebGpu.js";
 import { tryInitWebGpuCanvas } from "./liveVisualWebGpu.js";
 import {
+  VERTICAL_SLICE_FLAGSHIP_V18_BODY,
+  VERTICAL_SLICE_FLAGSHIP_V18_TITLE,
   VERTICAL_SLICE_SCENARIO_BODY,
   VERTICAL_SLICE_SCENARIO_LABEL,
   VERTICAL_SLICE_SCENARIO_TITLE,
@@ -160,6 +162,15 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     el("p", "glass-vs-nickname", VERTICAL_SLICE_SCENARIO_LABEL),
     el("p", "glass-vs-subtitle", liveHeroSubtitle()),
     el("p", "glass-vs-scenario", VERTICAL_SLICE_SCENARIO_BODY),
+    (() => {
+      const p = el(
+        "p",
+        "glass-flagship-live-note",
+        `${VERTICAL_SLICE_FLAGSHIP_V18_TITLE} (replay): ${VERTICAL_SLICE_FLAGSHIP_V18_BODY}`,
+      );
+      p.setAttribute("data-testid", "live-flagship-note");
+      return p;
+    })(),
     el(
       "p",
       "glass-live-tech-note",
