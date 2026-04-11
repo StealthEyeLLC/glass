@@ -98,6 +98,17 @@ export function drawLiveVisualTextLabelsIntoContext(
     lineY += 14;
   }
 
+  if (spec.boundedEmphasisSummaryLine) {
+    ctx.font = "600 10px system-ui, sans-serif";
+    ctx.fillStyle = "#a16207";
+    ctx.fillText(
+      truncate(`emphasis: ${spec.boundedEmphasisSummaryLine}`, 58),
+      16,
+      lineY,
+    );
+    lineY += 14;
+  }
+
   if (spec.actorClusterSummaryLine) {
     ctx.font = "500 10px system-ui, sans-serif";
     ctx.fillStyle = "#475569";

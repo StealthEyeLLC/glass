@@ -15,7 +15,7 @@ This repository is the Glass v0 **monorepo spine**: session/pack/sanitization (P
 | `graph_engine/` | Graph derivation (stub crate; no presentation) |
 | `collector/` | Linux collector binary (lifecycle stub only) |
 | `bridge/` | Local loopback bridge binary (`glass_bridge`) + resync types — skeleton HTTP/WS (no live ingest) |
-| `viewer/` | TypeScript **Tier B static replay** (`loadGlassPack`, `replayModel`) + optional **`?live=1`** **live-session shell** (`src/live/`): **`GET /capabilities`** preflight, **`/ws`**, bounded **`GET /sessions/:id/snapshot`** (F-04 read-only), sessionStorage convenience (no token persistence); **Vertical Slice v0–v3** — one bounded demo path: shared Scene v0 + Drawable Primitives in replay and live (Canvas 2D; live may use WebGPU geometry + Canvas overlay; bounded **state rail**, **actor clusters**, **region composition** (`composition_*`) — see `docs/VERTICAL_SLICE_V0.md`); not a finished live product |
+| `viewer/` | TypeScript **Tier B static replay** (`loadGlassPack`, `replayModel`) + optional **`?live=1`** **live-session shell** (`src/live/`): **`GET /capabilities`** preflight, **`/ws`**, bounded **`GET /sessions/:id/snapshot`** (F-04 read-only), sessionStorage convenience (no token persistence); **Vertical Slice v0–v4** — one bounded demo path: shared Scene v0 + Drawable Primitives in replay and live (Canvas 2D; live may use WebGPU geometry + Canvas overlay; bounded **state rail**, **actor clusters**, **region composition** (`composition_*`), **emphasis overlays** (`emphasis_*`) when basis changes — see `docs/VERTICAL_SLICE_V0.md`); not a finished live product |
 | `tools/glass-pack` | CLI: validate / inspect packs; strict kinds + share-safe vs raw-dev expectations |
 | `tools/golden_scenes/` | Golden-scene harness scaffold |
 | `docs/` | Phase 0 tracker, boundaries, test strategy, status |
@@ -73,7 +73,7 @@ Default bridge listen: `127.0.0.1:9781`. **Live-session WebSocket** (`/ws`) exis
 
 ## Vertical Slice v0 (demo path)
 
-One bounded scenario through replay + live: same Scene System v0 strip, honest wire semantics (no fake topology). Vertical Slice v3 adds **bounded regions** and compositional underlays so wire vs system vs evidence reads as one scene — still **not** a graph. **Quick replay check:** from `viewer/` run `npm run dev`, then either **Open file** on `tests/fixtures/vertical_slice_v0/glass_vertical_slice_v0_tier_b.glass_pack`, or open the dev server with **`?fixture=vertical_slice_v0`** (dev-only — see [docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md)). Static `dist/` does not auto-load fixtures.
+One bounded scenario through replay + live: same Scene System v0 strip, honest wire semantics (no fake topology). Vertical Slice v3 adds **bounded regions** and compositional underlays; v4 adds **bounded emphasis** (pulse/flash when tail, wire mode, resync/reconcile, or replay cursor **actually changes** between paints) — still **not** a graph and **not** idle animation. **Quick replay check:** from `viewer/` run `npm run dev`, then either **Open file** on `tests/fixtures/vertical_slice_v0/glass_vertical_slice_v0_tier_b.glass_pack`, or open the dev server with **`?fixture=vertical_slice_v0`** (dev-only — see [docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md)). Static `dist/` does not auto-load fixtures.
 
 ## Status
 

@@ -22,7 +22,17 @@ export {
   formatActorClusterSummaryLine,
 } from "./boundedActorClusters.js";
 export { compileLiveToGlassSceneV0, type LiveSceneCompileInput } from "./compileLiveScene.js";
-export { compileReplayToGlassSceneV0 } from "./compileReplayScene.js";
+export {
+  compileReplayToGlassSceneV0,
+  type ReplaySceneCompileOptions,
+} from "./compileReplayScene.js";
+export {
+  computeBoundedSceneEmphasis,
+  formatBoundedEmphasisSummary,
+  type BoundedSceneEmphasisV0,
+  type SceneEmphasisSnapshot,
+  type ReplayLoadPhaseForEmphasis,
+} from "./boundedSceneEmphasis.js";
 export {
   buildLiveBoundedRegions,
   buildReplayBoundedRegions,
@@ -33,6 +43,7 @@ export {
   DRAWABLE_PRIMITIVES_V0,
   LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT,
   appendBoundedActorClusterStrip,
+  applyBoundedEmphasisOverlays,
   applyBoundedSceneComposition,
   buildBoundedVisualGeometryPrimitives,
   edgeFrameTagsForStroke,

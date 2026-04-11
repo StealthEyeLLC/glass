@@ -5,6 +5,7 @@ import { compileLiveToGlassSceneV0 } from "../scene/compileLiveScene.js";
 import { sceneToDrawablePrimitives } from "../scene/sceneToDrawablePrimitives.js";
 import {
   appendBoundedActorClusterStrip,
+  applyBoundedEmphasisOverlays,
   applyBoundedSceneComposition,
   buildBoundedVisualGeometryPrimitives,
   expandStrokeRectToFillRects,
@@ -66,6 +67,7 @@ describe("buildDrawablePrimitivesWebGpuVertexData", () => {
     const manual = buildBoundedVisualGeometryPrimitives(spec, layout.widthCss, layout.heightCss);
     appendBoundedActorClusterStrip(scene.clusters, layout.widthCss, manual);
     applyBoundedSceneComposition(scene, layout.widthCss, layout.heightCss, manual);
+    applyBoundedEmphasisOverlays(scene, layout.widthCss, layout.heightCss, manual);
     const fromManual = buildDrawablePrimitivesWebGpuVertexData(manual, layout);
     expect(fromScene.length).toBe(fromManual.length);
     expect([...fromScene]).toEqual([...fromManual]);

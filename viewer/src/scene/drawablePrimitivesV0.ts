@@ -101,7 +101,14 @@ export type DrawablePrimitiveSemanticTag =
   | "composition_bounded_scene_frame_top"
   | "composition_bounded_scene_frame_bottom"
   | "composition_bounded_scene_frame_left"
-  | "composition_bounded_scene_frame_right";
+  | "composition_bounded_scene_frame_right"
+  /** Vertical Slice v4 — bounded pulse/flash overlays (state-change-driven, not idle animation). */
+  | "emphasis_wire_pulse_overlay"
+  | "emphasis_sample_pulse_overlay"
+  | "emphasis_replay_cursor_pulse_overlay"
+  | "emphasis_resync_flash_overlay"
+  | "emphasis_system_flash_overlay"
+  | "emphasis_state_rail_attention_overlay";
 
 export type DrawablePrimitiveKind = "fill_rect" | "stroke_rect";
 
@@ -437,6 +444,66 @@ const COMPOSITION_INSET = 16;
 const COMPOSITION_ACCENT_X = 8;
 const COMPOSITION_ACCENT_W = 3;
 
+function emphasisPulseHex(step: 0 | 1 | 2 | 3): string | null {
+  if (step <= 0) {
+    return null;
+  }
+  if (step === 1) {
+    return "#fffbeb";
+  }
+  if (step === 2) {
+    return "#fef3c7";
+  }
+  return "#fde68a";
+}
+
+function railResyncHex(step: 0 | 1 | 2 | 3): string | null {
+  if (step <= 0) {
+    return null;
+  }
+  if (step === 1) {
+    return "#ffedd5";
+  }
+  if (step === 2) {
+    return "#fed7aa";
+  }
+  return "#fdba74";
+}
+
+function railSystemHex(step: 0 | 1 | 2 | 3): string | null {
+  if (step <= 0) {
+    return null;
+  }
+  if (step === 1) {
+    return "#fee2e2";
+  }
+  if (step === 2) {
+    return "#fecaca";
+  }
+  return "#fca5a5";
+}
+
+function primaryPanelHex(w: number): string {
+  if (w >= 0.52) {
+    return "#eff6ff";
+  }
+  return "#f8fafc";
+}
+
+function systemPanelHex(w: number): string {
+  if (w >= 0.48) {
+    return "#e8eef5";
+  }
+  return "#eef2f6";
+}
+
+function evidencePanelHex(w: number): string {
+  if (w >= 0.3) {
+    return "#ecfdf5";
+  }
+  return "#f0fdf4";
+}
+
 /**
  * Vertical Slice v3 — insert underlay panels / accents / separator before existing strip primitives,
  * then append an outer bounded-scene frame stroke. Uses only `scene.regions.length` as gate; geometry
@@ -453,6 +520,7 @@ export function applyBoundedSceneComposition(
   }
   const w = widthCss;
   const innerW = w - 2 * COMPOSITION_INSET;
+  const em = scene.emphasis;
 
   const primaryY = LIVE_VISUAL_BAND_LAYOUT.originY;
   const primaryH = LIVE_VISUAL_BAND_LAYOUT.height;
@@ -473,7 +541,7 @@ export function applyBoundedSceneComposition(
         y: primaryY,
         width: innerW,
         height: primaryH,
-        fillColorHex: "#f8fafc",
+        fillColorHex: primaryPanelHex(em.regionWeightPrimary),
       },
       {
         kind: "fill_rect",
@@ -499,7 +567,7 @@ export function applyBoundedSceneComposition(
         y: systemY,
         width: innerW,
         height: systemH,
-        fillColorHex: "#eef2f6",
+        fillColorHex: systemPanelHex(em.regionWeightSystem),
       },
       {
         kind: "fill_rect",
@@ -535,7 +603,7 @@ export function applyBoundedSceneComposition(
         y: evidenceY,
         width: innerW,
         height: evidenceH,
-        fillColorHex: "#f0fdf4",
+        fillColorHex: evidencePanelHex(em.regionWeightEvidence),
       },
       {
         kind: "fill_rect",
@@ -559,6 +627,88 @@ export function applyBoundedSceneComposition(
     strokeColorHex: "#94a3b8",
     lineWidthCss: 1,
   });
+}
+
+/**
+ * Vertical Slice v4 — pulse/flash overlays before the outer composition frame (same primitive stream as Canvas/WebGPU).
+ */
+export function applyBoundedEmphasisOverlays(
+  scene: GlassSceneV0,
+  widthCss: number,
+  heightCss: number,
+  out: DrawablePrimitive[],
+): void {
+  void heightCss;
+  const e = scene.emphasis;
+  const frameIdx = out.findIndex((p) => p.semanticTag === "composition_bounded_scene_frame");
+  const insertAt = frameIdx >= 0 ? frameIdx : out.length;
+  const w = widthCss;
+  const bandY = LIVE_VISUAL_BAND_LAYOUT.originY;
+  const bandH = LIVE_VISUAL_BAND_LAYOUT.height;
+  const inset = LIVE_VISUAL_STATE_RAIL_LAYOUT.insetX;
+  const railY = LIVE_VISUAL_STATE_RAIL_LAYOUT.originY;
+  const railH = LIVE_VISUAL_STATE_RAIL_LAYOUT.height;
+  const innerW = w - 2 * inset;
+  const inserts: DrawablePrimitive[] = [];
+
+  const wTint = emphasisPulseHex(e.wirePulseStep);
+  if (wTint) {
+    inserts.push({
+      kind: "fill_rect",
+      semanticTag: "emphasis_wire_pulse_overlay",
+      x: 16,
+      y: bandY,
+      width: w - 32,
+      height: bandH,
+      fillColorHex: wTint,
+    });
+  }
+  const sTint = emphasisPulseHex(e.samplePulseStep);
+  if (sTint) {
+    inserts.push({
+      kind: "fill_rect",
+      semanticTag: "emphasis_sample_pulse_overlay",
+      x: 16,
+      y: bandY,
+      width: w - 32,
+      height: bandH,
+      fillColorHex: sTint,
+    });
+  }
+  if (e.replayCursorPulseStep > 0 && scene.source === "replay") {
+    const cp = e.replayCursorPulseStep === 1 ? "#ecfccb" : "#d9f99d";
+    inserts.push({
+      kind: "fill_rect",
+      semanticTag: "emphasis_replay_cursor_pulse_overlay",
+      x: 16,
+      y: bandY,
+      width: w - 32,
+      height: bandH,
+      fillColorHex: cp,
+    });
+  }
+
+  const rs = e.resyncFlashStep;
+  const ss = e.systemFlashStep;
+  if (rs > 0 || ss > 0) {
+    const preferResync = rs >= ss;
+    const hex = preferResync ? railResyncHex(rs) : railSystemHex(ss);
+    if (hex) {
+      inserts.push({
+        kind: "fill_rect",
+        semanticTag: "emphasis_state_rail_attention_overlay",
+        x: inset,
+        y: railY,
+        width: innerW,
+        height: railH,
+        fillColorHex: hex,
+      });
+    }
+  }
+
+  if (inserts.length > 0) {
+    out.splice(insertAt, 0, ...inserts);
+  }
 }
 
 export function buildBoundedVisualGeometryPrimitives(

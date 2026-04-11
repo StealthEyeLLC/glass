@@ -1,6 +1,18 @@
-# Glass Vertical Slice v0 / v1 / v2 / v3
+# Glass Vertical Slice v0 / v1 / v2 / v3 / v4
 
-**Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier). **Vertical Slice v1** added a richer bounded scene; **v2** adds **bounded actor/sample clusters** from real event kinds only; **v3** adds **bounded regions** (membership + compositional drawable layers) — still **no** wire contract changes.
+**Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier). **Vertical Slice v1** added a richer bounded scene; **v2** adds **bounded actor/sample clusters** from real event kinds only; **v3** adds **bounded regions** (membership + compositional drawable layers); **v4** adds **bounded scene emphasis** and **pulse/flash overlays** driven only by real basis changes between compiles — still **no** wire contract changes.
+
+## Vertical Slice v4 (bounded emphasis / transitions)
+
+**What it adds (viewer-only):**
+
+- **`GlassSceneV0.emphasis`:** **`BoundedSceneEmphasisV0`** — pulse steps (`wirePulseStep`, `samplePulseStep`, `resyncFlashStep`, `systemFlashStep`, `replayCursorPulseStep`) that **decay** once per compile when the shell passes **`previousEmphasis`**, and **bump** only when the **emphasis basis** (wire mode, tail length, resync/warning/reconcile strings, replay cursor / phase) **actually changes**. **Not** idle animation; **not** a timeline.
+- **`GlassSceneV0.replayCursorIndex` / `replayEventTotal` / `replayPhase`:** replay presentation facts for emphasis (live uses **`replayPhase: "none"`** and null cursor/total).
+- **Pure core:** `computeBoundedSceneEmphasis` in `viewer/src/scene/boundedSceneEmphasis.ts` — deterministic, DOM-free, renderer-free.
+- **Drawable Primitives v0:** **`applyBoundedEmphasisOverlays`** inserts **`emphasis_*_overlay`** fills **before** the outer composition frame; region panel tints follow **`regionWeight*`** from emphasis. Canvas and WebGPU share the same primitive list; overlay text **`emphasis: …`** comes from **`LiveVisualSpec.boundedEmphasisSummaryLine`** (Canvas overlay only).
+- **Shells:** **`replayOnlyShell`** and **`liveSessionShell`** pass **`previousEmphasis`** between paints so replay scrub / live updates can show bounded pulses.
+
+**What it does *not* imply:** historical replay of wire events, causal graph, or decorative motion when nothing changed. **F-IPC transport** remains **provisional**. This is still **not** the Phase-6 full runtime scene.
 
 ## Vertical Slice v3 (bounded relationships / composition)
 

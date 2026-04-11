@@ -38,6 +38,8 @@ export interface LiveVisualSpec {
   actorClusterSummaryLine: string | null;
   /** Vertical Slice v3 — short region caption for overlay (from `scene.regions`; not topology). */
   boundedCompositionCaption: string | null;
+  /** Vertical Slice v4 — bounded pulse/flash summary (from `scene.emphasis`; not topology). */
+  boundedEmphasisSummaryLine: string | null;
 }
 
 /** Fill colors for primary band (deterministic, sRGB hex). */
@@ -89,6 +91,7 @@ export function buildLiveVisualSpec(
     stripSource: "live" as const,
     actorClusterSummaryLine: null as string | null,
     boundedCompositionCaption: null as string | null,
+    boundedEmphasisSummaryLine: null as string | null,
   };
 
   if (model.lastWarning) {

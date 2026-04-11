@@ -5,6 +5,10 @@
 import type { ReplayState } from "../replay/replayModel.js";
 import { liveVisualDensity01 } from "../live/liveVisualModel.js";
 import type { LiveVisualMode } from "../live/liveVisualModel.js";
+import {
+  computeBoundedSceneEmphasis,
+  type BoundedSceneEmphasisV0,
+} from "./boundedSceneEmphasis.js";
 import { deriveReplayBoundedActorClusters } from "./boundedActorClusters.js";
 import { buildReplayBoundedRegions } from "./boundedSceneRegions.js";
 import {
@@ -78,13 +82,36 @@ function replayWireMode(state: ReplayState): LiveVisualMode {
   return "append";
 }
 
+function finalizeReplayScene(
+  partial: Omit<GlassSceneV0, "emphasis">,
+  previousEmphasis: BoundedSceneEmphasisV0 | null,
+): GlassSceneV0 {
+  const emphasis = computeBoundedSceneEmphasis(
+    {
+      source: "replay",
+      wireMode: partial.wireMode,
+      boundedSampleCount: partial.boundedSampleCount,
+      warningCode: partial.warningCode,
+      resyncReason: partial.resyncReason,
+      reconcileSummary: partial.reconcileSummary,
+      snapshotOriginLabel: partial.snapshotOriginLabel,
+      replayCursorIndex: partial.replayCursorIndex,
+      replayEventTotal: partial.replayEventTotal,
+      replayPhase: partial.replayPhase,
+    },
+    previousEmphasis,
+  );
+  return { ...partial, emphasis };
+}
+
 function baseReplayFields(
   zones: readonly SceneZone[],
   edges: readonly SceneEdge[],
   honestyScope: GlassSceneV0["honesty"]["sampleScope"],
-  overrides: Partial<GlassSceneV0>,
+  overrides: Partial<Omit<GlassSceneV0, "emphasis">>,
+  previousEmphasis: BoundedSceneEmphasisV0 | null,
 ): GlassSceneV0 {
-  return {
+  const partial: Omit<GlassSceneV0, "emphasis"> = {
     kind: GLASS_SCENE_V0,
     source: "replay",
     bounds: DEFAULT_SCENE_BOUNDS,
@@ -100,6 +127,9 @@ function baseReplayFields(
     reconcileSummary: null,
     snapshotOriginLabel: null,
     replayPrefixFraction: null,
+    replayCursorIndex: null,
+    replayEventTotal: null,
+    replayPhase: "idle",
     clusters: [],
     zones,
     nodes: [],
@@ -111,12 +141,21 @@ function baseReplayFields(
     ...overrides,
     regions: buildReplayBoundedRegions(),
   };
+  return finalizeReplayScene(partial, previousEmphasis);
+}
+
+export interface ReplaySceneCompileOptions {
+  previousEmphasis?: BoundedSceneEmphasisV0 | null;
 }
 
 /**
  * Deterministic replay → scene. Does not invent graph edges — optional sequential edge only.
  */
-export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
+export function compileReplayToGlassSceneV0(
+  state: ReplayState,
+  options?: ReplaySceneCompileOptions,
+): GlassSceneV0 {
+  const prev = options?.previousEmphasis ?? null;
   const zones = replayZones();
   const edges: SceneEdge[] = [];
 
@@ -128,6 +167,7 @@ export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
       lastWireMsg: "replay_load_error",
       lastWireSummary: state.loadError ?? "error",
       warningCode: "replay_load",
+      replayPhase: "error",
       clusters,
       nodes: [
         ...replayClusterNodes(clusters),
@@ -144,7 +184,7 @@ export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
           payload: { key: "warning_code", value: "replay_load" },
         },
       ],
-    });
+    }, prev);
   }
 
   if (state.loadStatus === "reading") {
@@ -154,6 +194,7 @@ export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
       sessionLabel: state.packFileName ?? "—",
       lastWireMsg: "replay_reading",
       lastWireSummary: state.packFileName ?? "",
+      replayPhase: "reading",
       clusters,
       nodes: [
         ...replayClusterNodes(clusters),
@@ -164,7 +205,7 @@ export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
           payload: { phase: "reading" },
         },
       ],
-    });
+    }, prev);
   }
 
   if (state.loadStatus === "idle") {
@@ -172,7 +213,7 @@ export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
     return baseReplayFields(zones, edges, "empty", {
       clusters,
       nodes: [...replayClusterNodes(clusters)],
-    });
+    }, prev);
   }
 
   const total = state.events.length;
@@ -221,7 +262,7 @@ export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
     },
   ];
 
-  return {
+  const partial: Omit<GlassSceneV0, "emphasis"> = {
     kind: GLASS_SCENE_V0,
     source: "replay",
     bounds: DEFAULT_SCENE_BOUNDS,
@@ -240,6 +281,9 @@ export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
     reconcileSummary: null,
     snapshotOriginLabel: null,
     replayPrefixFraction: replayFrac,
+    replayCursorIndex: state.cursorIndex,
+    replayEventTotal: total,
+    replayPhase: "ready",
     clusters,
     zones,
     nodes,
@@ -250,4 +294,5 @@ export function compileReplayToGlassSceneV0(state: ReplayState): GlassSceneV0 {
     },
     regions: buildReplayBoundedRegions(),
   };
+  return finalizeReplayScene(partial, prev);
 }

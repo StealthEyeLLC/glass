@@ -6,6 +6,10 @@ import type { LiveSessionModelState } from "../live/applyLiveSessionMessage.js";
 import type { HttpReconcileRecord } from "../live/liveHttpReconcile.js";
 import { buildLiveVisualSpec, liveVisualDensity01 } from "../live/liveVisualModel.js";
 import { deriveLiveBoundedActorClusters } from "./boundedActorClusters.js";
+import {
+  computeBoundedSceneEmphasis,
+  type BoundedSceneEmphasisV0,
+} from "./boundedSceneEmphasis.js";
 import { buildLiveBoundedRegions } from "./boundedSceneRegions.js";
 import {
   DEFAULT_SCENE_BOUNDS,
@@ -22,6 +26,8 @@ export interface LiveSceneCompileInput {
   lastReconcile: HttpReconcileRecord | null;
   /** Optional — last bounded HTTP `snapshot_origin` when WS replace has not yet been observed */
   httpSnapshotOrigin?: string | null;
+  /** Vertical Slice v4 — previous emphasis from last compile (shell); omit for calm single-shot tests. */
+  previousEmphasis?: BoundedSceneEmphasisV0 | null;
 }
 
 function liveZones(): SceneZone[] {
@@ -135,6 +141,22 @@ export function compileLiveToGlassSceneV0(input: LiveSceneCompileInput): GlassSc
   const nodes = liveNodes(spec, clusters);
   const edges: SceneEdge[] = [];
 
+  const emphasis = computeBoundedSceneEmphasis(
+    {
+      source: "live",
+      wireMode: spec.mode,
+      boundedSampleCount: spec.eventTailCount,
+      warningCode: spec.warningCode,
+      resyncReason: spec.resyncReason,
+      reconcileSummary: spec.reconcileSummary,
+      snapshotOriginLabel: spec.snapshotOriginLabel,
+      replayCursorIndex: null,
+      replayEventTotal: null,
+      replayPhase: "none",
+    },
+    input.previousEmphasis ?? null,
+  );
+
   return {
     kind: GLASS_SCENE_V0,
     source: "live",
@@ -151,6 +173,9 @@ export function compileLiveToGlassSceneV0(input: LiveSceneCompileInput): GlassSc
     reconcileSummary: spec.reconcileSummary,
     snapshotOriginLabel: spec.snapshotOriginLabel,
     replayPrefixFraction: spec.replayPrefixFraction,
+    replayCursorIndex: null,
+    replayEventTotal: null,
+    replayPhase: "none",
     clusters,
     regions: buildLiveBoundedRegions(),
     zones,
@@ -160,5 +185,6 @@ export function compileLiveToGlassSceneV0(input: LiveSceneCompileInput): GlassSc
       sampleScope: "live_ws_tail",
       line: spec.honestyLine,
     },
+    emphasis,
   };
 }

@@ -4,6 +4,7 @@
 
 import type { LiveVisualSpec } from "../live/liveVisualModel.js";
 import { formatActorClusterSummaryLine } from "./boundedActorClusters.js";
+import { formatBoundedEmphasisSummary } from "./boundedSceneEmphasis.js";
 import { formatBoundedCompositionCaption } from "./boundedSceneRegions.js";
 import type { GlassSceneV0 } from "./glassSceneV0.js";
 
@@ -29,6 +30,10 @@ export function liveVisualSpecFromScene(scene: GlassSceneV0): LiveVisualSpec {
     boundedCompositionCaption: (() => {
       const cap = formatBoundedCompositionCaption(scene.regions);
       return cap.length > 0 ? cap : null;
+    })(),
+    boundedEmphasisSummaryLine: (() => {
+      const s = formatBoundedEmphasisSummary(scene.emphasis);
+      return s.length > 0 ? s : null;
     })(),
   };
 }

@@ -10,6 +10,7 @@ import { compileLiveToGlassSceneV0 } from "./compileLiveScene.js";
 import { compileReplayToGlassSceneV0 } from "./compileReplayScene.js";
 import {
   appendBoundedActorClusterStrip,
+  applyBoundedEmphasisOverlays,
   applyBoundedSceneComposition,
   buildBoundedVisualGeometryPrimitives,
 } from "./drawablePrimitivesV0.js";
@@ -60,6 +61,7 @@ describe("sceneToDrawablePrimitives", () => {
     );
     appendBoundedActorClusterStrip(scene.clusters, scene.bounds.widthCss, b);
     applyBoundedSceneComposition(scene, scene.bounds.widthCss, scene.bounds.heightCss, b);
+    applyBoundedEmphasisOverlays(scene, scene.bounds.widthCss, scene.bounds.heightCss, b);
     expect(a).toEqual(b);
   });
 
@@ -76,6 +78,7 @@ describe("sceneToDrawablePrimitives", () => {
     );
     appendBoundedActorClusterStrip(scene.clusters, 400, direct);
     applyBoundedSceneComposition(scene, 400, 200, direct);
+    applyBoundedEmphasisOverlays(scene, 400, 200, direct);
     expect(withLayout).toEqual(direct);
   });
 

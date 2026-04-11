@@ -13,6 +13,7 @@ import { loadGlassPack } from "../pack/loadPack.js";
 import { attachPackDropHandlers, wirePackFileInput } from "./dragDrop.js";
 import { renderLiveVisualOnCanvas } from "../live/liveVisualCanvas.js";
 import { GLASS_SCENE_V0 } from "../scene/glassSceneV0.js";
+import type { BoundedSceneEmphasisV0 } from "../scene/boundedSceneEmphasis.js";
 import { compileReplayToGlassSceneV0 } from "../scene/compileReplayScene.js";
 import {
   currentEvent,
@@ -227,8 +228,11 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     }
   }
 
+  let lastReplayEmphasis: BoundedSceneEmphasisV0 | null = null;
+
   function paintReplayScene(): void {
-    const scene = compileReplayToGlassSceneV0(state);
+    const scene = compileReplayToGlassSceneV0(state, { previousEmphasis: lastReplayEmphasis });
+    lastReplayEmphasis = scene.emphasis;
     void renderLiveVisualOnCanvas(sceneCanvas, scene);
   }
 

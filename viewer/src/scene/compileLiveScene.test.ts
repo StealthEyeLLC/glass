@@ -23,6 +23,8 @@ describe("compileLiveToGlassSceneV0", () => {
       "system_integrity_rail",
       "bounded_sample_evidence",
     ]);
+    expect(scene.replayPhase).toBe("none");
+    expect(scene.emphasis.wirePulseStep).toBe(0);
   });
 
   it("passes httpSnapshotOrigin into snapshotOriginLabel when model has no replace yet", () => {

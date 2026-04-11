@@ -4,6 +4,7 @@
  */
 
 import type { LiveVisualMode } from "../live/liveVisualModel.js";
+import type { BoundedSceneEmphasisV0, ReplayLoadPhaseForEmphasis } from "./boundedSceneEmphasis.js";
 
 export const GLASS_SCENE_V0 = "glass.scene.v0" as const;
 
@@ -137,6 +138,13 @@ export interface GlassSceneV0 {
   clusters: readonly SceneActorCluster[];
   /** Vertical Slice v3 — honest grouping of zones (containers / lanes / emphasis); not edges. */
   regions: readonly SceneBoundedRegion[];
+  /** Vertical Slice v4 — replay cursor/total for bounded emphasis (live: null). */
+  replayCursorIndex: number | null;
+  replayEventTotal: number | null;
+  /** Vertical Slice v4 — load lifecycle for emphasis basis (live: `none`). */
+  replayPhase: ReplayLoadPhaseForEmphasis;
+  /** Vertical Slice v4 — deterministic emphasis + pulse steps (not a second semantic authority). */
+  emphasis: BoundedSceneEmphasisV0;
   zones: readonly SceneZone[];
   nodes: readonly SceneNode[];
   edges: readonly SceneEdge[];

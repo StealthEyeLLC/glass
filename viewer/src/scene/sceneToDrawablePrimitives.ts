@@ -5,6 +5,7 @@
 import type { GlassSceneV0, SceneBounds } from "./glassSceneV0.js";
 import {
   appendBoundedActorClusterStrip,
+  applyBoundedEmphasisOverlays,
   applyBoundedSceneComposition,
   buildBoundedVisualGeometryPrimitives,
   type DrawablePrimitive,
@@ -26,5 +27,6 @@ export function sceneToDrawablePrimitives(
   const out = buildBoundedVisualGeometryPrimitives(spec, w, h);
   appendBoundedActorClusterStrip(scene.clusters, w, out);
   applyBoundedSceneComposition(scene, w, h, out);
+  applyBoundedEmphasisOverlays(scene, w, h, out);
   return out;
 }

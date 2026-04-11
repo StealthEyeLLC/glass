@@ -50,8 +50,9 @@ import {
   type WebGpuLiveStatus,
 } from "./liveWebGpuProbe.js";
 import { formatLiveVisualLegendBlock } from "./liveVisualMarkers.js";
+import type { BoundedSceneEmphasisV0 } from "../scene/boundedSceneEmphasis.js";
 import { compileLiveToGlassSceneV0 } from "../scene/compileLiveScene.js";
-import { GLASS_SCENE_V0 } from "../scene/glassSceneV0.js";
+import { GLASS_SCENE_V0, type GlassSceneV0 } from "../scene/glassSceneV0.js";
 import { liveVisualSpecFromScene } from "../scene/sceneToLiveVisualSpec.js";
 import type { LiveVisualSpec } from "./liveVisualModel.js";
 import {
@@ -411,8 +412,13 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
 
   let webGpuBundle: LiveVisualWebGpuBundle | null = null;
   let lastPaintResult: PaintLiveVisualSurfaceResult | null = null;
+  let lastPaintedLiveScene: GlassSceneV0 | null = null;
+  let lastLiveEmphasis: BoundedSceneEmphasisV0 | null = null;
 
   function buildCurrentLiveVisualSpec(): LiveVisualSpec {
+    if (lastPaintedLiveScene) {
+      return liveVisualSpecFromScene(lastPaintedLiveScene);
+    }
     return liveVisualSpecFromScene(
       compileLiveToGlassSceneV0({
         model,
@@ -570,7 +576,10 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       model,
       lastReconcile,
       httpSnapshotOrigin: lastHttp?.bounded_snapshot?.snapshot_origin ?? null,
+      previousEmphasis: lastLiveEmphasis,
     });
+    lastLiveEmphasis = scene.emphasis;
+    lastPaintedLiveScene = scene;
     const result = await paintLiveVisualSurface(
       visualCanvas,
       visualCanvasWebGpu,
