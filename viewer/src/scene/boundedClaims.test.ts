@@ -277,6 +277,107 @@ describe("buildBoundedClaimReceipt + boundedClaimEvidenceUiLines", () => {
 });
 
 describe("renderBoundedClaimsInto / renderBoundedClaimReceiptInto", () => {
+  it("renders empty receipt with explicit copy", () => {
+    const root = document.createElement("div");
+    renderBoundedClaimReceiptInto(root, null, { testIdPrefix: "replay" });
+    const empty = root.querySelector('[data-testid="replay-bounded-claim-receipt-empty"]');
+    expect(empty?.textContent).toBe("No bounded receipt — select a claim chip or episode.");
+  });
+
+  it("renders structured receipt with trust tier and section markers", () => {
+    const prev = sceneFromTail(2);
+    const cur = sceneFromTail(5);
+    const cmp = computeBoundedSceneCompare(prev, cur, { selectedId: null });
+    const episodes = computeBoundedSceneEpisodes({
+      path: "live",
+      currentScene: cur,
+      baselineScene: prev,
+      immediatePriorScene: prev,
+      compare: cmp,
+      selectedSelectionId: null,
+      liveEventTailMutation: "append",
+      compareBaselineIsImmediatePrior: true,
+    });
+    const spec = liveVisualSpecFromScene(cur, null, { previousScene: prev, compare: cmp });
+    const drill = computeBoundedEvidenceDrilldown({
+      scene: cur,
+      spec,
+      compare: cmp,
+      selectedSelectionId: null,
+      previousBoundedSampleCount: prev.boundedSampleCount,
+      liveEventTail: [],
+      replay: null,
+    });
+    const pack = computeBoundedSceneClaims({
+      path: "live",
+      scene: cur,
+      compare: cmp,
+      episodes,
+      drilldown: drill,
+      selectedSelectionId: null,
+      selectedEpisodeId: null,
+      liveEventTailMutation: "append",
+    });
+    const receiptRoot = document.createElement("div");
+    const rec = buildBoundedClaimReceipt(pack.claims[0] ?? null, drill, cur, {
+      compare: cmp,
+      episodes,
+    });
+    renderBoundedClaimReceiptInto(receiptRoot, rec, { testIdPrefix: "replay" });
+    const wrap = receiptRoot.querySelector('[data-testid="replay-bounded-claim-receipt"]');
+    expect(wrap?.getAttribute("data-trust-tier")).toMatch(/^(firm|weak|unavailable)$/);
+    expect(wrap?.querySelector('[data-section="scope"]')).toBeTruthy();
+    expect(wrap?.querySelector('[data-section="support"]')).toBeTruthy();
+    expect(wrap?.querySelector('[data-section="refs"]')).toBeTruthy();
+    expect(wrap?.querySelector('[data-section="limits"]')).toBeTruthy();
+  });
+
+  it("unavailable baseline receipt exposes limitation node and unavailable tier", () => {
+    const cur = sceneFromTail(1);
+    const cmp = computeBoundedSceneCompare(null, cur, { selectedId: null });
+    const episodes = computeBoundedSceneEpisodes({
+      path: "live",
+      currentScene: cur,
+      baselineScene: null,
+      immediatePriorScene: null,
+      compare: cmp,
+      selectedSelectionId: null,
+      liveEventTailMutation: null,
+      compareBaselineIsImmediatePrior: true,
+    });
+    const spec = liveVisualSpecFromScene(cur, null, { previousScene: null, compare: cmp });
+    const drill = computeBoundedEvidenceDrilldown({
+      scene: cur,
+      spec,
+      compare: cmp,
+      selectedSelectionId: null,
+      previousBoundedSampleCount: null,
+      liveEventTail: [],
+      replay: null,
+    });
+    const pack = computeBoundedSceneClaims({
+      path: "live",
+      scene: cur,
+      compare: cmp,
+      episodes,
+      drilldown: drill,
+      selectedSelectionId: null,
+      selectedEpisodeId: null,
+      liveEventTailMutation: null,
+    });
+    const claim = pack.claims[0];
+    expect(claim?.status).toBe("unavailable");
+    if (!claim) {
+      return;
+    }
+    const r = buildBoundedClaimReceipt(claim, drill, cur, { compare: cmp, episodes });
+    const receiptRoot = document.createElement("div");
+    renderBoundedClaimReceiptInto(receiptRoot, r, { testIdPrefix: "replay" });
+    const wrap = receiptRoot.querySelector('[data-testid="replay-bounded-claim-receipt"]');
+    expect(wrap?.getAttribute("data-trust-tier")).toBe("unavailable");
+    expect(receiptRoot.querySelector('[data-testid="replay-bounded-claim-receipt-limitation"]')).toBeTruthy();
+  });
+
   it("renders claim chips and receipt with test ids", () => {
     const prev = sceneFromTail(2);
     const cur = sceneFromTail(5);

@@ -1,0 +1,573 @@
+/**
+ * Vertical Slice v16 — bounded trust surfaces (claims, receipts, evidence).
+ * Imported after shell CSS so these presentation rules take precedence.
+ * Calm, exact, high hierarchy — no decorative motion.
+ */
+
+.glass-bounded-evidence-heading {
+  font-size: 0.85rem;
+  margin: 0.75rem 0 0.25rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.glass-bounded-claims-title {
+  font-size: 0.85rem;
+  margin: 0.5rem 0 0.35rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.glass-bounded-claims-strip-root {
+  margin-bottom: 0.5rem;
+}
+
+.glass-bounded-evidence-crosslink-note {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  color: #64748b;
+  min-height: 1em;
+}
+
+/* --- Evidence root: premium panel shell --- */
+.glass-bounded-evidence-root {
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: #334155;
+  margin: 0 0 0.85rem;
+  padding: 0;
+  background: linear-gradient(180deg, #fafbfc 0%, #f4f6f8 100%);
+  border: 1px solid #d8dee6;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.glass-bounded-evidence-trust {
+  padding: 0.55rem 0.65rem 0.65rem;
+}
+
+.glass-bounded-evidence-section {
+  margin: 0 0 0.5rem;
+}
+
+.glass-bounded-evidence-section:last-child {
+  margin-bottom: 0;
+}
+
+.glass-bounded-evidence-section-heading {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin: 0 0 0.35rem;
+}
+
+.glass-bounded-evidence-section--authority {
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.glass-bounded-evidence-kicker {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin: 0 0 0.35rem;
+}
+
+.glass-bounded-evidence-scope {
+  margin: 0 0 0.35rem;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.glass-bounded-evidence-honesty {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.glass-bounded-evidence-context {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.glass-bounded-evidence-selected,
+.glass-bounded-evidence-compare,
+.glass-bounded-evidence-compare-note {
+  margin: 0;
+  padding: 0.35rem 0.45rem;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  font-size: 0.74rem;
+}
+
+.glass-bounded-evidence-compare {
+  border-color: #fde68a;
+  background: #fffbeb;
+}
+
+.glass-bounded-evidence-compare-note {
+  margin: 0;
+  padding: 0.35rem 0.45rem;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.glass-bounded-evidence-alignment {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.glass-bounded-evidence-episode-honesty {
+  font-size: 0.72rem;
+  color: #64748b;
+  margin: 0.15rem 0 0;
+  font-style: italic;
+}
+
+.glass-bounded-evidence-episode {
+  font-size: 0.75rem;
+  color: #1e40af;
+  margin: 0;
+  padding: 0.35rem 0.45rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 6px;
+}
+
+.glass-bounded-evidence-claim {
+  font-size: 0.75rem;
+  color: #0f766e;
+  margin: 0;
+  padding: 0.35rem 0.45rem;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 6px;
+}
+
+.glass-bounded-evidence-claim-not {
+  font-size: 0.72rem;
+  color: #92400e;
+  margin: 0;
+  padding: 0.35rem 0.45rem;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 6px;
+}
+
+.glass-bounded-evidence-facts {
+  margin: 0.25rem 0 0;
+  padding: 0.4rem 0.5rem 0.4rem 1.25rem;
+  background: #fff;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+}
+
+.glass-bounded-evidence-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+}
+
+.glass-bounded-evidence-rows-label {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin: 0.15rem 0 0.25rem;
+}
+
+.glass-bounded-evidence-card {
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 0.45rem 0.5rem;
+  background: #fff;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+}
+
+.glass-bounded-evidence-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.glass-bounded-evidence-card-label {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #b45309;
+  padding: 0.12rem 0.35rem;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 4px;
+}
+
+.glass-bounded-evidence-card-label-human {
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: #475569;
+  line-height: 1.3;
+}
+
+.glass-bounded-evidence-card-title {
+  font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", monospace;
+  font-size: 0.72rem;
+  word-break: break-word;
+  color: #0f172a;
+}
+
+.glass-bounded-evidence-card-detail {
+  font-size: 0.68rem;
+  color: #64748b;
+  margin-top: 0.2rem;
+  padding-top: 0.2rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.glass-bounded-evidence-card--linked {
+  cursor: pointer;
+}
+
+.glass-bounded-evidence-card--linked:hover {
+  border-color: #94a3b8;
+  background: #fffefb;
+}
+
+.glass-bounded-evidence-card[data-selected="true"] {
+  border-color: #b45309;
+  background: #fffbeb;
+  outline: 1px solid #f59e0b;
+}
+
+.glass-bounded-evidence-card--claim-support {
+  border-left: 4px solid #0284c7;
+  background: linear-gradient(90deg, #f0f9ff 0%, #fff 0.75rem);
+  border-color: #bae6fd;
+}
+
+.glass-bounded-evidence-card--claim-support .glass-bounded-evidence-card-label {
+  color: #0369a1;
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+}
+
+.glass-bounded-evidence-card--claim-support::after {
+  content: "Supports active claim";
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #0369a1;
+  margin-top: 0.35rem;
+}
+
+.glass-bounded-evidence-compare--linked {
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 2px;
+}
+
+.glass-bounded-evidence-crosslink-note {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  color: #64748b;
+  min-height: 1em;
+}
+
+/* --- Claims strip --- */
+.glass-bounded-claims-honesty {
+  font-size: 0.68rem;
+  color: #64748b;
+  margin: 0 0 0.4rem;
+  line-height: 1.45;
+}
+
+.glass-bounded-claims-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: stretch;
+}
+
+.glass-bounded-claim-chip {
+  flex: 1 1 120px;
+  max-width: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 0.2rem;
+  padding: 0.4rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.05);
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.glass-bounded-claim-chip:hover {
+  border-color: #94a3b8;
+}
+
+.glass-bounded-claim-chip--selected {
+  border-color: #0f766e;
+  background: #ecfdf5;
+  outline: 1px solid #14b8a6;
+}
+
+.glass-bounded-claim-chip--status-unavailable {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.glass-bounded-claim-chip--status-weak {
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
+.glass-bounded-claim-chip-title {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.glass-bounded-claim-chip-status {
+  font-size: 0.65rem;
+  color: #475569;
+  text-transform: lowercase;
+}
+
+/* --- Receipt record --- */
+.glass-bounded-claim-receipt-root {
+  margin-bottom: 0.65rem;
+}
+
+.glass-bounded-claim-receipt {
+  font-size: 0.75rem;
+  border: 1px solid #d8dee6;
+  border-radius: 8px;
+  padding: 0;
+  background: linear-gradient(180deg, #fafbfc 0%, #f4f6f8 100%);
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.glass-bounded-claim-receipt[data-trust-tier="unavailable"] {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.glass-bounded-claim-receipt[data-trust-tier="weak"] {
+  border-color: #fcd34d;
+  background: linear-gradient(180deg, #fffbeb 0%, #fff 0.5rem);
+}
+
+.glass-bounded-claim-receipt-empty {
+  font-size: 0.74rem;
+  color: #64748b;
+  margin: 0.15rem 0;
+  padding: 0.5rem 0.55rem;
+  line-height: 1.45;
+}
+
+.glass-bounded-claim-receipt-header {
+  padding: 0.45rem 0.6rem 0.35rem;
+  border-bottom: 1px solid #e8e8e8;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.glass-bounded-claim-receipt-identity {
+  font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", monospace;
+  font-size: 0.62rem;
+  color: #64748b;
+  letter-spacing: 0.02em;
+  word-break: break-all;
+}
+
+.glass-bounded-claim-receipt-primary {
+  padding: 0.55rem 0.6rem 0.45rem;
+  border-bottom: 1px solid #e8e8e8;
+  background: #fff;
+}
+
+.glass-bounded-claim-receipt-primary h3.glass-bounded-claim-receipt-title {
+  margin: 0 0 0.35rem;
+}
+
+.glass-bounded-claim-receipt-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.35;
+}
+
+.glass-bounded-claim-receipt-statement {
+  margin: 0;
+  line-height: 1.5;
+  color: #1e293b;
+  font-size: 0.76rem;
+}
+
+.glass-bounded-claim-receipt-meta {
+  display: grid;
+  grid-template-columns: minmax(4rem, auto) 1fr;
+  gap: 0.25rem 0.4rem;
+  margin: 0;
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid #e8e8e8;
+  font-size: 0.72rem;
+}
+
+.glass-bounded-claim-receipt-meta dt {
+  margin: 0;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.glass-bounded-claim-receipt-meta dd {
+  margin: 0;
+  color: #1e293b;
+}
+
+.glass-bounded-claim-receipt-section {
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid #e8e8e8;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.glass-bounded-claim-receipt-section:last-of-type {
+  border-bottom: none;
+}
+
+.glass-bounded-claim-receipt-section-heading {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin: 0 0 0.35rem;
+}
+
+.glass-bounded-claim-receipt-focus {
+  margin: 0;
+  font-size: 0.74rem;
+  color: #1e40af;
+  line-height: 1.45;
+}
+
+.glass-bounded-claim-receipt-compare-anchor {
+  margin: 0;
+  font-size: 0.74rem;
+  color: #92400e;
+  line-height: 1.45;
+}
+
+.glass-bounded-claim-receipt-bullets {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.72rem;
+  color: #334155;
+  line-height: 1.45;
+}
+
+.glass-bounded-claim-receipt-bullets li {
+  margin-bottom: 0.25rem;
+}
+
+.glass-bounded-claim-receipt-bullets li:last-child {
+  margin-bottom: 0;
+}
+
+.glass-bounded-claim-receipt-refs {
+  margin: 0;
+  font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", monospace;
+  font-size: 0.72rem;
+  color: #334155;
+  word-break: break-word;
+}
+
+.glass-bounded-claim-receipt-scope,
+.glass-bounded-claim-receipt-source {
+  margin: 0.25rem 0 0;
+  font-size: 0.72rem;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.glass-bounded-claim-receipt-scope:first-child,
+.glass-bounded-claim-receipt-source:first-child {
+  margin-top: 0;
+}
+
+.glass-bounded-claim-receipt-not {
+  margin: 0;
+  font-size: 0.72rem;
+  color: #92400e;
+  line-height: 1.45;
+}
+
+.glass-bounded-claim-receipt-limitation {
+  margin: 0;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.72rem;
+  color: #64748b;
+  line-height: 1.45;
+  font-style: italic;
+  background: rgba(255, 255, 255, 0.85);
+  border-top: 1px solid #e8e8e8;
+}
+
+.glass-bounded-claim-receipt[data-trust-tier="unavailable"] .glass-bounded-claim-receipt-limitation {
+  color: #475569;
+  background: #f1f5f9;
+}
+
+.glass-bounded-claim-receipt[data-trust-tier="weak"] .glass-bounded-claim-receipt-limitation {
+  background: #fffbeb;
+}
+
+.glass-bounded-claim-receipt-footer {
+  padding: 0.45rem 0.6rem 0.55rem;
+  background: #fff;
+  border-top: 1px solid #e8e8e8;
+}
+
+.glass-bounded-claim-receipt-copy {
+  font-size: 0.68rem;
+  padding: 0.35rem 0.55rem;
+  cursor: pointer;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+  font-weight: 500;
+}
+
+.glass-bounded-claim-receipt-copy:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}

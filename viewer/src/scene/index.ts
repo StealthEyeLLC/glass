@@ -48,7 +48,10 @@ export {
   type BoundedEvidenceDrilldownV0,
   type BoundedEvidenceRowV0,
 } from "./boundedEvidenceDrilldown.js";
-export { renderBoundedEvidenceInto } from "./boundedEvidencePanel.js";
+export {
+  boundedEvidenceRowLabelCaption,
+  renderBoundedEvidenceInto,
+} from "./boundedEvidencePanel.js";
 export {
   evidenceRowLinkedToSelection,
   honestBoundedClusterIdFromEvent,

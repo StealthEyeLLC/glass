@@ -455,7 +455,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   boundedEpisodeTitle.setAttribute("data-testid", "live-bounded-episodes-heading");
   const boundedEpisodeRoot = el("div", "glass-bounded-episodes-root");
   boundedEpisodeRoot.setAttribute("data-testid", "live-bounded-episodes-root");
-  const boundedClaimTitle = el("h4", "glass-bounded-claims-title", "Bounded claims (Vertical Slice v14)");
+  const boundedClaimTitle = el("h4", "glass-bounded-claims-title", "Bounded claims (Vertical Slice v16)");
   boundedClaimTitle.setAttribute("data-testid", "live-bounded-claims-heading");
   const boundedClaimStripRoot = el("div", "glass-bounded-claims-strip-root");
   boundedClaimStripRoot.setAttribute("data-testid", "live-bounded-claims-strip-root");
