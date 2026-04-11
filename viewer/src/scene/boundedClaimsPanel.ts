@@ -2,7 +2,12 @@
  * DOM for Vertical Slice v13–v16 bounded claims + receipt — thin view over pure model output.
  */
 
-import type { BoundedClaimReceiptV0, BoundedClaimV0, BoundedSceneClaimsV0 } from "./boundedClaims.js";
+import {
+  formatBoundedClaimChipStatusShort,
+  type BoundedClaimReceiptV0,
+  type BoundedClaimV0,
+  type BoundedSceneClaimsV0,
+} from "./boundedClaims.js";
 
 export interface RenderBoundedClaimsOptions {
   testIdPrefix: "replay" | "live";
@@ -69,7 +74,7 @@ export function renderBoundedClaimsInto(
 
     const st = document.createElement("span");
     st.className = "glass-bounded-claim-chip-status";
-    st.textContent = c.status.replace(/_/g, " ");
+    st.textContent = formatBoundedClaimChipStatusShort(c.status);
 
     chip.append(title, st);
     chip.addEventListener("click", () => {

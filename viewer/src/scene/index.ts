@@ -94,6 +94,7 @@ export {
   BOUNDED_RECEIPT_SCHEMA_VERSION,
   boundedClaimEvidenceUiLines,
   boundedClaimSelectionStillValid,
+  formatBoundedClaimChipStatusShort,
   buildBoundedClaimReceipt,
   computeBoundedSceneClaims,
   resolvePrimaryClaimId,

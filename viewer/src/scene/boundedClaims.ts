@@ -471,6 +471,22 @@ export function boundedClaimSelectionStillValid(
   return claims.some((c) => c.id === selectedId);
 }
 
+/** Compact label for claim chip UI — avoids raw enum underscores (Vertical Slice v19). */
+export function formatBoundedClaimChipStatusShort(status: BoundedClaimStatusV0): string {
+  switch (status) {
+    case "observed":
+      return "Observed";
+    case "inferred_from_bounded_change":
+      return "Inferred (bounded change)";
+    case "weak":
+      return "Weak";
+    case "unavailable":
+      return "Unavailable";
+    default:
+      return status;
+  }
+}
+
 function statusLabel(s: BoundedClaimStatusV0): string {
   switch (s) {
     case "observed":

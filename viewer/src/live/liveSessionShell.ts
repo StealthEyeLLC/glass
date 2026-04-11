@@ -392,7 +392,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const visualIntro = el(
     "div",
     "glass-live-field",
-    "Vertical Slice v0 — same Drawable Primitives + Scene v0 strip as replay: Canvas 2D and/or WebGPU quads + Canvas text overlay (not topology)",
+    "Vertical Slice v0 — same strip + trust band as replay (selection, evidence, episodes, claims, temporal lens). Canvas 2D and/or WebGPU quads + Canvas text overlay; hybrid fallback is a supported mode — not topology.",
   );
   visualIntro.setAttribute("id", "live-visual-surface-title");
   const visualGpuStatus = el("p", "glass-live-visual-gpu-status");
@@ -419,7 +419,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const visualFallback = el("p", "glass-live-visual-fallback");
   visualFallback.setAttribute("data-testid", "live-visual-fallback");
   visualFallback.textContent =
-    "Canvas 2D context unavailable — textual panels above remain authoritative for this session.";
+    "Visual canvas unavailable — bounded selection, compare, evidence, episodes, and claims above still use the same compare baseline as the last successful paint (see provenance).";
   visualFallback.hidden = true;
   const visualProvenanceHeader = el("div", "glass-live-panel-header glass-live-visual-provenance-header");
   const visualProvenanceCopyJson = el("button", "glass-live-copy", "Copy JSON");
@@ -517,6 +517,8 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   let selectedBoundedSelectionId: string | null = null;
   let selectedBoundedEpisodeId: string | null = null;
   let selectedBoundedClaimId: string | null = null;
+  /** After temporal compare-baseline override, suppress primary-claim highlight until the next live paint (v19). */
+  let liveTrustPrimaryClaimHighlight = true;
 
   function applyCrosslinkResolutionLive(res: BoundedCrosslinkResolutionV0): void {
     if (res.targetSelectionId) {
@@ -568,10 +570,18 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     renderBoundedTemporalLensInto(boundedTemporalRoot, view, {
       onSelectBaseline: (ringIndex) => {
         liveCompareBaselineRingIndex = ringIndex;
+        liveTrustPrimaryClaimHighlight = false;
+        selectedBoundedEpisodeId = null;
+        selectedBoundedClaimId = null;
+        boundedEvidenceCrosslinkNote.textContent = "";
         void refreshLiveVisualAfterBaselineChange();
       },
       onResetBaseline: () => {
         liveCompareBaselineRingIndex = null;
+        liveTrustPrimaryClaimHighlight = false;
+        selectedBoundedEpisodeId = null;
+        selectedBoundedClaimId = null;
+        boundedEvidenceCrosslinkNote.textContent = "";
         void refreshLiveVisualAfterBaselineChange();
       },
     });
@@ -657,7 +667,9 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     if (!boundedClaimSelectionStillValid(claimsPack.claims, selectedBoundedClaimId)) {
       selectedBoundedClaimId = null;
     }
-    const highlightClaimId = selectedBoundedClaimId ?? claimsPack.primaryClaimId;
+    const highlightClaimId =
+      selectedBoundedClaimId ??
+      (liveTrustPrimaryClaimHighlight ? claimsPack.primaryClaimId : null);
     const activeClaim = claimsPack.claims.find((c) => c.id === highlightClaimId) ?? null;
     const receipt = buildBoundedClaimReceipt(activeClaim, drill, lastPaintedLiveScene, {
       compare: cmp,
@@ -880,6 +892,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   }
 
   async function paintLiveVisual(): Promise<void> {
+    liveTrustPrimaryClaimHighlight = true;
     const prev = lastPaintedLiveScene;
     const scene = compileLiveToGlassSceneV0({
       model,

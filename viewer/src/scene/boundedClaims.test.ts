@@ -7,6 +7,7 @@ import {
   BOUNDED_RECEIPT_SCHEMA_VERSION,
   boundedClaimEvidenceUiLines,
   boundedClaimSelectionStillValid,
+  formatBoundedClaimChipStatusShort,
   buildBoundedClaimReceipt,
   computeBoundedSceneClaims,
   resolvePrimaryClaimId,
@@ -427,5 +428,16 @@ describe("renderBoundedClaimsInto / renderBoundedClaimReceiptInto", () => {
     renderBoundedClaimReceiptInto(receiptRoot, rec, { testIdPrefix: "replay" });
     expect(receiptRoot.querySelector('[data-testid="replay-bounded-claim-receipt"]')).toBeTruthy();
     expect(receiptRoot.querySelector('[data-testid="replay-bounded-claim-receipt-keys"]')).toBeTruthy();
+  });
+});
+
+describe("formatBoundedClaimChipStatusShort (Vertical Slice v19)", () => {
+  it("maps statuses to compact operator-facing labels", () => {
+    expect(formatBoundedClaimChipStatusShort("observed")).toBe("Observed");
+    expect(formatBoundedClaimChipStatusShort("inferred_from_bounded_change")).toBe(
+      "Inferred (bounded change)",
+    );
+    expect(formatBoundedClaimChipStatusShort("weak")).toBe("Weak");
+    expect(formatBoundedClaimChipStatusShort("unavailable")).toBe("Unavailable");
   });
 });

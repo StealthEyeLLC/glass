@@ -116,6 +116,8 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   let selectedBoundedSelectionId: string | null = null;
   let selectedBoundedEpisodeId: string | null = null;
   let selectedBoundedClaimId: string | null = null;
+  /** After temporal compare-baseline override, suppress primary-claim highlight until the next cursor-driven paint (v19). */
+  let replayTrustPrimaryClaimHighlight = true;
 
   const hero = el("section", "glass-vs-hero glass-replay-vs-hero");
   hero.setAttribute("data-testid", "replay-vs-hero");
@@ -298,10 +300,18 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
       },
       onSelectBaseline: (ringIndex) => {
         replayCompareBaselineRingIndex = ringIndex;
+        replayTrustPrimaryClaimHighlight = false;
+        selectedBoundedEpisodeId = null;
+        selectedBoundedClaimId = null;
+        boundedEvidenceCrosslinkNote.textContent = "";
         refreshReplayVisualAfterBaselineChange();
       },
       onResetBaseline: () => {
         replayCompareBaselineRingIndex = null;
+        replayTrustPrimaryClaimHighlight = false;
+        selectedBoundedEpisodeId = null;
+        selectedBoundedClaimId = null;
+        boundedEvidenceCrosslinkNote.textContent = "";
         refreshReplayVisualAfterBaselineChange();
       },
     });
@@ -509,7 +519,9 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     if (!boundedClaimSelectionStillValid(claimsPack.claims, selectedBoundedClaimId)) {
       selectedBoundedClaimId = null;
     }
-    const highlightClaimId = selectedBoundedClaimId ?? claimsPack.primaryClaimId;
+    const highlightClaimId =
+      selectedBoundedClaimId ??
+      (replayTrustPrimaryClaimHighlight ? claimsPack.primaryClaimId : null);
     const activeClaim = claimsPack.claims.find((c) => c.id === highlightClaimId) ?? null;
     const receipt = buildBoundedClaimReceipt(activeClaim, drill, lastReplayScene, {
       compare: cmp,
@@ -554,6 +566,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   }
 
   function paintReplayScene(): void {
+    replayTrustPrimaryClaimHighlight = true;
     const prev = lastReplayScene;
     const scene = compileReplayToGlassSceneV0(state, { previousEmphasis: lastReplayEmphasis });
     lastReplayEmphasis = scene.emphasis;
