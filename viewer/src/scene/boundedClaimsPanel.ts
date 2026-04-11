@@ -50,7 +50,7 @@ export function renderBoundedClaimsInto(
   lead.textContent = pack.honestyLineSimple;
 
   const tech = document.createElement("details");
-  tech.className = "glass-trust-technical";
+  tech.className = "glass-trust-technical glass-surface-technical-only";
   tech.setAttribute("data-testid", `${options.testIdPrefix}-bounded-claims-technical`);
   const techSum = document.createElement("summary");
   techSum.className = "glass-trust-technical-summary";

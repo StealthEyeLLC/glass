@@ -1,4 +1,5 @@
 /* Tier B static replay — minimal utility styling only */
+@import "../app/glassSurface.css";
 @import "../scene/boundedTrustSurfaces.css";
 
 .glass-replay-root {

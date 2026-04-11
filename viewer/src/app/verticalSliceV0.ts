@@ -79,6 +79,14 @@ export const VERTICAL_SLICE_V28_LIVE_HERO_LEAD = "Same panels as replay — conn
 /** Vertical Slice v28 — evidence panel lead (minimum words). */
 export const VERTICAL_SLICE_V28_EVIDENCE_LEAD = "From this step — not the whole machine.";
 
+/** Vertical Slice v30 — Overview surface: scene strip caption without compiler jargon. */
+export const VERTICAL_SLICE_V30_SCENE_NOTE_OVERVIEW =
+  "What you see reflects the session so far — not the full machine or live feed.";
+
+/** Vertical Slice v30 — live visual block lead for Overview (no canvas/compiler wording). */
+export const VERTICAL_SLICE_V30_LIVE_VISUAL_INTRO_OVERVIEW =
+  "Same strip as replay: scene, evidence, claims, receipt, and time.";
+
 /** Vertical Slice v28 — receipt empty (minimum words). */
 export const VERTICAL_SLICE_V28_RECEIPT_EMPTY = "Pick a claim or story card.";
 

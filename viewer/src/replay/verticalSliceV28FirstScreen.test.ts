@@ -16,10 +16,11 @@ describe("Vertical Slice v28 — calm default first screen", () => {
     mountReplayShell(root);
     const kids = [...root.children].map((n) => n.getAttribute("data-testid"));
     const idxEasy = kids.indexOf("replay-easy-entry");
-    const idxFlag = kids.indexOf("replay-flagship-callout");
+    const idxTech = kids.indexOf("replay-technical-chrome");
     expect(idxEasy).toBeGreaterThan(-1);
-    expect(idxFlag).toBeGreaterThan(-1);
-    expect(idxEasy).toBeLessThan(idxFlag);
+    expect(idxTech).toBeGreaterThan(-1);
+    expect(idxEasy).toBeLessThan(idxTech);
+    expect(root.querySelector('[data-testid="replay-flagship-callout"]')).not.toBeNull();
 
     const hero = root.querySelector('[data-testid="replay-vs-hero"]');
     expect(hero?.textContent).toContain(VERTICAL_SLICE_V28_REPLAY_HERO_LEAD);

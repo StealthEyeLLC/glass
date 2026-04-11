@@ -111,8 +111,10 @@ import {
   VERTICAL_SLICE_V27_SCENARIO_TITLE_SIMPLE,
   VERTICAL_SLICE_V26_LIVE_INTRO_HONEST,
   VERTICAL_SLICE_V28_READING_ORDER_LIVE_MICRO,
+  VERTICAL_SLICE_V30_LIVE_VISUAL_INTRO_OVERVIEW,
   liveHeroSubtitle,
 } from "../app/verticalSliceV0.js";
+import { buildReplayHrefFromLive, mountGlassSurfaceControls } from "../app/glassSurface.js";
 import "./liveSessionShell.css";
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -161,6 +163,7 @@ export interface LiveSessionShellHandle {
 export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle {
   root.innerHTML = "";
   root.classList.add("glass-live-root");
+  mountGlassSurfaceControls(root);
 
   const hero = el("section", "glass-vs-hero glass-live-vs-hero");
   hero.setAttribute("data-testid", "live-vs-hero");
@@ -231,12 +234,15 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     el("h1", "glass-vs-title", "Glass — Vertical Slice v0"),
     el("p", "glass-vs-badge", "Live session (this machine)"),
     el("p", "glass-vs-subtitle", liveHeroSubtitle()),
-    liveHeroMore,
   );
+
+  const technicalChromeLive = el("section", "glass-surface-technical glass-live-technical-chrome");
+  technicalChromeLive.setAttribute("data-testid", "live-technical-chrome");
+  technicalChromeLive.append(liveHeroMore);
 
   const nav = el("div", "glass-live-nav");
   const back = document.createElement("a");
-  back.href = "?";
+  back.href = buildReplayHrefFromLive();
   back.setAttribute("data-testid", "live-back-to-replay");
   back.textContent = "← Back to bounded replay";
   nav.append(back);
@@ -264,6 +270,8 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     "Bridge WebSocket + bounded HTTP snapshot (F-04). F-IPC transport provisional. Bearer token not persisted (sessionStorage: URL, session id, delta-wire preference).",
   );
   transportDetails.append(transportSummary, transportBody);
+
+  technicalChromeLive.append(liveIntro, transportDetails);
 
   const form = el("section", "glass-live-form");
   const bridgeInput = document.createElement("input");
@@ -367,15 +375,15 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     ephemeralStatus.textContent = t;
   }
 
-  const logSectionIntro = el("div", "glass-live-field glass-live-log-intro");
+  const logSectionIntro = el("div", "glass-live-field glass-live-log-intro glass-surface-technical-only");
   logSectionIntro.setAttribute("data-testid", "live-log-intro");
   logSectionIntro.textContent =
     "Bounded in-memory live session log (oldest dropped over cap) — not a durable audit trail; no token values logged.";
 
-  const logPre = el("pre", "glass-live-pre glass-live-log-pre");
+  const logPre = el("pre", "glass-live-pre glass-live-log-pre glass-surface-technical-only");
   logPre.setAttribute("data-testid", "live-session-log");
 
-  const logHeader = el("div", "glass-live-panel-header");
+  const logHeader = el("div", "glass-live-panel-header glass-surface-technical-only");
   logHeader.append(
     el("span", "glass-live-field", "Live session log (operator)"),
     copyButton("session log", () => serializeLiveSessionLogForExport(logState), setEphemeralStatus),
@@ -398,7 +406,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     renderLiveLogStrip();
   }
 
-  const wsStatusHeader = el("div", "glass-live-panel-header");
+  const wsStatusHeader = el("div", "glass-live-panel-header glass-surface-technical-only");
   wsStatusHeader.append(
     el("span", "glass-live-field", "WebSocket session / close (debug)"),
     copyButton("ws status", () => {
@@ -410,7 +418,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       });
     }, setEphemeralStatus),
   );
-  const wsStatusPre = el("pre", "glass-live-pre glass-live-pre--compact");
+  const wsStatusPre = el("pre", "glass-live-pre glass-live-pre--compact glass-surface-technical-only");
   wsStatusPre.setAttribute("data-testid", "live-ws-status");
 
   function updateWsSessionPanel(): void {
@@ -431,23 +439,23 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const statePanel = el("section", "glass-live-state-panel");
   statePanel.setAttribute("data-testid", "live-state-panel");
 
-  const capsHeader = el("div", "glass-live-panel-header");
+  const capsHeader = el("div", "glass-live-panel-header glass-surface-technical-only");
   capsHeader.append(
     el("span", "glass-live-field", "Preflight (GET /capabilities)"),
     copyButton("capabilities", () => capsPre.textContent ?? "", setEphemeralStatus),
   );
-  const capsPre = el("pre", "glass-live-pre");
+  const capsPre = el("pre", "glass-live-pre glass-surface-technical-only");
   capsPre.setAttribute("data-testid", "live-capabilities");
 
-  const reconcileHeader = el("div", "glass-live-panel-header");
+  const reconcileHeader = el("div", "glass-live-panel-header glass-surface-technical-only");
   reconcileHeader.append(
     el("span", "glass-live-field", "Last HTTP snapshot reconcile (F-04)"),
     copyButton("reconcile", () => reconcilePre.textContent ?? "", setEphemeralStatus),
   );
-  const reconcilePre = el("pre", "glass-live-pre");
+  const reconcilePre = el("pre", "glass-live-pre glass-surface-technical-only");
   reconcilePre.setAttribute("data-testid", "live-reconcile");
 
-  const presentationHeader = el("div", "glass-live-panel-header");
+  const presentationHeader = el("div", "glass-live-panel-header glass-surface-technical-only");
   presentationHeader.append(
     el("span", "glass-live-field", "Live state summary (JSON)"),
     copyButton("live state", () => {
@@ -457,35 +465,42 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     }, setEphemeralStatus),
   );
 
-  const presentationPre = el("pre", "glass-live-pre glass-live-pre--compact");
+  const presentationPre = el("pre", "glass-live-pre glass-live-pre--compact glass-surface-technical-only");
   presentationPre.setAttribute("data-testid", "live-presentation-json");
 
-  const metaHeader = el("div", "glass-live-panel-header");
+  const metaHeader = el("div", "glass-live-panel-header glass-surface-technical-only");
   metaHeader.append(
     el("span", "glass-live-field", "Wire + full model JSON (debug)"),
     copyButton("model", () => metaPre.textContent ?? "", setEphemeralStatus),
   );
-  const metaPre = el("pre", "glass-live-pre");
+  const metaPre = el("pre", "glass-live-pre glass-surface-technical-only");
   metaPre.setAttribute("data-testid", "live-meta");
 
-  const tailOrigin = el("div", "glass-live-tail-origin");
+  const tailOrigin = el("div", "glass-live-tail-origin glass-surface-technical-only");
   tailOrigin.setAttribute("data-testid", "live-tail-origin");
 
-  const eventHonesty = el("p", "glass-live-event-honesty");
+  const eventHonesty = el("p", "glass-live-event-honesty glass-surface-technical-only");
   eventHonesty.setAttribute("data-testid", "live-event-honesty");
 
   const visualSurface = el("section", "glass-live-visual-surface");
   visualSurface.setAttribute("data-testid", "live-visual-surface");
   visualSurface.setAttribute("aria-labelledby", "live-visual-surface-title");
   visualSurface.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
-  const visualIntro = el(
-    "div",
-    "glass-live-field",
-    "Same panels as replay: scene canvas, then evidence, story cards, claims, receipt, time context. Canvas 2D and/or WebGPU — not a drawn topology.",
+  const visualIntroOverview = el(
+    "p",
+    "glass-live-field glass-scene-note--easy",
+    VERTICAL_SLICE_V30_LIVE_VISUAL_INTRO_OVERVIEW,
   );
-  visualIntro.setAttribute("id", "live-visual-surface-title");
+  visualIntroOverview.setAttribute("data-testid", "live-visual-intro-overview");
+  visualIntroOverview.setAttribute("id", "live-visual-surface-title");
+  const visualIntro = el(
+    "p",
+    "glass-live-field glass-scene-note--full",
+    "Same panels as replay: scene canvas, then evidence, episodes, claims, receipt, time context. Canvas 2D and/or WebGPU — not a drawn topology.",
+  );
   const visualIntroTechnical = document.createElement("details");
-  visualIntroTechnical.className = "glass-trust-technical glass-live-visual-intro-technical";
+  visualIntroTechnical.className =
+    "glass-trust-technical glass-live-visual-intro-technical glass-surface-technical-only";
   visualIntroTechnical.setAttribute("data-testid", "live-visual-surface-intro-technical");
   const visualIntroTechnicalSum = document.createElement("summary");
   visualIntroTechnicalSum.className = "glass-trust-technical-summary";
@@ -496,7 +511,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     "Vertical Slice v0 — same strip + trust band as replay (selection, evidence, episodes, claims, temporal lens). Canvas 2D and/or WebGPU quads + Canvas text overlay; hybrid fallback is a supported mode — not topology.",
   );
   visualIntroTechnical.append(visualIntroTechnicalSum, visualIntroTechnicalBody);
-  const visualGpuStatus = el("p", "glass-live-visual-gpu-status");
+  const visualGpuStatus = el("p", "glass-live-visual-gpu-status glass-surface-technical-only");
   visualGpuStatus.setAttribute("data-testid", "live-visual-gpu-status");
   let webGpuStatus: WebGpuLiveStatus = initialWebGpuLiveStatus(navigator);
   visualGpuStatus.textContent = formatWebGpuLiveStatusLine(webGpuStatus);
@@ -522,7 +537,10 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   visualFallback.textContent =
     "Visual canvas unavailable — bounded selection, compare, evidence, episodes, and claims above still use the same compare baseline as the last successful paint (see provenance).";
   visualFallback.hidden = true;
-  const visualProvenanceHeader = el("div", "glass-live-panel-header glass-live-visual-provenance-header");
+  const visualProvenanceHeader = el(
+    "div",
+    "glass-live-panel-header glass-live-visual-provenance-header glass-surface-technical-only",
+  );
   const visualProvenanceCopyJson = el("button", "glass-live-copy", "Copy JSON");
   visualProvenanceCopyJson.type = "button";
   visualProvenanceCopyJson.setAttribute("data-testid", "live-visual-provenance-copy-json");
@@ -551,7 +569,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const boundedEvidenceCrosslinkNote = el("p", "glass-bounded-evidence-crosslink-note");
   boundedEvidenceCrosslinkNote.setAttribute("data-testid", "live-bounded-evidence-crosslink-note");
   boundedEvidenceCrosslinkNote.setAttribute("aria-live", "polite");
-  const boundedEpisodeTitle = el("h4", "glass-bounded-episodes-title", "Story cards");
+  const boundedEpisodeTitle = el("h4", "glass-bounded-episodes-title", "Episodes");
   boundedEpisodeTitle.setAttribute("data-testid", "live-bounded-episodes-heading");
   const boundedEpisodeRoot = el("div", "glass-bounded-episodes-root");
   boundedEpisodeRoot.setAttribute("data-testid", "live-bounded-episodes-root");
@@ -568,6 +586,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   visualCanvasWebGpu.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
   visualCanvasTextOverlay.setAttribute("aria-describedby", "live-visual-legend live-visual-provenance-strip");
   visualSurface.append(
+    visualIntroOverview,
     visualIntro,
     visualIntroTechnical,
     visualGpuStatus,
@@ -884,36 +903,37 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     void paintLiveVisual();
   })();
 
-  const eventList = el("div", "glass-live-event-list");
+  const eventList = el("div", "glass-live-event-list glass-surface-technical-only");
   eventList.setAttribute("data-testid", "live-event-list");
   eventList.setAttribute("data-live-events", "bounded-tail");
 
-  const eventsHeader = el("div", "glass-live-panel-header");
+  const eventsHeader = el("div", "glass-live-panel-header glass-surface-technical-only");
   eventsHeader.append(
     el("span", "glass-live-field", "Bounded WS event tail (debug)"),
     copyButton("event tail", () => JSON.stringify(model.eventTail, null, 2), setEphemeralStatus),
   );
-  const eventsPre = el("pre", "glass-live-pre glass-live-pre--hidden");
+  const eventsPre = el("pre", "glass-live-pre glass-live-pre--hidden glass-surface-technical-only");
   eventsPre.setAttribute("data-testid", "live-events");
   eventsPre.setAttribute("aria-hidden", "true");
 
-  statePanel.append(
+  const operatorLiveInstrumentation = el("div", "glass-live-operator-instrumentation glass-surface-technical-only");
+  operatorLiveInstrumentation.setAttribute("data-testid", "live-operator-instrumentation");
+  operatorLiveInstrumentation.append(
     el("h2", "glass-live-state-heading", "Live state (operator)"),
     presentationHeader,
     presentationPre,
     tailOrigin,
     eventHonesty,
-    visualSurface,
     eventList,
     eventsHeader,
     eventsPre,
   );
+  statePanel.append(operatorLiveInstrumentation, visualSurface);
 
   root.append(
     hero,
     nav,
-    liveIntro,
-    transportDetails,
+    technicalChromeLive,
     connectionDetails,
     statePanel,
     capsHeader,

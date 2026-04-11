@@ -1,0 +1,89 @@
+/* Vertical Slice v30 — Overview (easy) vs Technical surfaces */
+
+.glass-surface-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  box-shadow: 0 1px 2px rgb(15 23 42 / 6%);
+}
+
+.glass-surface-bar-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+
+.glass-surface-segmented {
+  display: inline-flex;
+  border-radius: 7px;
+  border: 1px solid #cbd5e1;
+  overflow: hidden;
+  background: #f1f5f9;
+}
+
+.glass-surface-segment {
+  margin: 0;
+  border: none;
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: #475569;
+}
+
+.glass-surface-segment:hover {
+  background: rgb(255 255 255 / 70%);
+}
+
+.glass-surface-segment--selected {
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 0 0 1px #cbd5e1;
+}
+
+.glass-replay-root[data-surface="easy"] .glass-surface-technical-only,
+.glass-live-root[data-surface="easy"] .glass-surface-technical-only {
+  display: none !important;
+}
+
+/* Receipt: hide mechanical subsections in Overview (primary + limitation still visible). */
+.glass-replay-root[data-surface="easy"] .glass-bounded-claim-receipt .glass-trust-technical,
+.glass-replay-root[data-surface="easy"] .glass-bounded-claim-receipt-footer,
+.glass-live-root[data-surface="easy"] .glass-bounded-claim-receipt .glass-trust-technical,
+.glass-live-root[data-surface="easy"] .glass-bounded-claim-receipt-footer {
+  display: none !important;
+}
+
+.glass-scene-note--easy {
+  margin: 0 0 8px;
+  font-size: 0.86rem;
+  color: #334155;
+  line-height: 1.45;
+}
+
+.glass-replay-root[data-surface="technical"] .glass-scene-note--easy,
+.glass-live-root[data-surface="technical"] .glass-scene-note--easy {
+  display: none !important;
+}
+
+.glass-scene-note--full {
+  margin: 0 0 8px;
+  font-size: 0.86rem;
+  color: #334155;
+  line-height: 1.45;
+}
+
+.glass-replay-root[data-surface="easy"] .glass-scene-note--full,
+.glass-live-root[data-surface="easy"] .glass-scene-note--full {
+  display: none !important;
+}

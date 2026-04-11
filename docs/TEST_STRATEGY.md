@@ -59,6 +59,8 @@ Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaf
 | Suite | Obligation |
 |-------|------------|
 | `src/app/mode.test.ts` | `getBuildMode` stays **`static_replay`**; `uiSurfaceFromSearch` for `?live=1` |
+| `src/app/glassSurface.test.ts` | **`parseGlassSurface`** — default **Overview**; **`?surface=technical`** |
+| `src/replay/surfaceSeparationV30.test.ts` | **Vertical Slice v30** — replay/live **default surface**; **technical chrome** + **operator instrumentation** present in DOM |
 | `src/app/verticalSliceV0.test.ts` | **Vertical Slice v0** copy exports (`VERTICAL_SLICE_V0_ID`, hero subtitles; **v18** flagship session id `canonical_v15_append_heavy`; **v20** reading-order + receipt supplement strings; **v21** **`GLASS_FLAGSHIP_CHAIN_*`** in reading-order strings; **v26** **`replayHeroSubtitleTechnical`**; **v28** **`replayHeroSubtitle`** micro line + live **Same panels**) |
 | `src/replay/verticalSliceV27TrustLayers.test.ts` | **Vertical Slice v27** — replay **`replay-reading-order-simple`** vs **`replay-reading-order-technical`**; flagship **`replay-flagship-framing`** inside **`replay-flagship-bundle`**; live reading-order simple vs technical |
 | `src/replay/verticalSliceV28FirstScreen.test.ts` | **Vertical Slice v28** — replay **easy entry** before **flagship** callout; short hero line; **`replay-reading-order-micro`**; technical strings still in DOM; live **short hero** + **`live-hero-context`** |

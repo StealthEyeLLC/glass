@@ -91,7 +91,8 @@ export function renderBoundedEvidenceInto(
   trust.appendChild(lead);
 
   const authorityDetails = document.createElement("details");
-  authorityDetails.className = "glass-trust-technical glass-bounded-evidence-authority-details";
+  authorityDetails.className =
+    "glass-trust-technical glass-bounded-evidence-authority-details glass-surface-technical-only";
   authorityDetails.setAttribute("data-testid", "glass-bounded-evidence-authority-technical");
   const authSum = document.createElement("summary");
   authSum.className = "glass-trust-technical-summary";
@@ -176,7 +177,7 @@ export function renderBoundedEvidenceInto(
     }
     if (options?.episodeHonestyNote || options?.claimDoesNotImplyLine) {
       const fine = document.createElement("details");
-      fine.className = "glass-trust-technical";
+      fine.className = "glass-trust-technical glass-surface-technical-only";
       fine.setAttribute("data-testid", "glass-bounded-evidence-alignment-technical");
       const fineSum = document.createElement("summary");
       fineSum.className = "glass-trust-technical-summary";

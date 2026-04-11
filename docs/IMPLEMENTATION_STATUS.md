@@ -5,6 +5,10 @@
 
 ## Vertical Slice v0 / v1 / v2 (milestone)
 
+## Vertical Slice v30 (Overview vs Technical surfaces)
+
+**Viewer:** **Overview** (default) vs **Technical** — segmented control + **`?surface=technical`**; **Technical** chrome holds flagship explainer, reading order, live/transport honesty, pack manifest rows, operator JSON, event debug; trust panels keep **technical** sub-blocks off **Overview** via CSS. **No** wire or engine changes. See **`docs/VERTICAL_SLICE_V0.md`**, **`viewer/src/app/glassSurface.ts`**, tests **`surfaceSeparationV30.test.ts`**, **`glassSurface.test.ts`**.
+
 ## Vertical Slice v28 (default flagship surface — minimal first paint)
 
 **Viewer:** **Few visible words** on load: short hero line; **Try the flagship** block **before** flagship/read-me details; reading order and flagship explanation **collapsed** by default. Evidence/receipt default leads shortened. **No** wire or engine changes. See **`docs/VERTICAL_SLICE_V0.md`**, tests **`viewer/src/replay/verticalSliceV28FirstScreen.test.ts`**.
