@@ -1,6 +1,6 @@
 # Repository boundaries
 
-**Public context:** [README](../README.md) and [VISION.md](../VISION.md) state product scope; this file is **ownership**, not positioning.
+**Public context:** [README](../README.md) and [VISION.md](../VISION.md) state product scope; `GLASS_FULL_ENGINEERING_SPEC_v10.md` is a long-horizon architecture reference, not the current launch contract. This file is **ownership**, not positioning.
 
 **Spec §8A.1** — one role per top-level tree; no hidden coupling.
 

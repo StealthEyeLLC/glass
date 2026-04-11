@@ -28,12 +28,23 @@ async function main() {
   const flagship = `${base}/?fixture=flagship`;
   await page.goto(flagship, { waitUntil: "load", timeout: 60_000 });
   await page.waitForSelector('[data-testid="replay-scene-v0"]', { timeout: 60_000 });
+  await page.locator('[data-testid="replay-jump-end"]').click();
+  await page.waitForTimeout(250);
 
   await page.screenshot({
     path: path.join(outDir, "01-replay-flagship-overview.png"),
     fullPage: true,
   });
 
+  const flagshipTechnical = `${base}/?fixture=flagship&surface=technical`;
+  await page.goto(flagshipTechnical, { waitUntil: "load", timeout: 60_000 });
+  await page.waitForSelector('[data-testid="replay-scene-v0"]', { timeout: 60_000 });
+  await page.locator('[data-testid="replay-jump-end"]').click();
+  await page.waitForTimeout(250);
+  await page.locator('[data-testid="replay-bounded-claim-chip"]').first().click();
+  await page.waitForTimeout(200);
+  await page.locator('[data-testid="replay-bounded-claim-receipt-ids"] summary').click();
+  await page.waitForTimeout(150);
   const receipt = page.locator('[data-testid="replay-bounded-claim-receipt-root"]');
   await receipt.scrollIntoViewIfNeeded();
   await page.waitForTimeout(200);
@@ -41,6 +52,12 @@ async function main() {
     path: path.join(outDir, "02-claim-chain-receipt.png"),
   });
 
+  await page.goto(flagship, { waitUntil: "load", timeout: 60_000 });
+  await page.waitForSelector('[data-testid="replay-scene-v0"]', { timeout: 60_000 });
+  await page.locator('[data-testid="replay-jump-end"]').click();
+  await page.waitForTimeout(250);
+  await page.locator('[data-testid="bounded-temporal-paint-chip"]:not([data-current="true"])').first().click();
+  await page.waitForTimeout(200);
   const temporal = page.locator('[data-testid="replay-temporal-lens-root"]');
   await temporal.scrollIntoViewIfNeeded();
   await page.waitForTimeout(200);
@@ -54,7 +71,7 @@ async function main() {
   await page.waitForTimeout(300);
   await page.screenshot({
     path: path.join(outDir, "04-live-shell-overview.png"),
-    fullPage: false,
+    fullPage: true,
   });
 
   await browser.close();

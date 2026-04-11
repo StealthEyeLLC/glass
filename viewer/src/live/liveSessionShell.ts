@@ -113,6 +113,8 @@ import {
   VERTICAL_SLICE_V26_LIVE_INTRO_HONEST,
   VERTICAL_SLICE_V28_READING_ORDER_LIVE_MICRO,
   VERTICAL_SLICE_V31_LIVE_VISUAL_INTRO_OVERVIEW,
+  VERTICAL_SLICE_V32_LIVE_SETUP_OVERVIEW,
+  VERTICAL_SLICE_V32_LIVE_SETUP_TECHNICAL,
   liveHeroSubtitle,
 } from "../app/verticalSliceV0.js";
 import { buildReplayHrefFromLive, mountGlassSurfaceControls } from "../app/glassSurface.js";
@@ -545,6 +547,27 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   visualFallback.textContent =
     "Visual canvas unavailable — bounded selection, compare, evidence, episodes, and claims above still use the same compare baseline as the last successful paint (see provenance).";
   visualFallback.hidden = true;
+  const liveTrustSetup = el("section", "glass-live-trust-setup");
+  liveTrustSetup.setAttribute("data-testid", "live-trust-setup");
+  const liveTrustSetupOverview = el(
+    "p",
+    "glass-live-trust-setup-note",
+    VERTICAL_SLICE_V32_LIVE_SETUP_OVERVIEW,
+  );
+  liveTrustSetupOverview.setAttribute("data-testid", "live-trust-setup-overview");
+  const liveTrustSetupTechnical = document.createElement("details");
+  liveTrustSetupTechnical.className = "glass-trust-technical glass-surface-technical-only";
+  liveTrustSetupTechnical.setAttribute("data-testid", "live-trust-setup-technical");
+  const liveTrustSetupTechnicalSum = document.createElement("summary");
+  liveTrustSetupTechnicalSum.className = "glass-trust-technical-summary";
+  liveTrustSetupTechnicalSum.textContent = "Why trust panels are waiting";
+  const liveTrustSetupTechnicalBody = el(
+    "p",
+    "glass-live-trust-setup-technical-body",
+    VERTICAL_SLICE_V32_LIVE_SETUP_TECHNICAL,
+  );
+  liveTrustSetupTechnical.append(liveTrustSetupTechnicalSum, liveTrustSetupTechnicalBody);
+  liveTrustSetup.append(liveTrustSetupOverview, liveTrustSetupTechnical);
   const visualProvenanceHeader = el(
     "div",
     "glass-live-panel-header glass-live-visual-provenance-header glass-surface-technical-only",
@@ -564,10 +587,12 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   visualProvenanceStrip.setAttribute("data-testid", "live-visual-provenance-strip");
   visualProvenanceStrip.setAttribute("id", "live-visual-provenance-strip");
   visualProvenanceStrip.setAttribute("title", LIVE_VISUAL_PROVENANCE_STRIP_HONESTY);
+  visualProvenanceStrip.classList.add("glass-surface-technical-only");
   const visualLegend = el("p", "glass-live-visual-legend");
   visualLegend.setAttribute("data-testid", "live-visual-legend");
   visualLegend.setAttribute("id", "live-visual-legend");
   visualLegend.textContent = formatLiveVisualLegendBlock();
+  visualLegend.classList.add("glass-surface-technical-only");
   const boundedInspectorTitle = el("h4", "glass-bounded-inspector-title", "Selection details");
   const boundedInspectorPre = el("pre", "glass-bounded-inspector");
   boundedInspectorPre.setAttribute("data-testid", "live-bounded-inspector");
@@ -610,6 +635,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     visualGpuStatus,
     visualCanvasStack,
     visualFallback,
+    liveTrustSetup,
     boundedEvidenceTitle,
     boundedEvidenceRoot,
     boundedEvidenceCrosslinkNote,
@@ -643,6 +669,29 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   let selectedBoundedClaimId: string | null = null;
   /** After temporal compare-baseline override, suppress primary-claim highlight until the next live paint (v19). */
   let liveTrustPrimaryClaimHighlight = true;
+
+  function hasBoundedLiveTrustSource(): boolean {
+    return model.lastAppliedWire !== null || lastHttp !== null || lastReconcile !== null;
+  }
+
+  function setLiveTrustSurfaceVisibility(visible: boolean): void {
+    liveTrustSetup.hidden = visible;
+    boundedEvidenceTitle.hidden = !visible;
+    boundedEvidenceRoot.hidden = !visible;
+    boundedEvidenceCrosslinkNote.hidden = !visible;
+    boundedClaimTitleOverview.hidden = !visible;
+    boundedClaimTitleTechnical.hidden = !visible;
+    boundedClaimStripRoot.hidden = !visible;
+    boundedClaimReceiptRoot.hidden = !visible;
+    boundedTemporalTitleOverview.hidden = !visible;
+    boundedTemporalTitleTechnical.hidden = !visible;
+    boundedTemporalRoot.hidden = !visible;
+    boundedEpisodeTitle.hidden = !visible;
+    boundedEpisodeRoot.hidden = !visible;
+    boundedInspectorBlock.hidden = !visible;
+  }
+
+  setLiveTrustSurfaceVisibility(false);
 
   function applyCrosslinkResolutionLive(res: BoundedCrosslinkResolutionV0): void {
     if (res.targetSelectionId) {
@@ -686,7 +735,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   }
 
   function refreshTemporalLensLive(): void {
-    if (!lastPaintedLiveScene) {
+    if (!lastPaintedLiveScene || !hasBoundedLiveTrustSource()) {
       boundedTemporalRoot.replaceChildren();
       return;
     }
@@ -713,6 +762,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
 
   async function refreshBoundedInspectorLive(): Promise<void> {
     if (!lastPaintedLiveScene) {
+      setLiveTrustSurfaceVisibility(false);
       boundedInspectorPre.textContent = "";
       boundedInspectorPre.removeAttribute("data-selected");
       boundedEvidenceRoot.replaceChildren();
@@ -725,6 +775,22 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       boundedTemporalRoot.replaceChildren();
       return;
     }
+    if (!hasBoundedLiveTrustSource()) {
+      setLiveTrustSurfaceVisibility(false);
+      boundedInspectorPre.textContent = "";
+      boundedInspectorPre.removeAttribute("data-selected");
+      boundedEvidenceRoot.replaceChildren();
+      boundedEvidenceCrosslinkNote.textContent = "";
+      boundedEpisodeRoot.replaceChildren();
+      boundedClaimStripRoot.replaceChildren();
+      boundedClaimReceiptRoot.replaceChildren();
+      boundedTemporalRoot.replaceChildren();
+      selectedBoundedSelectionId = null;
+      selectedBoundedEpisodeId = null;
+      selectedBoundedClaimId = null;
+      return;
+    }
+    setLiveTrustSurfaceVisibility(true);
     const baseline = effectiveCompareBaselineLive();
     const cmp = computeBoundedSceneCompare(baseline, lastPaintedLiveScene, {
       selectedId: selectedBoundedSelectionId,
@@ -1069,7 +1135,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
 
   visualCanvasStack.addEventListener("pointerdown", (ev) => {
     const scene = lastPaintedLiveScene;
-    if (!scene) {
+    if (!scene || !hasBoundedLiveTrustSource()) {
       return;
     }
     const rect = visualCanvasStack.getBoundingClientRect();

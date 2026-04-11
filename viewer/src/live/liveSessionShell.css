@@ -345,6 +345,28 @@
   margin: 0.35rem 0 0;
 }
 
+.glass-live-trust-setup {
+  margin: 0.75rem 0 0.9rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.glass-live-trust-setup-note {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #334155;
+}
+
+.glass-live-trust-setup-technical-body {
+  margin: 0.45rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #475569;
+}
+
 .glass-live-visual-provenance-header {
   margin-top: 0.35rem;
 }

@@ -5,10 +5,17 @@
 - **What:** Bounded **investigation surface** over normalized runtime events — **scene → change → evidence → receipt** without inventing topology or full history.
 - **Why it matters:** Operators need **exact** claims from **bounded** windows, not narrative filler.
 - **Flagship:** Tier B pack `canonical_v15_append_heavy` — depth on one path ([`docs/VERTICAL_SLICE_V0.md`](docs/VERTICAL_SLICE_V0.md)).
+- **Current public surface:** replay-first bounded showcase; optional **`?live=1`** is local-only and secondary.
 - **Honest boundary:** **Freeze-candidate** only for that **showcase path** in-repo. **F-IPC**, durable production ingest, and Phase-6 **full topology runtime** are **not** proven here.
 - **First-run UX (v26–v30):** The default **bounded showcase** path leads with **what to open** (easy entry + optional dev **Load flagship demo**); **v27** added **simple** vs **technical** copy layers; **v28** **reduces visible words** on first paint; **v30** separates **Overview** vs **Technical** into two surfaces ( **`?surface=technical`** ) — same bounded truth, different chrome. **Local** bridge scope and transport notes are concentrated in **Technical**; **F-IPC** remains **provisional**.
 
 **Product hook (exact):** Glass turns bounded runtime activity into an inspectable claim chain: scene, change, evidence, receipt.
+
+## Current shipped truth vs long horizon
+
+- **Use these as the public truth for the shipped bounded showcase:** `README.md`, `VISION.md`, `docs/IMPLEMENTATION_STATUS.md`, `docs/TEST_STRATEGY.md`, `docs/REPO_BOUNDARIES.md`.
+- **Use this as milestone history, not the front-door contract:** `docs/VERTICAL_SLICE_V0.md`.
+- **Use these as long-horizon architecture references, not the current product contract:** `GLASS_FULL_ENGINEERING_SPEC_v10.md`, `GLASS_V0_BUILD_PLAN.md`.
 
 ## Strategic framing (cold)
 

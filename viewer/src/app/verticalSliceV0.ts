@@ -112,7 +112,15 @@ export const VERTICAL_SLICE_V30_LIVE_VISUAL_INTRO_OVERVIEW =
   "Same strip as replay: scene, evidence, claims, receipt, and time.";
 
 /** v31 — live Scene block lead (Overview); matches replay spirit. */
-export const VERTICAL_SLICE_V31_LIVE_VISUAL_INTRO_OVERVIEW = VERTICAL_SLICE_V31_SCENE_NOTE_OVERVIEW;
+export const VERTICAL_SLICE_V31_LIVE_VISUAL_INTRO_OVERVIEW =
+  "Same strip as replay, fed by live data when the bridge is connected.";
+
+/** Live shell setup state — no evidence/claims/receipts before bounded live data exists. */
+export const VERTICAL_SLICE_V32_LIVE_SETUP_OVERVIEW =
+  "Connect to a local session to unlock evidence, claims, receipt, and time context.";
+
+export const VERTICAL_SLICE_V32_LIVE_SETUP_TECHNICAL =
+  "No bounded live data yet. Until the live shell receives a bounded wire update or HTTP snapshot, it stays in setup mode and does not emit evidence, episodes, claims, or receipts.";
 
 /** Vertical Slice v28 — receipt empty (minimum words). */
 export const VERTICAL_SLICE_V28_RECEIPT_EMPTY = "Pick a claim or story card.";

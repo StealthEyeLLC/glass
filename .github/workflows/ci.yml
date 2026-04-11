@@ -48,10 +48,11 @@ jobs:
         run: cargo test -p integration_tests --test retained_snapshot_demo_smoke
 
   viewer:
-    name: Viewer (build, test, lint)
+    name: Viewer (build, test, lint, fixtures)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
@@ -67,3 +68,9 @@ jobs:
       - name: lint
         working-directory: viewer
         run: npm run lint
+      - name: verify vertical slice fixture
+        working-directory: viewer
+        run: npm run verify:vertical-slice-fixture
+      - name: verify canonical scenarios
+        working-directory: viewer
+        run: npm run verify:canonical-scenarios-v15

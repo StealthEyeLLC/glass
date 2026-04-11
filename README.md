@@ -1,39 +1,66 @@
-# Glass (v0)
+# Glass
 
 **Glass turns bounded runtime activity into an inspectable claim chain: scene, change, evidence, receipt.**
 
-**What this is:** A **bounded investigation surface** above runtime telemetry — `.glass_pack` I/O, Tier B **static replay** (default), optional loopback **`?live=1`**. **Freeze-candidate in-repo for the bounded showcase path only** — not production ingest at scale, not **F-IPC** finality, not Phase-6 full topology (see **[VISION.md](VISION.md)**).
+Glass is a **replay-first bounded investigation surface** above runtime telemetry. The current public surface in this repo is one honest showcase path: load a saved session, inspect what changed, inspect the evidence behind it, and open the technical layer only when you want the full instrument. Optional **`?live=1`** is local-only and secondary.
 
----
+This repo does **not** claim production ingest at scale, final **F-IPC** transport, or Phase-6 full topology runtime. Start with the shipped bounded showcase, not the long-horizon spec.
 
-## Standout interaction (the real product)
+## Start Here
+
+1. Run the viewer locally: `cd viewer && npm ci && npm run dev`
+2. On replay, use **Load flagship demo** (dev only) or **Open file** and pick `tests/fixtures/canonical_scenarios_v15/canonical_v15_append_heavy.glass_pack`
+3. Stay on **Overview** first. Use **Technical** only when you want exact scan order, ids, manifests, receipt refs, and transport detail.
+4. Static `dist/` does not auto-load fixtures. Optional **`?live=1`** is local-only and not the front door.
+
+## Standout Interaction
 
 | | |
 |--|--|
-| **scene** | Current bounded **Glass Scene v0** — prefix/tail honest, not full history. |
-| **change** | **Compare** vs a declared baseline — not causal inference. |
+| **scene** | Current bounded **Glass Scene v0** — honest prefix/tail view, not full history. |
+| **change** | **Compare** against a declared baseline — not causal inference. |
 | **evidence** | Drilldown **rows/facts** from the bounded window — not a complete trace. |
 | **receipt** | **Viewer-derived** claim text; **weak** / **unavailable** when support is thin — not a collector certificate. |
 
-Live: WS tail and HTTP snapshot stay **separate**. Replay: index-ordered prefix; same compilers.
+Replay uses an index-ordered pack prefix. Live keeps WS tail and HTTP snapshot **separate**.
 
----
+## Screenshots
 
-## Try the flagship (fastest)
+**How these were taken:** Vite dev server (`npm run dev` in `viewer/`); replay frames use **`?fixture=flagship`** with the committed flagship pack; live frame uses **`?live=1`**. Regenerate with **`npm run capture:showcase-media -- http://127.0.0.1:<port>`** after `npx playwright install chromium` once. Synthetic committed fixtures only — not production telemetry.
 
-**Easy path (what to do):**
+| | |
+|:--|:--|
+| ![01 — Replay overview (flagship pack)](docs/media/01-replay-flagship-overview.png) | **01 — Replay overview.** Flagship replay at the strong end of the pack: scene first, then evidence, claims, time context, and episodes. |
+| ![02 — Claim chain / receipt](docs/media/02-claim-chain-receipt.png) | **02 — Claim chain.** Selected claim plus **`glass.receipt.v0`** receipt detail. |
+| ![03 — Temporal lens](docs/media/03-temporal-lens-compare.png) | **03 — Temporal lens.** Bounded compare baseline selection — not a full history timeline. |
+| ![04 — Live shell](docs/media/04-live-shell-overview.png) | **04 — Live shell.** Local-only setup-first shell; evidence, episodes, claims, and receipt wait for real live data. |
 
-1. Run the viewer locally (`cd viewer`, then `npm ci` and `npm run dev` — see **Verify bootstrap** below).
-2. In the replay shell, use **Load flagship demo** (dev only) **or** **Open file** — file `tests/fixtures/canonical_scenarios_v15/canonical_v15_append_heavy.glass_pack` (drop zone and pack-format detail are under **Technical**).
-3. Use **View → Technical** when you want the full instrument (paths, scan order, receipt ids, operator JSON, flagship **How to read**). On **Overview** (default), before a pack loads you only see title, primary actions, and one short helper line; after load, scroll **Scene** → **Evidence** → **Claim** → **Time** → **Episodes** (playback controls follow **Time**).
+Capture notes and file order: **[docs/media/README.md](docs/media/README.md)**.
 
-**Technical (how it loads):** Static **`dist/`** does not auto-load fixtures — use **Open file** with the committed pack. **Dev-only:** the shell can load the same bytes via `?fixture=flagship` ([details](docs/VERTICAL_SLICE_V0.md)). Add **`?surface=technical`** to deep-link the Technical surface. Live **`?live=1`** is optional; connection and transport honesty live under **Technical** — still **local** bridge semantics, not cloud-hosted Glass.
+## What This Repo Actually Ships
 
-**Verify (from `viewer/`):** `npm run verify:canonical-scenarios-v15` · `npm run verify:vertical-slice-fixture`
+| In scope (current public surface) | Out of scope (honest) |
+|-----------------------------------|------------------------|
+| Replay-first bounded showcase path | Production collector/bridge operations at scale |
+| Scene System v0 + bounded claims / receipts | Final **F-IPC** transport |
+| Canonical suite + green CI + fixture validation | Phase-6 **full topology runtime** |
+| Optional local **`?live=1`** shell | Cloud-hosted Glass |
 
----
+## Current Truth vs Long Horizon
 
-## Flagship depth vs scenario breadth
+**Current shipped bounded showcase truth:**
+
+| Doc | Use |
+|-----|-----|
+| **[VISION.md](VISION.md)** | Product scope, strategy, honest boundary |
+| **[docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)** | What is implemented now |
+| **[docs/TEST_STRATEGY.md](docs/TEST_STRATEGY.md)** | Verification map and CI coverage |
+| **[docs/REPO_BOUNDARIES.md](docs/REPO_BOUNDARIES.md)** | Ownership and layering |
+| **[docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md)** | Milestone history behind the current surface |
+
+**Long-horizon references (not the current launch contract):** `GLASS_FULL_ENGINEERING_SPEC_v10.md` · `GLASS_V0_BUILD_PLAN.md`
+
+## Flagship Depth vs Breadth
 
 | | Pack / role |
 |--|-------------|
@@ -41,66 +68,23 @@ Live: WS tail and HTTP snapshot stay **separate**. Replay: index-ordered prefix;
 | **Smoke (CI)** | `tests/fixtures/vertical_slice_v0/glass_vertical_slice_v0_tier_b.glass_pack` — 3 events, fast checks. |
 | **Breadth (suite)** | Four packs under `tests/fixtures/canonical_scenarios_v15/` — replace, append, calm/steady, file-heavy ([folder README](tests/fixtures/canonical_scenarios_v15/README.md)). **Supporting** proof, not a second product. |
 
----
-
-## Where to read next
-
-| Doc | Use |
-|-----|-----|
-| **[VISION.md](VISION.md)** | Strategy, standalone-first, ingest-agnostic, explicit out-of-scope |
-| **[docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md)** | Slice history, flagship naming |
-| **[docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)** | Implemented vs scaffold |
-| **[docs/REPO_BOUNDARIES.md](docs/REPO_BOUNDARIES.md)** | Crate ownership |
-| **[docs/TEST_STRATEGY.md](docs/TEST_STRATEGY.md)** | CI ↔ behavior map |
-
-**Authority:** `GLASS_FULL_ENGINEERING_SPEC_v10.md` · **Plan:** `GLASS_V0_BUILD_PLAN.md`
-
----
-
-## Showcase vs what this repo does not claim
-
-| In scope (bounded showcase) | Out of scope (honest) |
-|-------------------------------|------------------------|
-| Tier B replay + optional `?live=1` + canonical suite + green CI | Production collector/bridge operations at scale |
-| Scene System v0 + bounded claims/receipts | **F-IPC** transport freeze |
-| | Phase-6 **full topology runtime** |
-
----
-
-## Screenshots (bounded showcase)
-
-**How these were taken:** Vite dev server (`npm run dev` in `viewer/`); replay frames use **`?fixture=flagship`** → `canonical_v15_append_heavy.glass_pack`; live frame uses **`?live=1`**. Regenerate with **`npm run capture:showcase-media -- http://127.0.0.1:<port>`** (dev server URL, e.g. `5173`) after `npx playwright install chromium` once. Synthetic committed fixtures only — not production telemetry.
-
-| | |
-|:--|:--|
-| ![01 — Replay overview (flagship pack)](docs/media/01-replay-flagship-overview.png) | **01 — Replay overview.** Reading order, flagship callout, scene strip, bounded trust band (evidence → episodes → claims → receipt → temporal lens). |
-| ![02 — Claim chain / receipt](docs/media/02-claim-chain-receipt.png) | **02 — Claim chain.** Bounded claim chips + **`glass.receipt.v0`** receipt panel. |
-| ![03 — Temporal lens](docs/media/03-temporal-lens-compare.png) | **03 — Temporal lens.** Compare baseline context (bounded ring — not a full history timeline). |
-| ![04 — Live shell](docs/media/04-live-shell-overview.png) | **04 — Live shell.** `?live=1`: bridge form, bounded visual surface, provenance strip (loopback capture; no tokens). |
-
-Naming and re-capture checklist: **[docs/media/README.md](docs/media/README.md)**. Assets are **not** required to build or test.
-
----
-
 ## Layout
 
 | Path | Role |
 |------|------|
 | `schema/` | Canonical JSON Schema + bindings/migrations placeholders |
 | `session_engine/` | Events, session append model, `.glass_pack` I/O, **pure** sanitization |
-| `graph_engine/` | Graph derivation (stub crate; no presentation) |
-| `collector/` | Linux collector binary (lifecycle stub only) |
-| `bridge/` | Local loopback bridge (`glass_bridge`) + resync types — HTTP/WS per docs |
-| `viewer/` | Tier B static replay + optional **`?live=1`** — **Vertical Slice v0–v31** ([docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md)) |
+| `graph_engine/` | Derived graph helper (minimal; no presentation) |
+| `collector/` | Linux collector + adapters / retained loops / F-IPC inputs |
+| `bridge/` | Local loopback bridge (`glass_bridge`) — HTTP/WS per docs |
+| `viewer/` | Replay-first bounded showcase + optional local **`?live=1`** shell |
 | `tools/glass-pack` | CLI: validate / inspect packs; strict kinds + share-safe vs raw-dev |
 | `tools/golden_scenes/` | Golden-scene harness scaffold |
-| `docs/` | Status, boundaries, tests, contracts, **media** guidance |
-| `scripts/retained_snapshot_demo/` | Retained collector ↔ bridge snapshot demo ([docs/DEMO_RETAINED_SNAPSHOT.md](docs/DEMO_RETAINED_SNAPSHOT.md)) |
-| `tests/fixtures/` | **`vertical_slice_v0/`**, **`canonical_scenarios_v15/`** |
+| `docs/` | Status, boundaries, tests, contracts, media guidance |
+| `scripts/retained_snapshot_demo/` | Retained collector ↔ bridge snapshot demo |
+| `tests/fixtures/` | `vertical_slice_v0/`, `canonical_scenarios_v15/` |
 
----
-
-## Verify bootstrap
+## Verify Bootstrap
 
 ```bash
 # Unix
@@ -113,11 +97,19 @@ powershell -ExecutionPolicy Bypass -File scripts/bootstrap_check.ps1
 Or manually:
 
 ```bash
-cargo fmt --check && cargo clippy --workspace --all-targets -- -D warnings && cargo test --workspace
-cd viewer && npm ci && npm run build && npm test && npm run lint
+cargo fmt --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+cd viewer
+npm ci
+npm run build
+npm test
+npm run lint
+npm run verify:vertical-slice-fixture
+npm run verify:canonical-scenarios-v15
 ```
 
-### `glass-pack` CLI
+## `glass-pack` CLI
 
 ```bash
 cargo run -p glass-pack -- validate path/to/file.glass_pack
@@ -129,34 +121,26 @@ cargo run -p glass-pack -- info path/to/file.glass_pack --json
 
 Procfs dev → share flow: `glass-collector normalize-procfs` (raw pack) → `glass-collector export-procfs-pack` (sanitized) → `glass-pack validate … --expect-share-safe`. Details: `tools/glass-pack/README.md`.
 
-### Local bridge (Phase 5 skeleton)
+## Local Live Shell (Optional)
 
-HTTP bearer token (for `Authorization: Bearer …` and optional WS `?access_token=` on loopback) is **separate** from **F-IPC** shared secret:
+HTTP bearer token (for `Authorization: Bearer …` and optional WS `?access_token=` on loopback) is **separate** from the provisional **F-IPC** shared secret:
 
 ```bash
 cargo run -p glass_bridge -- --help
 cargo run -p glass_bridge -- --token dev-http-bearer
 ```
 
-Optional **bounded snapshot** via provisional TCP to `glass-collector ipc-serve` (loopback only):
+Optional bounded snapshot via provisional TCP to `glass-collector ipc-serve` (loopback only):
 
 ```bash
 cargo run -p glass-collector -- ipc-serve --shared-secret fipc-dev --listen 127.0.0.1:9876
 cargo run -p glass_bridge -- --token dev-http-bearer --collector-ipc-endpoint 127.0.0.1:9876 --collector-ipc-secret fipc-dev
 ```
 
-Default bridge listen: `127.0.0.1:9781`. **Live-session WebSocket** (`/ws`) — bounded polling + optional `session_delta` v0 when configured — see `docs/IMPLEMENTATION_STATUS.md`, `docs/contracts/live_session_ws_session_delta_v0.md`, and `viewer/src/live/`. **`?live=1`** may use **WebGPU geometry + Canvas text overlay** when `navigator.gpu` is available — still bounded, not Phase-6 topology.
+Default bridge listen: `127.0.0.1:9781`. **`?live=1`** is a local shell for bridge setup, bounded visual inspection, and transport honesty — not hosted Glass and not the repo front door.
 
-**Retained snapshot demo** (collector poll + fixture + bridge + `GET /sessions/…/snapshot`): [`docs/DEMO_RETAINED_SNAPSHOT.md`](docs/DEMO_RETAINED_SNAPSHOT.md) and `scripts/retained_snapshot_demo/`. CI: `cargo test -p integration_tests --test retained_snapshot_demo_smoke`.
+Retained snapshot demo: [`docs/DEMO_RETAINED_SNAPSHOT.md`](docs/DEMO_RETAINED_SNAPSHOT.md) and `scripts/retained_snapshot_demo/`. CI runs `cargo test -p integration_tests --test retained_snapshot_demo_smoke`.
 
----
+## License
 
-## Status
-
-[docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md)
-
----
-
-## Vertical slice (overview)
-
-One bounded narrative through replay and live. **v18** = flagship pack; **v15** = canonical suite; **v19–v22** = trust UX and freeze verdict; **v23** = public doc surface; **v24** = landing audit; **v25** = committed **docs/media** PNGs for README — **not** new subsystems. Details: [docs/VERTICAL_SLICE_V0.md](docs/VERTICAL_SLICE_V0.md).
+Dual-licensed under `MIT` or `Apache-2.0`, at your option. See `LICENSE-MIT` and `LICENSE-APACHE`.

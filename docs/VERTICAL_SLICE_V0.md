@@ -2,6 +2,8 @@
 
 **Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier).
 
+**Use this file as milestone history, not the public front door.** For the current shipped bounded showcase, start with `README.md`, `VISION.md`, and `docs/IMPLEMENTATION_STATUS.md`.
+
 ## Vertical Slice v32 (premium visual hierarchy — bounded showcase)
 
 **Goal:** Stronger **first impression** and **deliberate hierarchy** on the same bounded path — **stunning at a glance**, **calm on use**, **exact on inspection** — without new engine features, wire changes, or trust-surface semantics.

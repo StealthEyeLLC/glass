@@ -10,7 +10,13 @@ const root = document.querySelector("#app");
 if (!root) {
   throw new Error("#app missing");
 }
-if (getUiSurface() === "live_session") {
+const uiSurface = getUiSurface();
+document.title =
+  uiSurface === "live_session"
+    ? "Glass — live session showcase"
+    : "Glass — replay showcase";
+
+if (uiSurface === "live_session") {
   mountLiveSessionShell(root);
 } else {
   mountReplayShell(root);

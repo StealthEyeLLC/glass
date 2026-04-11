@@ -1,6 +1,7 @@
 # Implementation status
 
-**Spec:** `GLASS_FULL_ENGINEERING_SPEC_v10.md` (locked)  
+**Current shipped truth:** this file + `README.md` + `VISION.md` describe the bounded showcase that is actually in repo.
+**Long-horizon reference:** `GLASS_FULL_ENGINEERING_SPEC_v10.md` (locked; not the current launch contract)
 **Plan:** `GLASS_V0_BUILD_PLAN.md`
 
 ## Vertical Slice v0 / v1 / v2 (milestone)

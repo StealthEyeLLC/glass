@@ -1,8 +1,8 @@
-# Test strategy (bootstrap)
+# Test strategy (bounded showcase)
 
 **Public doc order (for context):** [README](../README.md) → [VISION.md](../VISION.md) → [VERTICAL_SLICE_V0.md](VERTICAL_SLICE_V0.md) → [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) → this file.
 
-Maps tests to build-plan obligations. **Visual / resync / golden** jobs are scaffolded; behavior grows in Phase 5–7.
+Maps the current bounded showcase to concrete verification. Use this file as the proof surface for what the repo actually ships today; long-horizon topology work is separate.
 
 ## Rust (`cargo test --workspace`)
 

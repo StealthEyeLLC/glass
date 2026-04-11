@@ -53,6 +53,33 @@ describe("mountLiveSessionShell", () => {
     expect(lt).toContain("HTTP = ");
     expect(lt.toLowerCase()).toContain("not a timeline");
   });
+
+  it("keeps live trust panels in setup mode until bounded live data exists", async () => {
+    const root = document.createElement("div");
+    mountLiveSessionShell(root);
+
+    await vi.waitFor(() => {
+      const setup = root.querySelector('[data-testid="live-trust-setup"]') as HTMLElement;
+      expect(setup.hidden).toBe(false);
+    });
+
+    expect(root.textContent).toContain("Connect to a local session to unlock evidence, claims, receipt, and time context.");
+    expect(root.textContent).not.toContain("No material bounded change");
+
+    expect(
+      (root.querySelector('[data-testid="live-bounded-claims-heading-overview"]') as HTMLElement).hidden,
+    ).toBe(true);
+    expect((root.querySelector('[data-testid="live-bounded-claims-strip-root"]') as HTMLElement).hidden).toBe(
+      true,
+    );
+    expect((root.querySelector('[data-testid="live-bounded-claim-receipt-root"]') as HTMLElement).hidden).toBe(
+      true,
+    );
+    expect((root.querySelector('[data-testid="live-bounded-episodes-root"]') as HTMLElement).hidden).toBe(
+      true,
+    );
+    expect((root.querySelector('[data-testid="live-temporal-lens-root"]') as HTMLElement).hidden).toBe(true);
+  });
 });
 
 describe("live visual provenance copy", () => {
