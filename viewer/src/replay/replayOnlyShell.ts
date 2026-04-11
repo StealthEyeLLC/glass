@@ -17,9 +17,11 @@ import {
   VERTICAL_SLICE_V27_FLAGSHIP_TITLE_SIMPLE,
   VERTICAL_SLICE_V27_READING_ORDER_REPLAY_SIMPLE,
   VERTICAL_SLICE_V27_READING_ORDER_REPLAY_TECHNICAL,
+  VERTICAL_SLICE_V27_REPLAY_HERO_LEAD,
   VERTICAL_SLICE_V27_SCENARIO_BODY_SIMPLE,
   VERTICAL_SLICE_V27_SCENARIO_LABEL_SIMPLE,
   VERTICAL_SLICE_V27_SCENARIO_TITLE_SIMPLE,
+  VERTICAL_SLICE_V28_READING_ORDER_REPLAY_MICRO,
   replayHeroSubtitle,
   replayHeroSubtitleTechnical,
 } from "../app/verticalSliceV0.js";
@@ -130,6 +132,19 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
 
   const hero = el("section", "glass-vs-hero glass-replay-vs-hero");
   hero.setAttribute("data-testid", "replay-vs-hero");
+  const heroMore = document.createElement("details");
+  heroMore.className = "glass-trust-technical glass-replay-hero-context";
+  heroMore.setAttribute("data-testid", "replay-hero-context");
+  const heroMoreSum = document.createElement("summary");
+  heroMoreSum.className = "glass-trust-technical-summary";
+  heroMoreSum.textContent = "About this view";
+  heroMore.append(
+    heroMoreSum,
+    el("p", "glass-vs-scenario-kicker", VERTICAL_SLICE_V27_SCENARIO_TITLE_SIMPLE),
+    el("p", "glass-vs-nickname", VERTICAL_SLICE_V27_SCENARIO_LABEL_SIMPLE),
+    el("p", "glass-vs-subtitle glass-vs-subtitle--context", VERTICAL_SLICE_V27_REPLAY_HERO_LEAD),
+    el("p", "glass-vs-scenario", VERTICAL_SLICE_V27_SCENARIO_BODY_SIMPLE),
+  );
   hero.append(
     el("h1", "glass-vs-title", "Glass — Vertical Slice v0"),
     el(
@@ -139,50 +154,50 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
         ? "Saved session replay (default)"
         : "Dev build — not the shipped static bundle",
     ),
-    el("p", "glass-vs-scenario-kicker", VERTICAL_SLICE_V27_SCENARIO_TITLE_SIMPLE),
-    el("p", "glass-vs-nickname", VERTICAL_SLICE_V27_SCENARIO_LABEL_SIMPLE),
     el("p", "glass-vs-subtitle", replayHeroSubtitle()),
-    el("p", "glass-vs-scenario", VERTICAL_SLICE_V27_SCENARIO_BODY_SIMPLE),
+    heroMore,
   );
 
   const flagshipCallout = el("section", "glass-flagship-callout");
   flagshipCallout.setAttribute("data-testid", "replay-flagship-callout");
+  const flagshipBundle = document.createElement("details");
+  flagshipBundle.className = "glass-flagship-callout-bundle";
+  flagshipBundle.setAttribute("data-testid", "replay-flagship-bundle");
+  const flagshipBundleSum = document.createElement("summary");
+  flagshipBundleSum.className = "glass-flagship-callout-bundle-summary";
+  flagshipBundleSum.textContent = "Flagship pack — full detail";
   const flagshipFraming = el("p", "glass-flagship-callout-framing", VERTICAL_SLICE_V27_FLAGSHIP_FRAMING_SIMPLE);
   flagshipFraming.setAttribute("data-testid", "replay-flagship-framing");
   const flagshipEasy = el("p", "glass-flagship-callout-easy", VERTICAL_SLICE_V26_FLAGSHIP_EASY_SUMMARY);
   flagshipEasy.setAttribute("data-testid", "replay-flagship-easy-summary");
-  const flagshipPathTechnical = document.createElement("details");
-  flagshipPathTechnical.className = "glass-trust-technical glass-flagship-technical-path";
-  flagshipPathTechnical.setAttribute("data-testid", "replay-flagship-path-technical");
-  const flagshipPathTechnicalSum = document.createElement("summary");
-  flagshipPathTechnicalSum.className = "glass-trust-technical-summary";
-  flagshipPathTechnicalSum.textContent = "Exact flagship path & product framing";
   const flagshipPathDoc = el("p", "glass-flagship-callout-body", GLASS_FLAGSHIP_CHAIN_DOC);
   const flagshipPathBody = el("p", "glass-flagship-callout-body", VERTICAL_SLICE_FLAGSHIP_V18_BODY);
-  flagshipPathTechnical.append(flagshipPathTechnicalSum, flagshipPathDoc, flagshipPathBody);
-  const flagshipTechnicalDetails = document.createElement("details");
-  flagshipTechnicalDetails.className = "glass-technical-details";
-  flagshipTechnicalDetails.setAttribute("data-testid", "replay-flagship-technical-details");
-  const flagshipTechnicalSummary = document.createElement("summary");
-  flagshipTechnicalSummary.className = "glass-technical-details-summary";
-  flagshipTechnicalSummary.textContent = "Fixture paths & developer auto-load";
   const flagshipTechnicalBody = el(
     "p",
     "glass-flagship-callout-meta",
     `Committed: tests/fixtures/canonical_scenarios_v15/${VERTICAL_SLICE_FLAGSHIP_V18_PACK_FILE} · session ${VERTICAL_SLICE_FLAGSHIP_V18_SESSION_ID}. Dev: npm run dev + ${VERTICAL_SLICE_FLAGSHIP_V18_DEV_QUERY_HINT}. ${replayHeroSubtitleTechnical()}`,
   );
-  flagshipTechnicalDetails.append(flagshipTechnicalSummary, flagshipTechnicalBody);
-  flagshipCallout.append(
-    el("h2", "glass-flagship-callout-title", VERTICAL_SLICE_V27_FLAGSHIP_TITLE_SIMPLE),
+  flagshipBundle.append(
+    flagshipBundleSum,
     el("p", "glass-flagship-callout-body", VERTICAL_SLICE_V27_FLAGSHIP_BODY_SIMPLE),
     flagshipFraming,
     flagshipEasy,
-    flagshipPathTechnical,
-    flagshipTechnicalDetails,
+    flagshipPathDoc,
+    flagshipPathBody,
+    flagshipTechnicalBody,
   );
+  flagshipCallout.append(el("h2", "glass-flagship-callout-title", VERTICAL_SLICE_V27_FLAGSHIP_TITLE_SIMPLE), flagshipBundle);
 
   const readingOrder = el("section", "glass-vs-reading-order");
-  readingOrder.setAttribute("data-testid", "replay-reading-order");
+  readingOrder.setAttribute("data-testid", "replay-reading-order-section");
+  const readingOrderWrap = document.createElement("details");
+  readingOrderWrap.className = "glass-vs-reading-order-wrap";
+  readingOrderWrap.setAttribute("data-testid", "replay-reading-order");
+  const readingOrderSum = document.createElement("summary");
+  readingOrderSum.className = "glass-vs-reading-order-summary";
+  readingOrderSum.textContent = "How to read";
+  const readingOrderMicro = el("p", "glass-vs-reading-order-body", VERTICAL_SLICE_V28_READING_ORDER_REPLAY_MICRO);
+  readingOrderMicro.setAttribute("data-testid", "replay-reading-order-micro");
   const readingOrderSimple = el("p", "glass-vs-reading-order-body", VERTICAL_SLICE_V27_READING_ORDER_REPLAY_SIMPLE);
   readingOrderSimple.setAttribute("data-testid", "replay-reading-order-simple");
   const readingOrderTechnical = document.createElement("details");
@@ -197,11 +212,8 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     VERTICAL_SLICE_V27_READING_ORDER_REPLAY_TECHNICAL,
   );
   readingOrderTechnical.append(readingOrderTechnicalSum, readingOrderTechnicalBody);
-  readingOrder.append(
-    el("h2", "glass-vs-reading-order-title", "How to read this surface"),
-    readingOrderSimple,
-    readingOrderTechnical,
-  );
+  readingOrderWrap.append(readingOrderSum, readingOrderMicro, readingOrderSimple, readingOrderTechnical);
+  readingOrder.append(readingOrderWrap);
 
   const liveNav = el("div", "glass-live-nav");
   liveNav.setAttribute("data-testid", "replay-live-nav");
@@ -209,7 +221,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   liveA.href = "?live=1";
   liveA.setAttribute("data-testid", "replay-link-live-session");
   liveA.className = "glass-live-nav-primary";
-  liveA.textContent = "Advanced: bounded live session (this machine)";
+  liveA.textContent = "Live session (advanced)";
   const liveNavDetails = document.createElement("details");
   liveNavDetails.className = "glass-technical-details glass-live-nav-details";
   liveNavDetails.setAttribute("data-testid", "replay-live-nav-technical");
@@ -225,28 +237,17 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   const easyEntry = el("section", "glass-easy-entry");
   easyEntry.setAttribute("data-testid", "replay-easy-entry");
   easyEntry.append(
-    el("h2", "glass-easy-entry-title", "Start here"),
-    el(
-      "p",
-      "glass-easy-entry-lead",
-      "Load the flagship demo pack to walk scene → what changed → evidence → claims → receipt — in one saved session file.",
-    ),
+    el("h2", "glass-easy-entry-title", "Try the flagship"),
+    el("p", "glass-easy-entry-lead", "Open file, drop a pack, or Load flagship demo (dev)."),
   );
   if (import.meta.env.DEV) {
     const flagshipDemo = document.createElement("a");
     flagshipDemo.href = `?fixture=flagship`;
     flagshipDemo.setAttribute("data-testid", "replay-easy-flagship-load");
-    flagshipDemo.className = "glass-easy-flagship-cta";
+    flagshipDemo.className = "glass-easy-flagship-cta glass-primary-flagship-cta";
     flagshipDemo.textContent = "Load flagship demo";
     easyEntry.append(flagshipDemo);
   }
-  easyEntry.append(
-    el(
-      "p",
-      "glass-easy-entry-secondary",
-      "Or use Open file with any .glass_pack from this checkout.",
-    ),
-  );
 
   const dropZone = el("div", "glass-drop-zone");
   dropZone.setAttribute("data-testid", "replay-drop-zone");
@@ -490,12 +491,12 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
 
   root.append(
     hero,
-    flagshipCallout,
-    readingOrder,
     easyEntry,
-    liveNav,
     dropZone,
     fileRow,
+    liveNav,
+    flagshipCallout,
+    readingOrder,
     errorBox,
     readingLine,
     metaSection,

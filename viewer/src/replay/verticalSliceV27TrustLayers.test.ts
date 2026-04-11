@@ -27,14 +27,14 @@ describe("Vertical Slice v27 — simple vs technical trust layers", () => {
     expect(tech?.textContent).toContain(GLASS_FLAGSHIP_CHAIN_ONE_LINER);
   });
 
-  it("replay: flagship default framing is simple; GLASS_FLAGSHIP_CHAIN_DOC is in technical path block", () => {
+  it("replay: flagship copy lives in bundled details; GLASS_FLAGSHIP_CHAIN_DOC + append-heavy remain", () => {
     const root = document.createElement("div");
     mountReplayShell(root);
     const framing = root.querySelector('[data-testid="replay-flagship-framing"]');
     expect(framing?.textContent).toBe(VERTICAL_SLICE_V27_FLAGSHIP_FRAMING_SIMPLE);
-    const pathTech = root.querySelector('[data-testid="replay-flagship-path-technical"]');
-    expect(pathTech?.textContent).toContain("append-heavy");
-    expect(pathTech?.textContent).toContain("Glass lets you move");
+    const bundle = root.querySelector('[data-testid="replay-flagship-bundle"]');
+    expect(bundle?.textContent).toContain("append-heavy");
+    expect(bundle?.textContent).toContain("Glass lets you move");
   });
 
   it("live: simple reading order + technical parity block", () => {

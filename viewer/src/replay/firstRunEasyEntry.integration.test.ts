@@ -18,8 +18,8 @@ describe("Vertical Slice v26 easy-first entry (bounded showcase)", () => {
     expect(primary?.textContent).not.toMatch(/127\.0\.0\.1/);
 
     expect(root.querySelector('[data-testid="replay-flagship-easy-summary"]')).not.toBeNull();
-    const technical = root.querySelector('[data-testid="replay-flagship-technical-details"]');
-    expect(technical?.textContent).toContain("?fixture=flagship");
+    const bundle = root.querySelector('[data-testid="replay-flagship-bundle"]');
+    expect(bundle?.textContent).toContain("?fixture=flagship");
   });
 
   it("replay: dev build exposes one-click flagship load", () => {

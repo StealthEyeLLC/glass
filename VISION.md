@@ -6,7 +6,7 @@
 - **Why it matters:** Operators need **exact** claims from **bounded** windows, not narrative filler.
 - **Flagship:** Tier B pack `canonical_v15_append_heavy` — depth on one path ([`docs/VERTICAL_SLICE_V0.md`](docs/VERTICAL_SLICE_V0.md)).
 - **Honest boundary:** **Freeze-candidate** only for that **showcase path** in-repo. **F-IPC**, durable production ingest, and Phase-6 **full topology runtime** are **not** proven here.
-- **First-run UX (v26–v27):** The default **bounded showcase** path leads with **what to open** (easy entry + optional dev **Load flagship demo**); **v27** adds a real **simple** vs **technical** split (plain scan order and trust-panel leads first; exact wording, ids, and scan limits in **`<details>`**). **Local** bridge URLs, query flags, and transport notes stay in **Advanced** / **`<details>`** — still honest that the product is **local/provisional**, not cloud-hosted.
+- **First-run UX (v26–v28):** The default **bounded showcase** path leads with **what to open** (easy entry + optional dev **Load flagship demo**); **v27** added a **simple** vs **technical** split; **v28** **reduces visible words** on first paint (short hero, **Try the flagship** before explainer blocks, collapsed reading order / flagship bundle / live intro). **Local** bridge URLs, query flags, and transport notes stay in **Advanced** / **`<details>`** — still honest that the product is **local/provisional**, not cloud-hosted.
 
 **Product hook (exact):** Glass turns bounded runtime activity into an inspectable claim chain: scene, change, evidence, receipt.
 

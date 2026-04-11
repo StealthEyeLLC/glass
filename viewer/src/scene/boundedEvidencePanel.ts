@@ -2,7 +2,7 @@
  * DOM rendering for Vertical Slice v9–v16 bounded evidence drilldown — thin view over pure model output.
  */
 
-import { VERTICAL_SLICE_V27_EVIDENCE_LEAD } from "../app/verticalSliceV0.js";
+import { VERTICAL_SLICE_V28_EVIDENCE_LEAD } from "../app/verticalSliceV0.js";
 import type { GlassSceneV0 } from "./glassSceneV0.js";
 import type { GlassEvent } from "../pack/types.js";
 import type { LiveVisualSpec } from "../live/liveVisualModel.js";
@@ -87,7 +87,7 @@ export function renderBoundedEvidenceInto(
   const lead = document.createElement("p");
   lead.className = "glass-bounded-evidence-lead";
   lead.setAttribute("data-testid", "glass-bounded-evidence-lead");
-  lead.textContent = VERTICAL_SLICE_V27_EVIDENCE_LEAD;
+  lead.textContent = VERTICAL_SLICE_V28_EVIDENCE_LEAD;
   trust.appendChild(lead);
 
   const authorityDetails = document.createElement("details");

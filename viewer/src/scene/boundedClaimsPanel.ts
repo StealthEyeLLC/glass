@@ -2,7 +2,7 @@
  * DOM for Vertical Slice v13–v16 bounded claims + receipt — thin view over pure model output.
  */
 
-import { VERTICAL_SLICE_V27_RECEIPT_EMPTY_SIMPLE } from "../app/verticalSliceV0.js";
+import { VERTICAL_SLICE_V28_RECEIPT_EMPTY } from "../app/verticalSliceV0.js";
 import {
   formatBoundedClaimChipStatusShort,
   type BoundedClaimReceiptV0,
@@ -116,7 +116,7 @@ export function renderBoundedClaimReceiptInto(
     const empty = document.createElement("p");
     empty.className = "glass-bounded-claim-receipt-empty";
     empty.setAttribute("data-testid", `${options.testIdPrefix}-bounded-claim-receipt-empty`);
-    empty.textContent = VERTICAL_SLICE_V27_RECEIPT_EMPTY_SIMPLE;
+    empty.textContent = VERTICAL_SLICE_V28_RECEIPT_EMPTY;
     container.appendChild(empty);
     if (options.emptySupplementLine) {
       const sup = document.createElement("p");

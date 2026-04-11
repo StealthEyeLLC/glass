@@ -194,6 +194,11 @@
   background: #4338ca;
 }
 
+/* v28 — primary flagship CTA (same base as dev load; slightly emphasized) */
+.glass-easy-flagship-cta.glass-primary-flagship-cta {
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.12);
+}
+
 .glass-easy-entry-secondary {
   margin: 0;
   font-size: 0.78rem;

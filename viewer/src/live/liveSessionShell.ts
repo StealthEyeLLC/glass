@@ -103,12 +103,14 @@ import {
   VERTICAL_SLICE_FLAGSHIP_V18_TITLE,
   VERTICAL_SLICE_V27_FLAGSHIP_FRAMING_SIMPLE,
   VERTICAL_SLICE_V27_LIVE_FLAGSHIP_NOTE_SIMPLE,
+  VERTICAL_SLICE_V27_LIVE_HERO_LEAD,
   VERTICAL_SLICE_V27_READING_ORDER_LIVE_SIMPLE,
   VERTICAL_SLICE_V27_READING_ORDER_LIVE_TECHNICAL,
   VERTICAL_SLICE_V27_SCENARIO_BODY_SIMPLE,
   VERTICAL_SLICE_V27_SCENARIO_LABEL_SIMPLE,
   VERTICAL_SLICE_V27_SCENARIO_TITLE_SIMPLE,
   VERTICAL_SLICE_V26_LIVE_INTRO_HONEST,
+  VERTICAL_SLICE_V28_READING_ORDER_LIVE_MICRO,
   liveHeroSubtitle,
 } from "../app/verticalSliceV0.js";
 import "./liveSessionShell.css";
@@ -162,65 +164,74 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
 
   const hero = el("section", "glass-vs-hero glass-live-vs-hero");
   hero.setAttribute("data-testid", "live-vs-hero");
+  const liveHeroMore = document.createElement("details");
+  liveHeroMore.className = "glass-live-hero-context";
+  liveHeroMore.setAttribute("data-testid", "live-hero-context");
+  const liveHeroMoreSum = document.createElement("summary");
+  liveHeroMoreSum.className = "glass-trust-technical-summary";
+  liveHeroMoreSum.textContent = "About live mode";
+  const liveFlagshipNote = el("p", "glass-flagship-live-note", VERTICAL_SLICE_V27_LIVE_FLAGSHIP_NOTE_SIMPLE);
+  liveFlagshipNote.setAttribute("data-testid", "live-flagship-note");
+  const liveFraming = el("p", "glass-flagship-live-framing", VERTICAL_SLICE_V27_FLAGSHIP_FRAMING_SIMPLE);
+  liveFraming.setAttribute("data-testid", "live-flagship-framing");
+  const noteTech = document.createElement("details");
+  noteTech.className = "glass-trust-technical glass-flagship-live-note-technical";
+  noteTech.setAttribute("data-testid", "live-flagship-note-technical");
+  const noteTechSum = document.createElement("summary");
+  noteTechSum.className = "glass-trust-technical-summary";
+  noteTechSum.textContent = "Flagship session (exact)";
+  noteTech.append(
+    noteTechSum,
+    el(
+      "p",
+      "glass-flagship-live-note-body",
+      `${VERTICAL_SLICE_FLAGSHIP_V18_TITLE} (replay): ${VERTICAL_SLICE_FLAGSHIP_V18_BODY}`,
+    ),
+  );
+  const framingTech = document.createElement("details");
+  framingTech.className = "glass-trust-technical glass-flagship-live-framing-technical";
+  framingTech.setAttribute("data-testid", "live-flagship-framing-technical");
+  const framingTechSum = document.createElement("summary");
+  framingTechSum.className = "glass-trust-technical-summary";
+  framingTechSum.textContent = "Exact product framing";
+  framingTech.append(framingTechSum, el("p", "glass-flagship-live-framing-body", GLASS_FLAGSHIP_CHAIN_DOC));
+  const liveReadingWrap = document.createElement("details");
+  liveReadingWrap.setAttribute("data-testid", "live-reading-order");
+  const liveReadingSum = document.createElement("summary");
+  liveReadingSum.className = "glass-vs-reading-order-summary";
+  liveReadingSum.textContent = "How to read";
+  const liveReadingMicro = el("p", "glass-vs-reading-order-live", VERTICAL_SLICE_V28_READING_ORDER_LIVE_MICRO);
+  liveReadingMicro.setAttribute("data-testid", "live-reading-order-micro");
+  const liveReadingSimple = el("p", "glass-vs-reading-order-live", VERTICAL_SLICE_V27_READING_ORDER_LIVE_SIMPLE);
+  liveReadingSimple.setAttribute("data-testid", "live-reading-order-simple");
+  const liveReadingTech = document.createElement("details");
+  liveReadingTech.className = "glass-trust-technical glass-vs-reading-order-live-technical";
+  liveReadingTech.setAttribute("data-testid", "live-reading-order-technical");
+  const liveReadingTechSum = document.createElement("summary");
+  liveReadingTechSum.className = "glass-trust-technical-summary";
+  liveReadingTechSum.textContent = "Exact scan order & limits";
+  liveReadingTech.append(
+    liveReadingTechSum,
+    el("p", "glass-vs-reading-order-live glass-vs-reading-order-live--technical", VERTICAL_SLICE_V27_READING_ORDER_LIVE_TECHNICAL),
+  );
+  liveReadingWrap.append(liveReadingSum, liveReadingMicro, liveReadingSimple, liveReadingTech);
+  liveHeroMore.append(
+    liveHeroMoreSum,
+    el("p", "glass-vs-scenario-kicker", `${VERTICAL_SLICE_V27_SCENARIO_TITLE_SIMPLE} · live`),
+    el("p", "glass-vs-nickname", VERTICAL_SLICE_V27_SCENARIO_LABEL_SIMPLE),
+    el("p", "glass-vs-subtitle glass-vs-subtitle--context", VERTICAL_SLICE_V27_LIVE_HERO_LEAD),
+    el("p", "glass-vs-scenario", VERTICAL_SLICE_V27_SCENARIO_BODY_SIMPLE),
+    liveFlagshipNote,
+    noteTech,
+    liveFraming,
+    framingTech,
+    liveReadingWrap,
+  );
   hero.append(
     el("h1", "glass-vs-title", "Glass — Vertical Slice v0"),
     el("p", "glass-vs-badge", "Live session (this machine)"),
-    el("p", "glass-vs-scenario-kicker", `${VERTICAL_SLICE_V27_SCENARIO_TITLE_SIMPLE} · live`),
-    el("p", "glass-vs-nickname", VERTICAL_SLICE_V27_SCENARIO_LABEL_SIMPLE),
     el("p", "glass-vs-subtitle", liveHeroSubtitle()),
-    el("p", "glass-vs-scenario", VERTICAL_SLICE_V27_SCENARIO_BODY_SIMPLE),
-    (() => {
-      const p = el("p", "glass-flagship-live-note", VERTICAL_SLICE_V27_LIVE_FLAGSHIP_NOTE_SIMPLE);
-      p.setAttribute("data-testid", "live-flagship-note");
-      return p;
-    })(),
-    (() => {
-      const noteTech = document.createElement("details");
-      noteTech.className = "glass-trust-technical glass-flagship-live-note-technical";
-      noteTech.setAttribute("data-testid", "live-flagship-note-technical");
-      const noteTechSum = document.createElement("summary");
-      noteTechSum.className = "glass-trust-technical-summary";
-      noteTechSum.textContent = "Flagship session (exact)";
-      const noteTechBody = el(
-        "p",
-        "glass-flagship-live-note-body",
-        `${VERTICAL_SLICE_FLAGSHIP_V18_TITLE} (replay): ${VERTICAL_SLICE_FLAGSHIP_V18_BODY}`,
-      );
-      noteTech.append(noteTechSum, noteTechBody);
-      return noteTech;
-    })(),
-    (() => {
-      const p = el("p", "glass-flagship-live-framing", VERTICAL_SLICE_V27_FLAGSHIP_FRAMING_SIMPLE);
-      p.setAttribute("data-testid", "live-flagship-framing");
-      return p;
-    })(),
-    (() => {
-      const framingTech = document.createElement("details");
-      framingTech.className = "glass-trust-technical glass-flagship-live-framing-technical";
-      framingTech.setAttribute("data-testid", "live-flagship-framing-technical");
-      const framingTechSum = document.createElement("summary");
-      framingTechSum.className = "glass-trust-technical-summary";
-      framingTechSum.textContent = "Exact product framing";
-      const framingTechBody = el("p", "glass-flagship-live-framing-body", GLASS_FLAGSHIP_CHAIN_DOC);
-      framingTech.append(framingTechSum, framingTechBody);
-      return framingTech;
-    })(),
-    (() => {
-      const wrap = el("div", "glass-vs-reading-order-live-wrap");
-      wrap.setAttribute("data-testid", "live-reading-order");
-      const simple = el("p", "glass-vs-reading-order-live", VERTICAL_SLICE_V27_READING_ORDER_LIVE_SIMPLE);
-      simple.setAttribute("data-testid", "live-reading-order-simple");
-      const tech = document.createElement("details");
-      tech.className = "glass-trust-technical glass-vs-reading-order-live-technical";
-      tech.setAttribute("data-testid", "live-reading-order-technical");
-      const techSum = document.createElement("summary");
-      techSum.className = "glass-trust-technical-summary";
-      techSum.textContent = "Exact scan order & limits";
-      const techBody = el("p", "glass-vs-reading-order-live glass-vs-reading-order-live--technical", VERTICAL_SLICE_V27_READING_ORDER_LIVE_TECHNICAL);
-      tech.append(techSum, techBody);
-      wrap.append(simple, tech);
-      return wrap;
-    })(),
+    liveHeroMore,
   );
 
   const nav = el("div", "glass-live-nav");
@@ -230,8 +241,16 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   back.textContent = "← Back to bounded replay";
   nav.append(back);
 
-  const liveIntro = el("p", "glass-live-easy-intro", VERTICAL_SLICE_V26_LIVE_INTRO_HONEST);
+  const liveIntro = document.createElement("details");
+  liveIntro.className = "glass-live-easy-intro-wrap";
   liveIntro.setAttribute("data-testid", "live-easy-intro");
+  const liveIntroSum = document.createElement("summary");
+  liveIntroSum.className = "glass-live-easy-intro-summary";
+  liveIntroSum.textContent = "Local-only (not cloud)";
+  liveIntro.append(
+    liveIntroSum,
+    el("p", "glass-live-easy-intro", VERTICAL_SLICE_V26_LIVE_INTRO_HONEST),
+  );
 
   const transportDetails = document.createElement("details");
   transportDetails.className = "glass-technical-details";

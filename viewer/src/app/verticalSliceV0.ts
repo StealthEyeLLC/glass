@@ -62,13 +62,33 @@ export const VERTICAL_SLICE_V26_REPLAY_HERO_LEAD =
 export const VERTICAL_SLICE_V27_REPLAY_HERO_LEAD =
   "Open the flagship demo pack to walk scene → what changed → evidence → claim → receipt. Other packs in the repo are for breadth checks; you can ignore them for a first read.";
 
+/** Vertical Slice v28 — first visible hero line only (one short sentence). */
+export const VERTICAL_SLICE_V28_REPLAY_HERO_LEAD = "Load the flagship pack below.";
+
+/** Vertical Slice v28 — reading-order hint inside collapsed details (not the v27 paragraph on screen). */
+export const VERTICAL_SLICE_V28_READING_ORDER_REPLAY_MICRO =
+  "Scene → change → evidence → claims → receipt → time.";
+
+/** Vertical Slice v28 — live reading-order micro (inside collapsed details). */
+export const VERTICAL_SLICE_V28_READING_ORDER_LIVE_MICRO =
+  "Scene → evidence → claims → receipt → time.";
+
+/** Vertical Slice v28 — live hero: one short line; longer copy in details. */
+export const VERTICAL_SLICE_V28_LIVE_HERO_LEAD = "Same panels as replay — connect below.";
+
+/** Vertical Slice v28 — evidence panel lead (minimum words). */
+export const VERTICAL_SLICE_V28_EVIDENCE_LEAD = "From this step — not the whole machine.";
+
+/** Vertical Slice v28 — receipt empty (minimum words). */
+export const VERTICAL_SLICE_V28_RECEIPT_EMPTY = "Pick a claim or story card.";
+
 /** Checkout-relative paths, CI roles, and dev auto-load — for advanced/docs only. */
 export function replayHeroSubtitleTechnical(): string {
   return "Minimal smoke: tests/fixtures/vertical_slice_v0/ Tier B (3 events) for fast CI. Canonical suite packs under tests/fixtures/canonical_scenarios_v15/ prove breadth (replace, calm, file-heavy). Development: npm run dev with ?fixture=flagship loads the flagship bytes without picking a path from disk.";
 }
 
 export function replayHeroSubtitle(): string {
-  return VERTICAL_SLICE_V27_REPLAY_HERO_LEAD;
+  return VERTICAL_SLICE_V28_REPLAY_HERO_LEAD;
 }
 
 /** Flagship callout — one sentence for scanning; no npm/query in the primary line. */
@@ -84,7 +104,7 @@ export const VERTICAL_SLICE_V26_LIVE_INTRO_HONEST =
   "Live mode runs in this browser against a bridge on your machine — not a hosted Glass service. Expand Connection settings when you have a loopback URL, bearer token, and session id; bounded replay (default) needs no bridge.";
 
 export function liveHeroSubtitle(): string {
-  return VERTICAL_SLICE_V27_LIVE_HERO_LEAD;
+  return VERTICAL_SLICE_V28_LIVE_HERO_LEAD;
 }
 
 export const VERTICAL_SLICE_V27_LIVE_HERO_LEAD =
@@ -131,9 +151,8 @@ export const VERTICAL_SLICE_V20_READING_ORDER_LIVE = VERTICAL_SLICE_V27_READING_
 export const RECEIPT_EMPTY_SUPPLEMENT_AFTER_TEMPORAL_BASELINE =
   "The compare baseline just moved — scrub or play a step to refresh suggested highlights, or pick a claim explicitly.";
 
-/** Receipt panel — empty state (simple layer). */
-export const VERTICAL_SLICE_V27_RECEIPT_EMPTY_SIMPLE =
-  "No claim receipt yet — pick a claim chip or a story card.";
+/** Receipt panel — empty state (simple layer); v28 short wording. */
+export const VERTICAL_SLICE_V27_RECEIPT_EMPTY_SIMPLE = VERTICAL_SLICE_V28_RECEIPT_EMPTY;
 
 /** Evidence panel — first line (simple layer). */
 export const VERTICAL_SLICE_V27_EVIDENCE_LEAD =

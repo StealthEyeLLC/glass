@@ -73,7 +73,7 @@ describe("static replay shell", () => {
     expect(root.textContent).toContain("inspectable claim chain");
     expect(root.querySelector('[data-testid="replay-reading-order"]')).toBeTruthy();
     expect(root.querySelector('[data-testid="replay-reading-order-simple"]')).toBeTruthy();
-    expect(root.textContent).toContain("How to read this surface");
+    expect(root.textContent).toMatch(/How to read/i);
     expect(root.textContent).toContain("canonical_v15_append_heavy");
     expect(root.querySelector(".glass-drop-zone")).toBeTruthy();
     expect(root.querySelector('[data-testid="replay-open-file"]')).toBeTruthy();

@@ -20,10 +20,10 @@ describe("verticalSliceV0", () => {
     expect(VERTICAL_SLICE_SCENARIO_TITLE.length).toBeGreaterThan(4);
     expect(VERTICAL_SLICE_SCENARIO_LABEL.length).toBeGreaterThan(4);
     expect(replayHeroSubtitle()).toContain("flagship");
-    expect(replayHeroSubtitle()).toMatch(/walk scene|Open the flagship/i);
+    expect(replayHeroSubtitle()).toMatch(/below|Load the flagship/i);
     expect(replayHeroSubtitleTechnical()).toContain("vertical_slice_v0");
     expect(replayHeroSubtitleTechnical()).toContain("?fixture=flagship");
-    expect(liveHeroSubtitle()).toContain("Same surfaces");
+    expect(liveHeroSubtitle()).toContain("Same panels");
     expect(VERTICAL_SLICE_FLAGSHIP_V18_SESSION_ID).toBe("canonical_v15_append_heavy");
     expect(VERTICAL_SLICE_V20_READING_ORDER_REPLAY).toContain("temporal lens");
     expect(VERTICAL_SLICE_V20_READING_ORDER_REPLAY).toContain(GLASS_FLAGSHIP_CHAIN_ONE_LINER);

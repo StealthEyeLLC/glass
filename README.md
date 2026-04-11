@@ -24,8 +24,8 @@ Live: WS tail and HTTP snapshot stay **separate**. Replay: index-ordered prefix;
 **Easy path (what to do):**
 
 1. Run the viewer locally (`cd viewer`, then `npm ci` and `npm run dev` — see **Verify bootstrap** below).
-2. In the replay shell, use **Start here** → **Load flagship demo** (dev build only) **or** **Open file** and choose `tests/fixtures/canonical_scenarios_v15/canonical_v15_append_heavy.glass_pack`.
-3. Read **How to read this surface** (plain-language scan first; open **Exact scan order & limits** for technical wording); then top-to-bottom: **Scene** → **Evidence** → **Story cards** → **Claims** → receipt → **Time context**.
+2. In the replay shell, use **Try the flagship** → **Load flagship demo** (dev only) **or** **Open file** / drop a pack — file `tests/fixtures/canonical_scenarios_v15/canonical_v15_append_heavy.glass_pack`.
+3. Expand **How to read** when you want the scan tip; scroll the page top-to-bottom: **Scene** → **Evidence** → **Story cards** → **Claims** → receipt → **Time context** (longer wording stays under **Technical** / **details**).
 
 **Technical (how it loads):** Static **`dist/`** does not auto-load fixtures — use **Open file** with the committed pack. **Dev-only:** the shell can load the same bytes via `?fixture=flagship` ([details](docs/VERTICAL_SLICE_V0.md)). Live **`?live=1`** is optional and documented in the UI behind **Advanced** / collapsed sections — still **local** bridge semantics, not cloud-hosted Glass.
 
