@@ -36,10 +36,12 @@ export async function paintLiveVisualSurface(
 ): Promise<PaintLiveVisualSurfaceResult> {
   const lay =
     layout ?? { widthCss: scene.bounds.widthCss, heightCss: scene.bounds.heightCss };
-  const spec = liveVisualSpecFromScene(scene);
   const sel = selection?.selectedSelectionId ?? null;
+  const spec = liveVisualSpecFromScene(scene, sel);
   if (webGpuBundle) {
-    const okGpu = await renderLiveVisualWebGpuFrame(canvasWebGpu, scene, lay, webGpuBundle);
+    const okGpu = await renderLiveVisualWebGpuFrame(canvasWebGpu, scene, lay, webGpuBundle, {
+      focusedSelectionId: sel,
+    });
     if (okGpu) {
       const okText = renderLiveVisualTextOverlayOnCanvas(canvasTextOverlay, spec, lay, {
         scene,

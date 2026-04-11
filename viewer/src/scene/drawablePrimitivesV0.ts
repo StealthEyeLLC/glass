@@ -108,7 +108,10 @@ export type DrawablePrimitiveSemanticTag =
   | "emphasis_replay_cursor_pulse_overlay"
   | "emphasis_resync_flash_overlay"
   | "emphasis_system_flash_overlay"
-  | "emphasis_state_rail_attention_overlay";
+  | "emphasis_state_rail_attention_overlay"
+  /** Vertical Slice v6 — bounded focus highlight strokes (grouping, not graph edges). */
+  | "focus_region_selection_frame"
+  | "focus_cluster_selection_frame";
 
 export type DrawablePrimitiveKind = "fill_rect" | "stroke_rect";
 
@@ -191,6 +194,14 @@ export function edgeFrameTagsForStroke(
       "composition_bounded_scene_frame_bottom",
       "composition_bounded_scene_frame_left",
       "composition_bounded_scene_frame_right",
+    ];
+  }
+  if (tag === "focus_region_selection_frame" || tag === "focus_cluster_selection_frame") {
+    return [
+      "band_frame_top",
+      "band_frame_bottom",
+      "band_frame_left",
+      "band_frame_right",
     ];
   }
   return ["band_frame_top", "band_frame_bottom", "band_frame_left", "band_frame_right"];

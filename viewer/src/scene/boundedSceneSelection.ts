@@ -1,9 +1,10 @@
 /**
- * Vertical Slice v5 — bounded scene selection ids + hit targets + inspector copy.
+ * Vertical Slice v5–v6 — bounded scene selection ids + hit targets + inspector copy (+ focus mode).
  * Pure, DOM-free, renderer-agnostic (uses the same DrawablePrimitive stream as Canvas/WebGPU).
  */
 
 import type { LiveVisualSpec } from "../live/liveVisualModel.js";
+import { computeBoundedSceneFocus } from "./boundedSceneFocus.js";
 import {
   LIVE_VISUAL_ACTOR_CLUSTER_STRIP_LAYOUT,
   LIVE_VISUAL_STATE_RAIL_LAYOUT,
@@ -240,6 +241,9 @@ export function buildBoundedSelectionTextOverlayHitTargets(
   if (spec.boundedEmphasisSummaryLine) {
     pushLine(makeId("overlay", "emphasis_summary"));
   }
+  if (spec.boundedFocusCaptionLine) {
+    pushLine(makeId("overlay", "focus_caption"));
+  }
   if (spec.actorClusterSummaryLine) {
     pushLine(makeId("overlay", "cluster_summary"));
   }
@@ -280,9 +284,10 @@ export function mergeBoundedSelectionHitTargets(
 export function buildBoundedSelectionHitTargetsForScene(
   scene: GlassSceneV0,
   layout?: Pick<SceneBounds, "widthCss" | "heightCss">,
+  focusedSelectionId?: string | null,
 ): BoundedSelectionHitTarget[] {
-  const primitives = sceneToDrawablePrimitives(scene, layout);
-  const spec = liveVisualSpecFromScene(scene);
+  const primitives = sceneToDrawablePrimitives(scene, layout, { focusedSelectionId });
+  const spec = liveVisualSpecFromScene(scene, focusedSelectionId);
   const w = layout?.widthCss ?? scene.bounds.widthCss;
   const h = layout?.heightCss ?? scene.bounds.heightCss;
   const geo = buildBoundedSelectionHitTargetsFromPrimitives(scene, primitives);
@@ -345,6 +350,13 @@ export function buildBoundedInspectorLines(
   }
 
   const lines: string[] = [`Selected: ${selectedId}`];
+  const focus = computeBoundedSceneFocus(scene, selectedId);
+  if (focus.active) {
+    lines.push(`Focus mode: ${focus.provenanceFocusLine ?? focus.captionLine ?? "(active)"}`);
+    if (focus.relatedRegionIds.length > 0) {
+      lines.push(`Related regions (grouping only): ${focus.relatedRegionIds.join(", ")}`);
+    }
+  }
 
   const pushHonesty = () => {
     lines.push(
@@ -461,6 +473,9 @@ export function buildBoundedInspectorLines(
     }
     if (selectedId.endsWith(":http_reconcile_line")) {
       lines.push(`HTTP reconcile: ${spec.reconcileSummary ?? "—"}`);
+    }
+    if (selectedId.endsWith(":focus_caption")) {
+      lines.push(`Bounded focus caption: ${spec.boundedFocusCaptionLine ?? "—"}`);
     }
     pushHonesty();
     return lines;

@@ -38,6 +38,7 @@ const baseInput = {
   },
   deltaWireCheckbox: true,
   sessionDeltaWireV0FromCaps: true,
+  boundedFocusSummary: null as string | null,
 };
 
 describe("deriveRendererMode", () => {
@@ -94,6 +95,17 @@ describe("buildLiveVisualProvenanceStrip", () => {
     expect(s.lastReconcile?.status).toBe("ok");
     expect(s.deltaWire.checkbox).toBe(true);
     expect(s.deltaWire.serverSessionDeltaWireV0).toBe(true);
+    expect(s.boundedFocusSummary).toBeNull();
+  });
+
+  it("includes bounded focus summary on strip and formatted text when set", () => {
+    const s = buildLiveVisualProvenanceStrip({
+      ...baseInput,
+      boundedFocusSummary: "primary_wire · reg_x",
+    });
+    expect(s.boundedFocusSummary).toBe("primary_wire · reg_x");
+    const t = formatLiveVisualProvenanceStripText(s);
+    expect(t).toContain("focus=primary_wire · reg_x");
   });
 
   it("uses none_yet when bounded_snapshot origin missing", () => {

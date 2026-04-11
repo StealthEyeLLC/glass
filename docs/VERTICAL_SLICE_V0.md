@@ -1,6 +1,19 @@
-# Glass Vertical Slice v0 / v1 / v2 / v3 / v4 / v5
+# Glass Vertical Slice v0 / v1 / v2 / v3 / v4 / v5 / v6
 
-**Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier). **Vertical Slice v1** added a richer bounded scene; **v2** adds **bounded actor/sample clusters** from real event kinds only; **v3** adds **bounded regions** (membership + compositional drawable layers); **v4** adds **bounded scene emphasis** and **pulse/flash overlays** driven only by real basis changes between compiles; **v5** adds **bounded scene selection** and **inspector coupling** (same ids + hit map for replay and live) — still **no** wire contract changes.
+**Id:** `glass.vertical_slice.v0` (documentation and viewer copy only — not a wire identifier). **Vertical Slice v1** added a richer bounded scene; **v2** adds **bounded actor/sample clusters** from real event kinds only; **v3** adds **bounded regions** (membership + compositional drawable layers); **v4** adds **bounded scene emphasis** and **pulse/flash overlays** driven only by real basis changes between compiles; **v5** adds **bounded scene selection** and **inspector coupling** (same ids + hit map for replay and live); **v6** adds **bounded focus mode** — selection reshapes **dim/emphasis** and overlay/provenance copy from **grouping-only** scene facts — still **no** wire contract changes.
+
+## Vertical Slice v6 (bounded focus mode)
+
+**What it adds (viewer-only):**
+
+- **`boundedSceneFocus.ts`:** **`computeBoundedSceneFocus(scene, selectionId)`** → **`BoundedSceneFocusV0`** (`glass.focus.v0`) — pure, deterministic; **only** existing regions, clusters, and selection-id patterns (no graph traversal, no inferred edges). **`dimHexColor`** + **`applyBoundedSceneFocusToPrimitives`** adjust **fill** tints and optional **selection frame** strokes on related bands; non-focused vertical bands are **dimmed**, not removed.
+- **`LiveVisualSpec.boundedFocusCaptionLine`** and provenance **`boundedFocusSummary`** — same focus vocabulary on Canvas overlay (`focus: …` line) and **`formatLiveVisualProvenanceStripText`** (` · focus=…` when active).
+- **`sceneToDrawablePrimitives(…, { focusedSelectionId })`** and **`liveVisualSpecFromScene(…, focusedSelectionId?)`** — replay and live **share** the path; WebGPU consumes the same primitive list (honest fallback: if a future effect cannot be expressed in WebGPU, keep Canvas overlay as the source of caption text — **no** fake GPU-only topology).
+- **Shells:** **`replayOnlyShell`** / **`liveSessionShell`** already drive selection; v6 **refreshes** inspector and scene paint with **focus-aware** spec + primitives.
+
+**What it does *not* imply:** drill-down graph, hidden navigation, edges between processes, or “related” structures beyond **explicit** region membership and **known** cluster/rail/wire roles in Scene v0. **F-IPC transport** remains **provisional**. This is still **not** the Phase-6 full runtime scene.
+
+**Next major step:** durable push ingest and/or additive live-era HTTP/WS fields **without** breaking frozen bounded-era HTTP — see `docs/IMPLEMENTATION_STATUS.md`. Focus mode stays bounded to the **current** compile; it does **not** replace durable ingest or an eventual honest topology surface when data exists.
 
 ## Vertical Slice v5 (bounded selection + inspector)
 
@@ -105,6 +118,6 @@ A single **bounded** demo path through the real Glass v0 substrate: **Tier B sta
 1. **Replay (default):** same as above; the fixture is optional but is the **documented** known-good pack.
 2. **Live:** append **`?live=1`**; connect to a loopback bridge with token + session id as documented in `README.md` and `docs/IMPLEMENTATION_STATUS.md`.
 
-## Next major step
+## Next major step (unchanged)
 
-Durable push ingest and/or additive live-era HTTP/WS fields **without** breaking frozen bounded-era HTTP — see `docs/IMPLEMENTATION_STATUS.md` “Next engineering steps”. Selection/inspector stay bounded to the current compile; they do **not** replace the need for durable ingest or a future honest topology surface when data exists.
+Durable push ingest and/or additive live-era HTTP/WS fields **without** breaking frozen bounded-era HTTP — see `docs/IMPLEMENTATION_STATUS.md` “Next engineering steps”. Selection, inspector, and **v6 focus** stay bounded to the current compile; they do **not** replace the need for durable ingest or a future honest topology surface when data exists.

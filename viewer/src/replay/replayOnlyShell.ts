@@ -75,6 +75,9 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
 
   let state = initialReplayState();
   let playTimer: ReturnType<typeof setInterval> | null = null;
+  let lastReplayEmphasis: BoundedSceneEmphasisV0 | null = null;
+  let lastReplayScene: GlassSceneV0 | null = null;
+  let selectedBoundedSelectionId: string | null = null;
 
   const hero = el("section", "glass-vs-hero glass-replay-vs-hero");
   hero.setAttribute("data-testid", "replay-vs-hero");
@@ -183,7 +186,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     const x = ev.clientX - rect.left;
     const y = ev.clientY - rect.top;
     const lay = { widthCss: scene.bounds.widthCss, heightCss: scene.bounds.heightCss };
-    const targets = buildBoundedSelectionHitTargetsForScene(scene, lay);
+    const targets = buildBoundedSelectionHitTargetsForScene(scene, lay, selectedBoundedSelectionId);
     const id = hitTestBoundedSelection(x, y, targets);
     if (id === selectedBoundedSelectionId) {
       selectedBoundedSelectionId = null;
@@ -212,7 +215,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   const boundedInspectorTitle = el(
     "h4",
     "glass-bounded-inspector-title",
-    "Bounded scene selection (Vertical Slice v5)",
+    "Bounded scene selection (Vertical Slice v6)",
   );
   const boundedInspectorPre = el("pre", "glass-bounded-inspector");
   boundedInspectorPre.setAttribute("data-testid", "replay-bounded-inspector");
@@ -261,17 +264,13 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     }
   }
 
-  let lastReplayEmphasis: BoundedSceneEmphasisV0 | null = null;
-  let lastReplayScene: GlassSceneV0 | null = null;
-  let selectedBoundedSelectionId: string | null = null;
-
   function refreshBoundedInspectorReplay(): void {
     if (!lastReplayScene) {
       boundedInspectorPre.textContent = "";
       boundedInspectorPre.removeAttribute("data-selected");
       return;
     }
-    const spec = liveVisualSpecFromScene(lastReplayScene);
+    const spec = liveVisualSpecFromScene(lastReplayScene, selectedBoundedSelectionId);
     boundedInspectorPre.textContent = buildBoundedInspectorLines(
       lastReplayScene,
       spec,

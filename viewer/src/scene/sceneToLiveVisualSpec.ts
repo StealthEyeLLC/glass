@@ -4,12 +4,17 @@
 
 import type { LiveVisualSpec } from "../live/liveVisualModel.js";
 import { formatActorClusterSummaryLine } from "./boundedActorClusters.js";
+import { computeBoundedSceneFocus } from "./boundedSceneFocus.js";
 import { formatBoundedEmphasisSummary } from "./boundedSceneEmphasis.js";
 import { formatBoundedCompositionCaption } from "./boundedSceneRegions.js";
 import type { GlassSceneV0 } from "./glassSceneV0.js";
 
 /** Maps a bounded scene to the strip spec consumed by `liveVisualCanvas` / `liveVisualWebGpu`. */
-export function liveVisualSpecFromScene(scene: GlassSceneV0): LiveVisualSpec {
+export function liveVisualSpecFromScene(
+  scene: GlassSceneV0,
+  focusedSelectionId?: string | null,
+): LiveVisualSpec {
+  const focus = computeBoundedSceneFocus(scene, focusedSelectionId ?? null);
   return {
     mode: scene.wireMode,
     eventTailCount: scene.boundedSampleCount,
@@ -35,5 +40,6 @@ export function liveVisualSpecFromScene(scene: GlassSceneV0): LiveVisualSpec {
       const s = formatBoundedEmphasisSummary(scene.emphasis);
       return s.length > 0 ? s : null;
     })(),
+    boundedFocusCaptionLine: focus.captionLine,
   };
 }

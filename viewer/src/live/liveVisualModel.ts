@@ -40,6 +40,8 @@ export interface LiveVisualSpec {
   boundedCompositionCaption: string | null;
   /** Vertical Slice v4 — bounded pulse/flash summary (from `scene.emphasis`; not topology). */
   boundedEmphasisSummaryLine: string | null;
+  /** Vertical Slice v6 — bounded focus caption from selection (grouping-only; not graph navigation). */
+  boundedFocusCaptionLine: string | null;
 }
 
 /** Fill colors for primary band (deterministic, sRGB hex). */
@@ -92,6 +94,7 @@ export function buildLiveVisualSpec(
     actorClusterSummaryLine: null as string | null,
     boundedCompositionCaption: null as string | null,
     boundedEmphasisSummaryLine: null as string | null,
+    boundedFocusCaptionLine: null as string | null,
   };
 
   if (model.lastWarning) {

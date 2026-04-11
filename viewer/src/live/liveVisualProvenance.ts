@@ -25,6 +25,8 @@ export interface LiveVisualProvenanceStrip {
   wireUpdateMode: LiveVisualMode;
   /** `bounded_snapshot.snapshot_origin` when present; otherwise honest placeholder. */
   snapshotOrigin: string;
+  /** Vertical Slice v6 — bounded focus summary (grouping-only; not graph). */
+  boundedFocusSummary: string | null;
   /** Client checkbox vs server capability from preflight. */
   deltaWire: { checkbox: boolean; serverSessionDeltaWireV0: boolean | undefined };
   /** Last HTTP reconcile; null means none yet. */
@@ -42,6 +44,8 @@ export interface LiveVisualProvenanceInput {
   deltaWireCheckbox: boolean;
   /** From `GET /capabilities` `websocket.session_delta_wire_v0`; `undefined` if not fetched. */
   sessionDeltaWireV0FromCaps: boolean | undefined;
+  /** Vertical Slice v6 — from `computeBoundedSceneFocus` + current selection (viewer-only). */
+  boundedFocusSummary?: string | null;
 }
 
 const SNAPSHOT_NONE = "none_yet";
@@ -78,6 +82,7 @@ export function buildLiveVisualProvenanceStrip(input: LiveVisualProvenanceInput)
     canvasOnlyGpuSubdetail,
     wireUpdateMode: input.visualSpec.mode,
     snapshotOrigin: origin,
+    boundedFocusSummary: input.boundedFocusSummary ?? null,
     deltaWire: {
       checkbox: input.deltaWireCheckbox,
       serverSessionDeltaWireV0: input.sessionDeltaWireV0FromCaps,
@@ -152,7 +157,11 @@ export function formatLiveVisualProvenanceStripText(strip: LiveVisualProvenanceS
     strip.rendererMode === "canvas_only" && strip.canvasOnlyGpuSubdetail !== "none"
       ? ` (${strip.canvasOnlyGpuSubdetail})`
       : "";
-  const line1 = `renderer=${r}${sub} · wire=${WIRE_STRIP_LABEL[strip.wireUpdateMode]} · snapshot_origin=${strip.snapshotOrigin}`;
+  const focusFrag =
+    strip.boundedFocusSummary !== null && strip.boundedFocusSummary.length > 0
+      ? ` · focus=${strip.boundedFocusSummary}`
+      : "";
+  const line1 = `renderer=${r}${sub} · wire=${WIRE_STRIP_LABEL[strip.wireUpdateMode]} · snapshot_origin=${strip.snapshotOrigin}${focusFrag}`;
   const line2 = `${formatDeltaWireLine(strip.deltaWire)} · ${formatReconcileOneLine(strip.lastReconcile)}`;
   return `${line1}\n${line2}`;
 }
@@ -172,6 +181,7 @@ export interface LiveVisualProvenanceExportV0 {
   canvasOnlyGpuSubdetail: CanvasOnlyGpuSubdetail;
   wireUpdateMode: LiveVisualMode;
   snapshotOrigin: string;
+  boundedFocusSummary: string | null;
   deltaWire: {
     checkbox: boolean;
     serverSessionDeltaWireV0: boolean | undefined;
@@ -215,6 +225,7 @@ export function toLiveVisualProvenanceExportV0(strip: LiveVisualProvenanceStrip)
     canvasOnlyGpuSubdetail: strip.canvasOnlyGpuSubdetail,
     wireUpdateMode: strip.wireUpdateMode,
     snapshotOrigin: strip.snapshotOrigin,
+    boundedFocusSummary: strip.boundedFocusSummary,
     deltaWire: {
       checkbox: strip.deltaWire.checkbox,
       serverSessionDeltaWireV0: strip.deltaWire.serverSessionDeltaWireV0,

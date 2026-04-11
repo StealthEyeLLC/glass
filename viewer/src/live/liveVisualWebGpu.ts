@@ -213,6 +213,7 @@ export async function renderLiveVisualWebGpuFrame(
   scene: GlassSceneV0,
   layout: LiveVisualCanvasLayout,
   bundle: LiveVisualWebGpuBundle,
+  options?: { focusedSelectionId?: string | null },
 ): Promise<boolean> {
   try {
     const dpr =
@@ -232,7 +233,9 @@ export async function renderLiveVisualWebGpuFrame(
       alphaMode: "premultiplied",
     });
 
-    const primitives = sceneToDrawablePrimitives(scene, layout);
+    const primitives = sceneToDrawablePrimitives(scene, layout, {
+      focusedSelectionId: options?.focusedSelectionId ?? null,
+    });
     const data = buildDrawablePrimitivesWebGpuVertexData(primitives, layout);
     if (data.length === 0) {
       return false;

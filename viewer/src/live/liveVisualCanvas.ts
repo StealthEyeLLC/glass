@@ -113,6 +113,13 @@ export function drawLiveVisualTextLabelsIntoContext(
     lineY += 14;
   }
 
+  if (spec.boundedFocusCaptionLine) {
+    ctx.font = "600 10px system-ui, sans-serif";
+    ctx.fillStyle = "#b45309";
+    ctx.fillText(truncate(`focus: ${spec.boundedFocusCaptionLine}`, 58), 16, lineY);
+    lineY += 14;
+  }
+
   if (spec.actorClusterSummaryLine) {
     ctx.font = "500 10px system-ui, sans-serif";
     ctx.fillStyle = "#475569";
@@ -176,7 +183,7 @@ function drawBoundedSelectionHighlightIntoContext(
   if (selectedSelectionId === null || selectedSelectionId.length === 0) {
     return;
   }
-  const targets = buildBoundedSelectionHitTargetsForScene(scene, layout);
+  const targets = buildBoundedSelectionHitTargetsForScene(scene, layout, selectedSelectionId);
   const r = unionBoundingRectForSelectionId(selectedSelectionId, targets);
   if (!r || r.width <= 0 || r.height <= 0) {
     return;
@@ -305,7 +312,8 @@ export function renderLiveVisualOnCanvas(
   }
 
   const lay = layoutForScene(scene, options?.layout);
-  const spec = liveVisualSpecFromScene(scene);
+  const sel = options?.selectedSelectionId ?? null;
+  const spec = liveVisualSpecFromScene(scene, sel);
   const dpr = typeof window !== "undefined" && window.devicePixelRatio ? window.devicePixelRatio : 1;
   const w = lay.widthCss;
   const h = lay.heightCss;
@@ -315,10 +323,10 @@ export function renderLiveVisualOnCanvas(
   canvas.height = Math.floor(h * dpr);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  const primitives = sceneToDrawablePrimitives(scene, lay);
+  const primitives = sceneToDrawablePrimitives(scene, lay, { focusedSelectionId: sel });
   renderDrawablePrimitivesToCanvas2D(ctx, primitives);
   drawLiveVisualTextLabelsIntoContext(ctx, spec, w, h);
-  drawBoundedSelectionHighlightIntoContext(ctx, scene, lay, options?.selectedSelectionId ?? null);
+  drawBoundedSelectionHighlightIntoContext(ctx, scene, lay, sel);
 
   return true;
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createInitialLiveSessionModelState } from "./applyLiveSessionMessage.js";
 import { buildLiveVisualSpec } from "./liveVisualModel.js";
 import { compileLiveToGlassSceneV0 } from "../scene/compileLiveScene.js";
+import { applyBoundedSceneFocusToPrimitives, computeBoundedSceneFocus } from "../scene/boundedSceneFocus.js";
 import { sceneToDrawablePrimitives } from "../scene/sceneToDrawablePrimitives.js";
 import {
   appendBoundedActorClusterStrip,
@@ -68,6 +69,8 @@ describe("buildDrawablePrimitivesWebGpuVertexData", () => {
     appendBoundedActorClusterStrip(scene.clusters, layout.widthCss, manual);
     applyBoundedSceneComposition(scene, layout.widthCss, layout.heightCss, manual);
     applyBoundedEmphasisOverlays(scene, layout.widthCss, layout.heightCss, manual);
+    const focus = computeBoundedSceneFocus(scene, null);
+    applyBoundedSceneFocusToPrimitives(scene, focus, layout.widthCss, layout.heightCss, manual);
     const fromManual = buildDrawablePrimitivesWebGpuVertexData(manual, layout);
     expect(fromScene.length).toBe(fromManual.length);
     expect([...fromScene]).toEqual([...fromManual]);

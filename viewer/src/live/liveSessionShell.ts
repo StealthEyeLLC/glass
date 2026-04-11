@@ -52,6 +52,7 @@ import {
 import { formatLiveVisualLegendBlock } from "./liveVisualMarkers.js";
 import type { BoundedSceneEmphasisV0 } from "../scene/boundedSceneEmphasis.js";
 import { compileLiveToGlassSceneV0 } from "../scene/compileLiveScene.js";
+import { computeBoundedSceneFocus } from "../scene/boundedSceneFocus.js";
 import {
   buildBoundedInspectorLines,
   buildBoundedSelectionHitTargetsForScene,
@@ -407,7 +408,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   const boundedInspectorTitle = el(
     "h4",
     "glass-bounded-inspector-title",
-    "Bounded scene selection (Vertical Slice v5)",
+    "Bounded scene selection (Vertical Slice v6)",
   );
   const boundedInspectorPre = el("pre", "glass-bounded-inspector");
   boundedInspectorPre.setAttribute("data-testid", "live-bounded-inspector");
@@ -438,7 +439,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       boundedInspectorPre.removeAttribute("data-selected");
       return;
     }
-    const spec = liveVisualSpecFromScene(lastPaintedLiveScene);
+    const spec = liveVisualSpecFromScene(lastPaintedLiveScene, selectedBoundedSelectionId);
     boundedInspectorPre.textContent = buildBoundedInspectorLines(
       lastPaintedLiveScene,
       spec,
@@ -453,7 +454,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
 
   function buildCurrentLiveVisualSpec(): LiveVisualSpec {
     if (lastPaintedLiveScene) {
-      return liveVisualSpecFromScene(lastPaintedLiveScene);
+      return liveVisualSpecFromScene(lastPaintedLiveScene, selectedBoundedSelectionId);
     }
     return liveVisualSpecFromScene(
       compileLiveToGlassSceneV0({
@@ -461,11 +462,16 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
         lastReconcile,
         httpSnapshotOrigin: lastHttp?.bounded_snapshot?.snapshot_origin ?? null,
       }),
+      selectedBoundedSelectionId,
     );
   }
 
   function buildCurrentProvenanceStrip() {
     const spec = buildCurrentLiveVisualSpec();
+    const boundedFocusSummary =
+      lastPaintedLiveScene !== null
+        ? computeBoundedSceneFocus(lastPaintedLiveScene, selectedBoundedSelectionId).provenanceFocusLine
+        : null;
     return buildLiveVisualProvenanceStrip({
       webGpuProbeStatus: webGpuStatus,
       webGpuBundlePresent: webGpuBundle !== null,
@@ -475,6 +481,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       lastReconcile,
       deltaWireCheckbox: deltaWire.checked,
       sessionDeltaWireV0FromCaps: lastCaps?.websocket.session_delta_wire_v0,
+      boundedFocusSummary,
     });
   }
 
@@ -641,7 +648,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     const x = ev.clientX - rect.left;
     const y = ev.clientY - rect.top;
     const lay = { widthCss: scene.bounds.widthCss, heightCss: scene.bounds.heightCss };
-    const targets = buildBoundedSelectionHitTargetsForScene(scene, lay);
+    const targets = buildBoundedSelectionHitTargetsForScene(scene, lay, selectedBoundedSelectionId);
     const id = hitTestBoundedSelection(x, y, targets);
     if (id === selectedBoundedSelectionId) {
       selectedBoundedSelectionId = null;

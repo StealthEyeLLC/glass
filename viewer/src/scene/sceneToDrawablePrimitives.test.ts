@@ -14,6 +14,7 @@ import {
   applyBoundedSceneComposition,
   buildBoundedVisualGeometryPrimitives,
 } from "./drawablePrimitivesV0.js";
+import { applyBoundedSceneFocusToPrimitives, computeBoundedSceneFocus } from "./boundedSceneFocus.js";
 import { liveVisualSpecFromScene } from "./sceneToLiveVisualSpec.js";
 import { sceneToDrawablePrimitives } from "./sceneToDrawablePrimitives.js";
 import { listSemanticTagsForScene } from "./semanticTagSummaryV0.js";
@@ -62,6 +63,8 @@ describe("sceneToDrawablePrimitives", () => {
     appendBoundedActorClusterStrip(scene.clusters, scene.bounds.widthCss, b);
     applyBoundedSceneComposition(scene, scene.bounds.widthCss, scene.bounds.heightCss, b);
     applyBoundedEmphasisOverlays(scene, scene.bounds.widthCss, scene.bounds.heightCss, b);
+    const focus = computeBoundedSceneFocus(scene, null);
+    applyBoundedSceneFocusToPrimitives(scene, focus, scene.bounds.widthCss, scene.bounds.heightCss, b);
     expect(a).toEqual(b);
   });
 
@@ -79,6 +82,8 @@ describe("sceneToDrawablePrimitives", () => {
     appendBoundedActorClusterStrip(scene.clusters, 400, direct);
     applyBoundedSceneComposition(scene, 400, 200, direct);
     applyBoundedEmphasisOverlays(scene, 400, 200, direct);
+    const focus400 = computeBoundedSceneFocus(scene, null);
+    applyBoundedSceneFocusToPrimitives(scene, focus400, 400, 200, direct);
     expect(withLayout).toEqual(direct);
   });
 
