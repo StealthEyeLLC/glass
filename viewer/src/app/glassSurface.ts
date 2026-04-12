@@ -119,7 +119,7 @@ export function buildReplayHrefFromLive(): string {
   return `${u.pathname}${u.search}${u.hash}`;
 }
 
-/** Dev flagship loader: preserve surface. */
+/** Flagship replay loader: preserve surface. */
 export function buildFlagshipDevHref(): string {
   const u = new URL(window.location.href);
   u.searchParams.set("fixture", "flagship");

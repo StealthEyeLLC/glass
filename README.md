@@ -1,10 +1,14 @@
 # Glass
 
+[![CI](https://github.com/StealthEyeLLC/glass/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/StealthEyeLLC/glass/actions/workflows/ci.yml)
+
 **See what your code or agent actually did.**
 
 Glass is a **replay-first bounded investigation surface**: open one saved session, move from **scene** to **change** to **evidence** to **receipt**, and stop at what the bounded window can honestly support.
 
-**Start with the flagship replay path:** open `tests/fixtures/canonical_scenarios_v15/canonical_v15_append_heavy.glass_pack` and stay on **Overview** first.
+**Try the hosted flagship replay:** [stealtheyellc.github.io/glass/?fixture=flagship](https://stealtheyellc.github.io/glass/?fixture=flagship)
+
+**Start with the flagship replay path:** use the hosted replay above, or open `tests/fixtures/canonical_scenarios_v15/canonical_v15_append_heavy.glass_pack` locally and stay on **Overview** first.
 
 ![00 — Flagship replay motion](docs/media/00-flagship-replay-motion.gif)
 
@@ -30,10 +34,11 @@ Replay uses an index-ordered pack prefix. Live keeps WS tail and HTTP snapshot *
 
 ## Start Here
 
-1. Run the viewer locally: `cd viewer && npm ci && npm run dev`
-2. On replay, use **Load flagship demo** (dev only) or **Open file** and pick `tests/fixtures/canonical_scenarios_v15/canonical_v15_append_heavy.glass_pack`
-3. Stay on **Overview** first. Use **Technical** only when you want exact scan order, ids, manifests, receipt refs, and transport detail.
-4. Static `dist/` does not auto-load fixtures. Optional **`?live=1`** is local-only and not the front door.
+1. Try the hosted replay: [stealtheyellc.github.io/glass/?fixture=flagship](https://stealtheyellc.github.io/glass/?fixture=flagship)
+2. Or run the viewer locally: `cd viewer && npm ci && npm run dev`
+3. On replay, use **Load flagship demo** or **Open file** and pick `tests/fixtures/canonical_scenarios_v15/canonical_v15_append_heavy.glass_pack`
+4. Stay on **Overview** first. Use **Technical** only when you want exact scan order, ids, manifests, receipt refs, and transport detail.
+5. Static `dist/` can load the committed flagship replay with **`?fixture=flagship`**. The smoke pack shortcut **`?fixture=vertical_slice_v0`** stays dev-only. Optional **`?live=1`** is local-only and not the front door.
 
 ## Screenshots
 

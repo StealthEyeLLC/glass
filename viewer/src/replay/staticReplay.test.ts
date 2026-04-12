@@ -48,7 +48,7 @@ describe("static replay shell", () => {
     expect(getBuildMode()).toBe("static_replay");
   });
 
-  it("does not auto-fetch dev fixture when ?fixture=vertical_slice_v0 (tests mirror production inert)", () => {
+  it("does not auto-fetch dev-only smoke fixture when ?fixture=vertical_slice_v0", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(() =>
       Promise.resolve(new Response()),
     );
@@ -57,6 +57,21 @@ describe("static replay shell", () => {
       const root = document.createElement("div");
       mountReplayShell(root);
       expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      fetchSpy.mockRestore();
+      history.replaceState({}, "", "/");
+    }
+  });
+
+  it("auto-fetches the flagship fixture when ?fixture=flagship", () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(new Response(new Uint8Array())),
+    );
+    history.replaceState({}, "", "/?fixture=flagship");
+    try {
+      const root = document.createElement("div");
+      mountReplayShell(root);
+      expect(fetchSpy).toHaveBeenCalledWith("/fixtures/canonical_v15_append_heavy.glass_pack");
     } finally {
       fetchSpy.mockRestore();
       history.replaceState({}, "", "/");

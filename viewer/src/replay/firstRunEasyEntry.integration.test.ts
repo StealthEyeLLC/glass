@@ -22,14 +22,12 @@ describe("Vertical Slice v26 easy-first entry (bounded showcase)", () => {
     expect(bundle?.textContent).toContain("?fixture=flagship");
   });
 
-  it("replay: dev build exposes one-click flagship load", () => {
+  it("replay: exposes one-click flagship load", () => {
     const root = document.createElement("div");
     mountReplayShell(root);
-    if (import.meta.env.DEV) {
-      const cta = root.querySelector('[data-testid="replay-easy-flagship-load"]');
-      expect(cta).not.toBeNull();
-      expect((cta as HTMLAnchorElement).getAttribute("href")).toContain("fixture=flagship");
-    }
+    const cta = root.querySelector('[data-testid="replay-easy-flagship-load"]');
+    expect(cta).not.toBeNull();
+    expect((cta as HTMLAnchorElement).getAttribute("href")).toContain("fixture=flagship");
   });
 
   it("live: easy intro and connection settings collapsed; bridge placeholder is not a literal loopback IP", () => {

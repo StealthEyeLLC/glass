@@ -5,14 +5,18 @@ import { defineConfig, type Plugin } from "vite";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
+const flagshipFixtureSourceFile = path.join(
+  repoRoot,
+  "tests/fixtures/canonical_scenarios_v15/canonical_v15_append_heavy.glass_pack",
+);
+const flagshipFixtureDistFile = "fixtures/canonical_v15_append_heavy.glass_pack";
 
 /**
- * Serves the committed Vertical Slice v0 `.glass_pack` only when `vite` dev server runs.
- * No `configureServer` in `vite build` / `vite preview` — production `dist/` has no route.
+ * Serves committed replay fixtures in dev and emits the flagship pack into production `dist/`.
  */
-function glassDevFixturePlugin(): Plugin {
+function glassFixturePlugin(): Plugin {
   return {
-    name: "glass-dev-fixture",
+    name: "glass-fixture",
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const pathname = req.url?.split("?")[0];
@@ -40,17 +44,13 @@ function glassDevFixturePlugin(): Plugin {
           pathname ===
           "/__glass__/dev/canonical_scenarios_v15/canonical_v15_append_heavy.glass_pack"
         ) {
-          const file = path.join(
-            repoRoot,
-            "tests/fixtures/canonical_scenarios_v15/canonical_v15_append_heavy.glass_pack",
-          );
-          if (!fs.existsSync(file)) {
+          if (!fs.existsSync(flagshipFixtureSourceFile)) {
             res.statusCode = 404;
             res.end("glass dev fixture missing on disk");
             return;
           }
           res.setHeader("Content-Type", "application/zip");
-          fs.createReadStream(file).on("error", () => {
+          fs.createReadStream(flagshipFixtureSourceFile).on("error", () => {
             res.statusCode = 500;
             res.end();
           }).pipe(res);
@@ -59,11 +59,22 @@ function glassDevFixturePlugin(): Plugin {
         next();
       });
     },
+    generateBundle() {
+      if (!fs.existsSync(flagshipFixtureSourceFile)) {
+        throw new Error("flagship fixture missing on disk for production build");
+      }
+      this.emitFile({
+        type: "asset",
+        fileName: flagshipFixtureDistFile,
+        source: fs.readFileSync(flagshipFixtureSourceFile),
+      });
+    },
   };
 }
 
 export default defineConfig({
-  plugins: [glassDevFixturePlugin()],
+  base: process.env.GLASS_PUBLIC_BASE ?? "/",
+  plugins: [glassFixturePlugin()],
   root: ".",
   build: {
     outDir: "dist",

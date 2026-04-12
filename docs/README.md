@@ -17,6 +17,8 @@ Start at [`README.md`](../README.md). Use this page to choose between the curren
 - [`media/README.md`](media/README.md) — capture rules and committed showcase assets
 - [`DEMO_RETAINED_SNAPSHOT.md`](DEMO_RETAINED_SNAPSHOT.md) — retained snapshot walkthrough
 - [`RELEASE_PACKAGING.md`](RELEASE_PACKAGING.md) — narrow PR/release framing for the bounded showcase
+- [`LAUNCH_DISTRIBUTION.md`](LAUNCH_DISTRIBUTION.md) — exact launch framing and channel copy
+- [`POST_LAUNCH_LOOP.md`](POST_LAUNCH_LOOP.md) — first-72-hours launch response runbook
 - [`contracts/bridge_session_snapshot_bounded_v0.schema.json`](contracts/bridge_session_snapshot_bounded_v0.schema.json) — bounded HTTP snapshot contract subset
 - [`contracts/live_session_ws_session_delta_v0.md`](contracts/live_session_ws_session_delta_v0.md) — additive live delta contract note
 - [`../tools/glass-pack/README.md`](../tools/glass-pack/README.md) — pack validation and inspection CLI

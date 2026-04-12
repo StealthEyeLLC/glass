@@ -19,7 +19,7 @@ labels: []
 
 - OS:
 - Browser:
-- How you ran the viewer (e.g. `cd viewer && npm run dev`, or static `dist/`):
+- How you ran the viewer (e.g. hosted `?fixture=flagship`, `cd viewer && npm run dev`, or static `dist/`):
 
 ## Notes
 

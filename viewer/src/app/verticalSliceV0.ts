@@ -13,7 +13,7 @@ export const VERTICAL_SLICE_FLAGSHIP_V18_SESSION_ID = "canonical_v15_append_heav
 
 export const VERTICAL_SLICE_FLAGSHIP_V18_PACK_FILE = "canonical_v15_append_heavy.glass_pack" as const;
 
-/** Dev server: `npm run dev` + this query loads the flagship bytes from the repo fixture (see devFixtureRoute). */
+/** Shared replay query: hosted/static builds and local dev can use this to load the flagship pack. */
 export const VERTICAL_SLICE_FLAGSHIP_V18_DEV_QUERY_HINT = "?fixture=flagship" as const;
 
 /** Technical / docs — full flagship path description (details layer). */
@@ -127,7 +127,7 @@ export const VERTICAL_SLICE_V28_RECEIPT_EMPTY = "Pick a claim or story card.";
 
 /** Checkout-relative paths, CI roles, and dev auto-load — for advanced/docs only. */
 export function replayHeroSubtitleTechnical(): string {
-  return "Minimal smoke: tests/fixtures/vertical_slice_v0/ Tier B (3 events) for fast CI. Canonical suite packs under tests/fixtures/canonical_scenarios_v15/ prove breadth (replace, calm, file-heavy). Development: npm run dev with ?fixture=flagship loads the flagship bytes without picking a path from disk.";
+  return "Minimal smoke: tests/fixtures/vertical_slice_v0/ Tier B (3 events) for fast CI. Canonical suite packs under tests/fixtures/canonical_scenarios_v15/ prove breadth (replace, calm, file-heavy). Hosted/static replay and local dev both support ?fixture=flagship for the committed flagship pack.";
 }
 
 export function replayHeroSubtitle(): string {
@@ -136,7 +136,7 @@ export function replayHeroSubtitle(): string {
 
 /** Flagship callout — one sentence for scanning; no npm/query in the primary line. */
 export const VERTICAL_SLICE_V26_FLAGSHIP_EASY_SUMMARY =
-  "The flagship pack is committed in this repo — use Open file, or Load flagship demo when running the dev build.";
+  "The flagship pack is committed in this repo — use Open file, or Load flagship demo.";
 
 /** One paragraph for collapsible “technical” on replay + README-adjacent honesty. */
 export const VERTICAL_SLICE_V26_LIVE_NAV_TECHNICAL =

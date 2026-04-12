@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Docs / current truth
+    url: https://github.com/StealthEyeLLC/glass/blob/main/docs/README.md
+    about: Start here for shipped scope, proof surfaces, and the hosted replay path before filing a docs or usage issue.
+  - name: Security reporting
+    url: https://github.com/StealthEyeLLC/glass/security/policy
+    about: Use private vulnerability reporting if it is enabled. Do not post exploit details or secrets in a public issue.

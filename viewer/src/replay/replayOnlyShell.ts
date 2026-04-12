@@ -82,14 +82,17 @@ import {
 import "./replayShell.css";
 
 /**
- * Vitest keeps `import.meta.env.DEV === true` while bundling tests — treat as non-dev here so
- * `mountReplayShell` never fires fixture `fetch` in unit tests (mirrors static `dist/` inertness).
+ * Vitest keeps `import.meta.env.DEV === true` while bundling tests. Force fixture planning through
+ * the shipped/static path so tests do not depend on dev-only middleware.
  */
-function devFixtureEnvForReplay(): { DEV?: boolean } {
+function devFixtureEnvForReplay(): { DEV?: boolean; BASE_URL?: string } {
   if (typeof process !== "undefined" && process.env.VITEST === "true") {
-    return { DEV: false };
+    return { DEV: false, BASE_URL: import.meta.env.BASE_URL };
   }
-  return import.meta.env;
+  return {
+    DEV: import.meta.env.DEV,
+    BASE_URL: import.meta.env.BASE_URL,
+  };
 }
 
 /** UX pacing only — not a spec freeze; Tier B uses index-based playback. */
@@ -265,14 +268,12 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
   openBtn.setAttribute("data-testid", "replay-open-file");
   openBtn.addEventListener("click", () => fileInput.click());
   primaryActions.append(openBtn);
-  if (import.meta.env.DEV) {
-    const flagshipDemo = document.createElement("a");
-    flagshipDemo.href = buildFlagshipDevHref();
-    flagshipDemo.setAttribute("data-testid", "replay-easy-flagship-load");
-    flagshipDemo.className = "glass-easy-flagship-cta glass-primary-flagship-cta";
-    flagshipDemo.textContent = "Load flagship demo";
-    primaryActions.insertBefore(flagshipDemo, openBtn);
-  }
+  const flagshipDemo = document.createElement("a");
+  flagshipDemo.href = buildFlagshipDevHref();
+  flagshipDemo.setAttribute("data-testid", "replay-easy-flagship-load");
+  flagshipDemo.className = "glass-easy-flagship-cta glass-primary-flagship-cta";
+  flagshipDemo.textContent = "Load flagship demo";
+  primaryActions.insertBefore(flagshipDemo, openBtn);
 
   const overviewHelper = el(
     "p",
@@ -288,7 +289,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
     el(
       "p",
       "glass-easy-entry-lead glass-surface-technical-only",
-      "Open file, drop a pack, or Load flagship demo (dev).",
+      "Open file, drop a pack, or Load flagship demo.",
     ),
     primaryActions,
     overviewHelper,
@@ -798,7 +799,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
       window.location.search,
       devFixtureEnvForReplay(),
     );
-    if (plan.kind !== "load_dev_pack") {
+    if (plan.kind !== "load_pack") {
       return;
     }
     dispatch({ type: "start_reading", fileName: plan.fileName });
@@ -812,7 +813,7 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
           dispatch({
             type: "load_err",
             fileName: plan.fileName,
-            message: `dev fixture HTTP ${res.status}`,
+            message: `fixture HTTP ${res.status}`,
           });
           return undefined;
         }

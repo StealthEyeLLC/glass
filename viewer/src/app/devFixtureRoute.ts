@@ -1,7 +1,8 @@
 /**
- * Dev-only Tier B fixture loading via `?fixture=…` (Vertical Slice v0 minimal + v18 flagship).
- * Vite `npm run dev` serves bytes at dev fetch paths; production/static builds set
- * `import.meta.env.DEV === false` — no fetch, no exposure.
+ * Fixture loading via `?fixture=…`.
+ *
+ * - `vertical_slice_v0` remains dev-only (fast smoke / CI path).
+ * - `flagship` is production-safe and may be served from a static build.
  */
 
 export const FIXTURE_QUERY_PARAM = "fixture" as const;
@@ -28,6 +29,14 @@ export const FLAGSHIP_V18_DEV_FETCH_PATH =
 
 export const FLAGSHIP_V18_DEV_FILE_NAME = "canonical_v15_append_heavy.glass_pack" as const;
 
+export const FLAGSHIP_V18_STATIC_RELATIVE_PATH =
+  "fixtures/canonical_v15_append_heavy.glass_pack" as const;
+
+function buildStaticFixtureUrl(baseUrl: string | undefined, relativePath: string): string {
+  const prefix = baseUrl && baseUrl.length > 0 ? baseUrl : "/";
+  return `${prefix.endsWith("/") ? prefix : `${prefix}/`}${relativePath}`;
+}
+
 export function shouldOfferDevFixtureLoad(env: { DEV?: boolean }): boolean {
   return env.DEV === true;
 }
@@ -48,7 +57,7 @@ export function parseDevFixtureQuery(search: string): DevFixtureQueryValue | nul
 export type DevFixturePlan =
   | { kind: "none" }
   | {
-      kind: "load_dev_pack";
+      kind: "load_pack";
       url: string;
       fileName: string;
     };
@@ -56,40 +65,39 @@ export type DevFixturePlan =
 /** Pure — used by replay shell and tests (no I/O). */
 export function planDevFixtureLoad(
   search: string,
-  env: { DEV?: boolean },
+  env: { DEV?: boolean; BASE_URL?: string },
 ): DevFixturePlan {
+  const key = parseDevFixtureQuery(search);
+  if (key === FLAGSHIP_V18_FIXTURE_QUERY_VALUE) {
+    return {
+      kind: "load_pack",
+      url: shouldOfferDevFixtureLoad(env)
+        ? FLAGSHIP_V18_DEV_FETCH_PATH
+        : buildStaticFixtureUrl(env.BASE_URL, FLAGSHIP_V18_STATIC_RELATIVE_PATH),
+      fileName: FLAGSHIP_V18_DEV_FILE_NAME,
+    };
+  }
   if (!shouldOfferDevFixtureLoad(env)) {
     return { kind: "none" };
   }
-  const key = parseDevFixtureQuery(search);
   if (key === VERTICAL_SLICE_V0_FIXTURE_QUERY_VALUE) {
     return {
-      kind: "load_dev_pack",
+      kind: "load_pack",
       url: VERTICAL_SLICE_V0_DEV_FETCH_PATH,
       fileName: VERTICAL_SLICE_V0_DEV_FILE_NAME,
-    };
-  }
-  if (key === FLAGSHIP_V18_FIXTURE_QUERY_VALUE) {
-    return {
-      kind: "load_dev_pack",
-      url: FLAGSHIP_V18_DEV_FETCH_PATH,
-      fileName: FLAGSHIP_V18_DEV_FILE_NAME,
     };
   }
   return { kind: "none" };
 }
 
-/** Remove known `fixture=` values after a successful load so refresh does not re-fetch. */
+/** Remove dev-only smoke fixture query after a successful load. */
 export function stripVerticalSliceDevFixtureQuery(): void {
   if (typeof window === "undefined") {
     return;
   }
   const u = new URL(window.location.href);
   const cur = u.searchParams.get(FIXTURE_QUERY_PARAM);
-  if (
-    cur !== VERTICAL_SLICE_V0_FIXTURE_QUERY_VALUE &&
-    cur !== FLAGSHIP_V18_FIXTURE_QUERY_VALUE
-  ) {
+  if (cur !== VERTICAL_SLICE_V0_FIXTURE_QUERY_VALUE) {
     return;
   }
   u.searchParams.delete(FIXTURE_QUERY_PARAM);
