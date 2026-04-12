@@ -157,6 +157,6 @@ Retained snapshot demo: [`docs/DEMO_RETAINED_SNAPSHOT.md`](docs/DEMO_RETAINED_SN
 
 ## License
 
-Dual-licensed under `MIT` or `Apache-2.0`, at your option. See `LICENSE-MIT` and `LICENSE-APACHE`.
+Licensed under `Apache-2.0`. See `LICENSE-APACHE`.
 
 Security reporting: see `SECURITY.md`.
