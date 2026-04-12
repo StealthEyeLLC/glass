@@ -37,7 +37,7 @@ Replay uses an index-ordered pack prefix. Live keeps WS tail and HTTP snapshot *
 
 ## Screenshots
 
-**How these were taken:** The flagship motion asset above and the stills below come from the real viewer surface. Replay frames use **`?fixture=flagship`** with the committed flagship pack; live uses **`?live=1`** in honest local setup mode. Regenerate with **`npm run capture:showcase-media -- http://127.0.0.1:<port>`** after `npx playwright install chromium` once. Synthetic committed fixtures only — not production telemetry.
+**How these were taken:** The flagship motion asset above and the stills below come from the real viewer surface. Replay frames use **`?fixture=flagship`** with the committed flagship pack; live uses **`?live=1`** in honest local setup mode. Regenerate with **`npm run capture:showcase-media -- http://127.0.0.1:5173`** after `npx playwright install chromium` once (replace `5173` if Vite chooses another port). Synthetic committed fixtures only — not production telemetry.
 
 | | |
 |:--|:--|
