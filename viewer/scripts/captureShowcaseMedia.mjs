@@ -50,7 +50,8 @@ async function captureFlagshipMotionFrames(page, framesDir) {
   await page.locator('[data-testid="replay-jump-start"]').click();
   await waitForReplayStep(page, 1);
   await page.evaluate(() => window.scrollTo(0, 180));
-  const ordinals = [1, 2, 3, 5, 7, 9, 11, 14];
+  // Favor a few legible state changes over rapid motion.
+  const ordinals = [1, 3, 5, 8, 11, 14];
   let currentOrdinal = 1;
   for (let i = 0; i < ordinals.length; i += 1) {
     const targetOrdinal = ordinals[i];

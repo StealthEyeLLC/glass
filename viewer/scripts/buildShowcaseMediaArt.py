@@ -57,7 +57,7 @@ def build_motion_gif(frames_dir: Path, output_path: Path) -> None:
     if not frame_paths:
         raise RuntimeError("No motion frames found to build the flagship replay GIF.")
     frames = [prepare_motion_frame(path).convert("P", palette=Image.Palette.ADAPTIVE) for path in frame_paths]
-    durations = [700, 450, 450, 450, 450, 450, 450, 1200][: len(frames)]
+    durations = [1000, 700, 700, 700, 700, 1400][: len(frames)]
     frames[0].save(
         output_path,
         save_all=True,
