@@ -1,6 +1,11 @@
 /**
- * One-shot showcase captures for docs/media/*.png (dev server must be running).
- * Run from repo root: node viewer/scripts/captureShowcaseMedia.mjs [baseUrl]
+ * One-shot showcase captures for Glass docs/media/*.png (and GIF + social-preview; dev server must be running).
+ *
+ * Usual path (see docs/media/README.md): from `viewer/` after `npm run dev` —
+ *   npm run capture:showcase-media -- http://127.0.0.1:5173
+ * (replace port if Vite chose another). Writes to `<Glass repo>/docs/media/` regardless of shell cwd.
+ *
+ * Alternate: from Glass repo root — `node viewer/scripts/captureShowcaseMedia.mjs [baseUrl]`
  * Default baseUrl: http://127.0.0.1:5173
  */
 import { execFileSync } from "node:child_process";
@@ -12,6 +17,24 @@ import { chromium } from "playwright";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../..");
+const viewerPkgPath = path.join(repoRoot, "viewer", "package.json");
+if (!fs.existsSync(viewerPkgPath)) {
+  throw new Error(
+    `Refusing to write media: Glass repo root not found at ${repoRoot} (missing viewer/package.json). ` +
+      `PNG/GIF output must go under Glass/docs/media/ — run npm run capture:showcase-media from the Glass viewer/ package, not a sibling repo.`,
+  );
+}
+let viewerPkg;
+try {
+  viewerPkg = JSON.parse(fs.readFileSync(viewerPkgPath, "utf8"));
+} catch (e) {
+  throw new Error(`Refusing to write media: could not parse ${viewerPkgPath}: ${String(e)}`);
+}
+if (viewerPkg.name !== "glass-viewer") {
+  throw new Error(
+    `Refusing to write media: ${viewerPkgPath} is not the Glass viewer package (expected name "glass-viewer").`,
+  );
+}
 const outDir = path.join(repoRoot, "docs/media");
 const artHelper = path.join(__dirname, "buildShowcaseMediaArt.py");
 
@@ -85,6 +108,7 @@ function buildShowcaseArt(framesDir) {
 }
 
 async function main() {
+  console.log("Glass showcase media output directory:", path.resolve(outDir));
   fs.mkdirSync(outDir, { recursive: true });
   const framesDir = fs.mkdtempSync(path.join(os.tmpdir(), "glass-showcase-"));
 
