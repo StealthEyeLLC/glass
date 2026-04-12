@@ -128,6 +128,10 @@ npm run verify:vertical-slice-fixture
 npm run verify:canonical-scenarios-v15
 ```
 
+### Windows note
+
+Use `npm ci` by default. On some Windows setups, `npm ci` can fail with `EPERM` while removing native binaries in `viewer/node_modules` if a dev server, editor, antivirus scan, or another process is holding files open. If that happens, close the locking processes, remove `viewer/node_modules` once the locks are gone, and rerun `npm ci`. For local recovery only, `npm install` is an acceptable fallback when `npm ci` is blocked by a file lock. CI still uses `npm ci`.
+
 ## `glass-pack` CLI
 
 ```bash
