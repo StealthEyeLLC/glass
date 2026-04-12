@@ -2,11 +2,18 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   GLASS_FLAGSHIP_CHAIN_DOC,
   VERTICAL_SLICE_V27_FLAGSHIP_FRAMING_SIMPLE,
+  VERTICAL_SLICE_V32_LIVE_SETUP_OVERVIEW,
+  VERTICAL_SLICE_V33_LIVE_TRUST_SYNCING_OVERVIEW,
 } from "../app/verticalSliceV0.js";
 import { GLASS_SCENE_V0 } from "../scene/glassSceneV0.js";
 import { mountLiveSessionShell } from "./liveSessionShell.js";
 
 describe("mountLiveSessionShell", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.restoreAllMocks();
+  });
+
   it("mounts live state panel and bounded event region", () => {
     const root = document.createElement("div");
     mountLiveSessionShell(root);
@@ -63,7 +70,7 @@ describe("mountLiveSessionShell", () => {
       expect(setup.hidden).toBe(false);
     });
 
-    expect(root.textContent).toContain("Connect to a local session to unlock evidence, claims, receipt, and time context.");
+    expect(root.textContent).toContain(VERTICAL_SLICE_V32_LIVE_SETUP_OVERVIEW);
     expect(root.textContent).not.toContain("No material bounded change");
 
     expect(
@@ -79,6 +86,196 @@ describe("mountLiveSessionShell", () => {
       true,
     );
     expect((root.querySelector('[data-testid="live-temporal-lens-root"]') as HTMLElement).hidden).toBe(true);
+  });
+
+  it("session_hello alone keeps data-live-trust-phase setup and trust panels hidden", async () => {
+    class FakeWebSocket {
+      static CONNECTING = 0;
+      static OPEN = 1;
+      static CLOSED = 3;
+      url: string;
+      readyState = FakeWebSocket.CONNECTING;
+      private listeners: Record<string, Array<(e: unknown) => void>> = {};
+
+      constructor(url: string) {
+        this.url = url;
+        queueMicrotask(() => {
+          this.readyState = FakeWebSocket.OPEN;
+          this.emit("open", {});
+        });
+      }
+
+      addEventListener(ev: string, fn: (e: unknown) => void): void {
+        if (!this.listeners[ev]) {
+          this.listeners[ev] = [];
+        }
+        this.listeners[ev].push(fn);
+      }
+
+      private emit(ev: string, payload: unknown): void {
+        for (const fn of this.listeners[ev] ?? []) {
+          fn(payload);
+        }
+      }
+
+      send(data: string): void {
+        const o = JSON.parse(data) as { msg?: string };
+        if (o.msg === "live_session_subscribe") {
+          queueMicrotask(() => {
+            this.emit("message", {
+              data: JSON.stringify({
+                type: "glass.bridge.live_session.v1",
+                msg: "session_hello",
+                session_id: "sess1",
+                protocol: 1,
+              }),
+            });
+          });
+        }
+      }
+
+      close(code?: number, reason?: string): void {
+        this.readyState = FakeWebSocket.CLOSED;
+        this.emit("close", {
+          code: code ?? 1000,
+          reason: reason ?? "",
+          wasClean: true,
+          target: this,
+        });
+      }
+    }
+
+    vi.stubGlobal("WebSocket", FakeWebSocket);
+
+    const root = document.createElement("div");
+    mountLiveSessionShell(root);
+    const urlIn = root.querySelector('[data-testid="live-bridge-url"]') as HTMLInputElement;
+    const tok = root.querySelector('[data-testid="live-token"]') as HTMLInputElement;
+    const sid = root.querySelector('[data-testid="live-session-id"]') as HTMLInputElement;
+    urlIn.value = "http://127.0.0.1:9";
+    tok.value = "tok";
+    sid.value = "sess1";
+
+    (root.querySelector('[data-testid="live-connect"]') as HTMLButtonElement).click();
+
+    await vi.waitFor(() => {
+      expect(
+        (root.querySelector('[data-testid="live-ws-status"]') as HTMLElement).textContent,
+      ).toContain('"phase": "open"');
+    });
+
+    const surface = root.querySelector('[data-testid="live-visual-surface"]') as HTMLElement;
+    await vi.waitFor(() => {
+      expect(surface.getAttribute("data-live-trust-phase")).toBe("setup");
+    });
+    expect(
+      (root.querySelector('[data-testid="live-bounded-claims-strip-root"]') as HTMLElement).hidden,
+    ).toBe(true);
+  });
+
+  it("HTTP snapshot in flight uses syncing phase; success with events becomes active", async () => {
+    let resolveSnap!: (r: Response) => void;
+    const snapPromise = new Promise<Response>((r) => {
+      resolveSnap = r;
+    });
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation((url) => {
+      if (String(url).includes("/sessions/") && String(url).includes("/snapshot")) {
+        return snapPromise;
+      }
+      return Promise.reject(new Error(`unexpected fetch ${String(url)}`));
+    });
+
+    class FakeWebSocket {
+      static CONNECTING = 0;
+      static OPEN = 1;
+      static CLOSED = 3;
+      url: string;
+      readyState = FakeWebSocket.CONNECTING;
+      private listeners: Record<string, Array<(e: unknown) => void>> = {};
+
+      constructor(url: string) {
+        this.url = url;
+        queueMicrotask(() => {
+          this.readyState = FakeWebSocket.OPEN;
+          this.emit("open", {});
+        });
+      }
+
+      addEventListener(ev: string, fn: (e: unknown) => void): void {
+        if (!this.listeners[ev]) {
+          this.listeners[ev] = [];
+        }
+        this.listeners[ev].push(fn);
+      }
+
+      private emit(ev: string, payload: unknown): void {
+        for (const fn of this.listeners[ev] ?? []) {
+          fn(payload);
+        }
+      }
+
+      send(): void {}
+
+      close(code?: number, reason?: string): void {
+        this.readyState = FakeWebSocket.CLOSED;
+        this.emit("close", {
+          code: code ?? 1000,
+          reason: reason ?? "",
+          wasClean: true,
+          target: this,
+        });
+      }
+    }
+
+    vi.stubGlobal("WebSocket", FakeWebSocket);
+
+    const root = document.createElement("div");
+    mountLiveSessionShell(root);
+    const urlIn = root.querySelector('[data-testid="live-bridge-url"]') as HTMLInputElement;
+    const tok = root.querySelector('[data-testid="live-token"]') as HTMLInputElement;
+    const sid = root.querySelector('[data-testid="live-session-id"]') as HTMLInputElement;
+    urlIn.value = "http://127.0.0.1:9";
+    tok.value = "tok";
+    sid.value = "sess1";
+
+    (root.querySelector('[data-testid="live-connect"]') as HTMLButtonElement).click();
+    await vi.waitFor(() => {
+      expect(
+        (root.querySelector('[data-testid="live-ws-status"]') as HTMLElement).textContent,
+      ).toContain('"phase": "open"');
+    });
+
+    (root.querySelector('[data-testid="live-http-snapshot"]') as HTMLButtonElement).click();
+
+    const surface = root.querySelector('[data-testid="live-visual-surface"]') as HTMLElement;
+    await vi.waitFor(() => {
+      expect(surface.getAttribute("data-live-trust-phase")).toBe("syncing");
+    });
+    expect(root.textContent).toContain(VERTICAL_SLICE_V33_LIVE_TRUST_SYNCING_OVERVIEW);
+    expect(
+      (root.querySelector('[data-testid="live-bounded-claims-strip-root"]') as HTMLElement).hidden,
+    ).toBe(true);
+
+    resolveSnap(
+      new Response(
+        JSON.stringify({
+          session_id: "sess1",
+          snapshot_cursor: "c",
+          events: [{ k: 1 }],
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      ),
+    );
+
+    await vi.waitFor(() => {
+      expect(surface.getAttribute("data-live-trust-phase")).toBe("active");
+    });
+    expect(
+      (root.querySelector('[data-testid="live-bounded-claims-strip-root"]') as HTMLElement).hidden,
+    ).toBe(false);
+
+    fetchSpy.mockRestore();
   });
 });
 

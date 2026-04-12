@@ -19,6 +19,7 @@ import {
   saveLiveFormPrefs,
 } from "./liveSessionStorage.js";
 import { makeReconcileRecord, type HttpReconcileRecord } from "./liveHttpReconcile.js";
+import { liveTrustBandShouldShow } from "./liveTrustGate.js";
 import {
   buildLiveStatePresentationDoc,
   liveConnectDisabledFromPreflight,
@@ -115,6 +116,8 @@ import {
   VERTICAL_SLICE_V31_LIVE_VISUAL_INTRO_OVERVIEW,
   VERTICAL_SLICE_V32_LIVE_SETUP_OVERVIEW,
   VERTICAL_SLICE_V32_LIVE_SETUP_TECHNICAL,
+  VERTICAL_SLICE_V33_LIVE_TRUST_SYNCING_OVERVIEW,
+  VERTICAL_SLICE_V33_LIVE_TRUST_SYNCING_TECHNICAL,
   liveHeroSubtitle,
 } from "../app/verticalSliceV0.js";
 import { buildReplayHrefFromLive, mountGlassSurfaceControls } from "../app/glassSurface.js";
@@ -370,6 +373,8 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   let lastCaps: BridgeCapabilitiesLive | null = null;
   let capsError: string | null = null;
   let lastReconcile: HttpReconcileRecord | null = null;
+  /** True while F-04 HTTP snapshot fetch is in flight — trust panels suspended, no stale chrome. */
+  let httpSnapshotInFlight = false;
 
   let logState: LiveSessionLogState = createInitialLiveSessionLogState(
     LIVE_SESSION_LOG_DEFAULT_MAX_LINES,
@@ -568,6 +573,28 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   );
   liveTrustSetupTechnical.append(liveTrustSetupTechnicalSum, liveTrustSetupTechnicalBody);
   liveTrustSetup.append(liveTrustSetupOverview, liveTrustSetupTechnical);
+  const liveTrustSyncing = el("section", "glass-live-trust-syncing");
+  liveTrustSyncing.setAttribute("data-testid", "live-trust-syncing");
+  const liveTrustSyncingOverview = el(
+    "p",
+    "glass-live-trust-syncing-note",
+    VERTICAL_SLICE_V33_LIVE_TRUST_SYNCING_OVERVIEW,
+  );
+  liveTrustSyncingOverview.setAttribute("data-testid", "live-trust-syncing-overview");
+  const liveTrustSyncingTechnical = document.createElement("details");
+  liveTrustSyncingTechnical.className = "glass-trust-technical glass-surface-technical-only";
+  liveTrustSyncingTechnical.setAttribute("data-testid", "live-trust-syncing-technical");
+  const liveTrustSyncingTechnicalSum = document.createElement("summary");
+  liveTrustSyncingTechnicalSum.className = "glass-trust-technical-summary";
+  liveTrustSyncingTechnicalSum.textContent = "Syncing (exact)";
+  const liveTrustSyncingTechnicalBody = el(
+    "p",
+    "glass-live-trust-syncing-technical-body",
+    VERTICAL_SLICE_V33_LIVE_TRUST_SYNCING_TECHNICAL,
+  );
+  liveTrustSyncingTechnical.append(liveTrustSyncingTechnicalSum, liveTrustSyncingTechnicalBody);
+  liveTrustSyncing.append(liveTrustSyncingOverview, liveTrustSyncingTechnical);
+  liveTrustSyncing.hidden = true;
   const visualProvenanceHeader = el(
     "div",
     "glass-live-panel-header glass-live-visual-provenance-header glass-surface-technical-only",
@@ -636,6 +663,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     visualCanvasStack,
     visualFallback,
     liveTrustSetup,
+    liveTrustSyncing,
     boundedEvidenceTitle,
     boundedEvidenceRoot,
     boundedEvidenceCrosslinkNote,
@@ -670,8 +698,27 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   /** After temporal compare-baseline override, suppress primary-claim highlight until the next live paint (v19). */
   let liveTrustPrimaryClaimHighlight = true;
 
-  function hasBoundedLiveTrustSource(): boolean {
-    return model.lastAppliedWire !== null || lastHttp !== null || lastReconcile !== null;
+  function trustBandVisible(): boolean {
+    return liveTrustBandShouldShow(model, lastHttp, lastReconcile, httpSnapshotInFlight);
+  }
+
+  function computeLiveTrustPhase(): "setup" | "syncing" | "active" {
+    if (httpSnapshotInFlight) {
+      return "syncing";
+    }
+    if (liveTrustBandShouldShow(model, lastHttp, lastReconcile, false)) {
+      return "active";
+    }
+    return "setup";
+  }
+
+  function updateLiveTrustChrome(): void {
+    const phase = computeLiveTrustPhase();
+    visualSurface.setAttribute("data-live-trust-phase", phase);
+    visualSurface.setAttribute("aria-busy", phase === "syncing" ? "true" : "false");
+    liveTrustSetup.hidden = phase !== "setup";
+    liveTrustSyncing.hidden = phase !== "syncing";
+    setLiveTrustSurfaceVisibility(phase === "active");
   }
 
   function setLiveTrustSurfaceVisibility(visible: boolean): void {
@@ -691,7 +738,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     boundedInspectorBlock.hidden = !visible;
   }
 
-  setLiveTrustSurfaceVisibility(false);
+  updateLiveTrustChrome();
 
   function applyCrosslinkResolutionLive(res: BoundedCrosslinkResolutionV0): void {
     if (res.targetSelectionId) {
@@ -715,7 +762,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   }
 
   async function refreshLiveVisualAfterBaselineChange(): Promise<void> {
-    if (!lastPaintedLiveScene) {
+    if (!lastPaintedLiveScene || !trustBandVisible()) {
       return;
     }
     const baseline = effectiveCompareBaselineLive();
@@ -735,7 +782,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   }
 
   function refreshTemporalLensLive(): void {
-    if (!lastPaintedLiveScene || !hasBoundedLiveTrustSource()) {
+    if (!lastPaintedLiveScene || !trustBandVisible()) {
       boundedTemporalRoot.replaceChildren();
       return;
     }
@@ -775,7 +822,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       boundedTemporalRoot.replaceChildren();
       return;
     }
-    if (!hasBoundedLiveTrustSource()) {
+    if (!trustBandVisible()) {
       setLiveTrustSurfaceVisibility(false);
       boundedInspectorPre.textContent = "";
       boundedInspectorPre.removeAttribute("data-selected");
@@ -1096,6 +1143,9 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
   }
 
   async function paintLiveVisual(): Promise<void> {
+    if (httpSnapshotInFlight) {
+      return;
+    }
     liveTrustPrimaryClaimHighlight = true;
     const prev = lastPaintedLiveScene;
     const scene = compileLiveToGlassSceneV0({
@@ -1135,7 +1185,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
 
   visualCanvasStack.addEventListener("pointerdown", (ev) => {
     const scene = lastPaintedLiveScene;
-    if (!scene || !hasBoundedLiveTrustSource()) {
+    if (!scene || !trustBandVisible()) {
       return;
     }
     const rect = visualCanvasStack.getBoundingClientRect();
@@ -1217,6 +1267,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     renderMeta();
     updateWsSessionPanel();
     renderLiveLogStrip();
+    updateLiveTrustChrome();
   }
 
   function closeActiveSocket(attribution: "operator" | "reconnect"): void {
@@ -1272,12 +1323,23 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
       renderReconcile();
       return;
     }
+    if (trigger === "session_resync_required") {
+      liveBoundedPaintRing = [];
+      liveCompareBaselineRingIndex = null;
+      selectedBoundedSelectionId = null;
+      selectedBoundedEpisodeId = null;
+      selectedBoundedClaimId = null;
+      boundedEvidenceCrosslinkNote.textContent = "";
+    }
     pushLiveLog("http", `HTTP snapshot start trigger=${trigger}`, { trigger });
     setEphemeralStatus(
       trigger === "operator"
         ? "fetching HTTP snapshot (operator Refresh)…"
         : "fetching HTTP snapshot (automatic after session_resync_required)…",
     );
+    httpSnapshotInFlight = true;
+    updateLiveTrustChrome();
+    void refreshBoundedInspectorLive();
     try {
       lastHttp = await fetchBoundedSnapshot(base, tok, sid);
       lastReconcile = makeReconcileRecord(trigger, "ok", {
@@ -1312,6 +1374,8 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
         detail: truncateForLog(msg, 240),
       });
       setEphemeralStatus(`HTTP snapshot error: ${msg}`);
+    } finally {
+      httpSnapshotInFlight = false;
     }
     persistFormSafe();
     renderAll();
@@ -1393,6 +1457,7 @@ export function mountLiveSessionShell(root: HTMLElement): LiveSessionShellHandle
     model = createInitialLiveSessionModelState(sid);
     lastReconcileProcessed = 0;
     lastHttp = null;
+    httpSnapshotInFlight = false;
     hadErrorEventOnActiveSocket = false;
     persistFormSafe();
     let url: string;
