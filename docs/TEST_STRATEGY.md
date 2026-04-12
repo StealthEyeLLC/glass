@@ -58,6 +58,8 @@ Maps the current bounded showcase to concrete verification. Use this file as the
 
 ## Viewer (`npm test` in `viewer/`)
 
+**Dependencies:** From `viewer/`, **`npm ci`** is the preferred install — it wipes and reinstalls from `package-lock.json` exactly (matches CI). On **Windows**, **`npm ci`** sometimes fails with **`EPERM`** unlinking native tools under `node_modules` (e.g. **`esbuild.exe`**) when another process still has them open (Vite, Vitest watch, IDE tooling, antivirus). Stop dev servers and stray **`node`** processes, delete **`viewer/node_modules`**, then retry **`npm ci`**. If it still fails after nothing holds those files, **`npm install`** is an acceptable **local** fallback to get a working tree; prefer **`npm ci`** on clean checkouts and in automation.
+
 | Suite | Obligation |
 |-------|------------|
 | `src/app/mode.test.ts` | `getBuildMode` stays **`static_replay`**; `uiSurfaceFromSearch` for `?live=1` |

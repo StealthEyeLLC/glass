@@ -1,4 +1,5 @@
 import {
+  FLAGSHIP_V18_DEV_FILE_NAME,
   planDevFixtureLoad,
   stripVerticalSliceDevFixtureQuery,
 } from "../app/devFixtureRoute.js";
@@ -839,6 +840,9 @@ export function mountReplayShell(root: HTMLElement): ReplayShellHandle {
           events: r.events,
         });
         stripVerticalSliceDevFixtureQuery();
+        if (plan.fileName === FLAGSHIP_V18_DEV_FILE_NAME && r.events.length > 0) {
+          dispatch({ type: "jump_end" });
+        }
       })
       .catch((e: unknown) => {
         if (gen !== loadGeneration) {

@@ -1,4 +1,8 @@
+import { readFileSync } from "fs";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { VERTICAL_SLICE_FLAGSHIP_V18_PACK_FILE } from "../app/verticalSliceV0.js";
 import { getBuildMode } from "../app/mode.js";
 import type { GlassEvent, GlassManifest } from "../pack/types.js";
 import {
@@ -7,6 +11,8 @@ import {
 } from "../pack/types.js";
 import { GLASS_SCENE_V0 } from "../scene/glassSceneV0.js";
 import { mountReplayShell } from "./replayOnlyShell.js";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function sampleManifest(sanitized: boolean): GlassManifest {
   return {
@@ -72,6 +78,39 @@ describe("static replay shell", () => {
       const root = document.createElement("div");
       mountReplayShell(root);
       expect(fetchSpy).toHaveBeenCalledWith("/fixtures/canonical_v15_append_heavy.glass_pack");
+    } finally {
+      fetchSpy.mockRestore();
+      history.replaceState({}, "", "/");
+    }
+  });
+
+  it("hosted flagship ?fixture=flagship lands on the last event (deterministic payoff)", async () => {
+    const packPath = join(
+      __dirname,
+      "..",
+      "..",
+      "..",
+      "tests",
+      "fixtures",
+      "canonical_scenarios_v15",
+      VERTICAL_SLICE_FLAGSHIP_V18_PACK_FILE,
+    );
+    const bytes = readFileSync(packPath);
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(() =>
+      Promise.resolve(new Response(bytes, { status: 200 })),
+    );
+    history.replaceState({}, "", "/?fixture=flagship");
+    try {
+      const root = document.createElement("div");
+      const h = mountReplayShell(root);
+      await vi.waitFor(() => {
+        expect(h.getState().loadStatus).toBe("ready");
+      });
+      expect(h.getState().events.length).toBe(14);
+      expect(h.getState().cursorIndex).toBe(13);
+      expect(root.querySelector('[data-testid="replay-position"]')?.textContent).toContain(
+        "Step 14 of 14",
+      );
     } finally {
       fetchSpy.mockRestore();
       history.replaceState({}, "", "/");

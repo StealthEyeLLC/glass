@@ -115,12 +115,19 @@ export const VERTICAL_SLICE_V30_LIVE_VISUAL_INTRO_OVERVIEW =
 export const VERTICAL_SLICE_V31_LIVE_VISUAL_INTRO_OVERVIEW =
   "Same strip as replay, fed by live data when the bridge is connected.";
 
-/** Live shell setup state — no evidence/claims/receipts before bounded live data exists. */
+/** Live shell setup — no trust band until bounded tail or successful HTTP snapshot with events (v33: hello alone does not qualify). */
 export const VERTICAL_SLICE_V32_LIVE_SETUP_OVERVIEW =
-  "Connect to a local session to unlock evidence, claims, receipt, and time context.";
+  "Evidence, episodes, claims, and receipt unlock after a non-empty bounded WebSocket tail or a successful HTTP snapshot with events — not from connect or session hello alone.";
 
 export const VERTICAL_SLICE_V32_LIVE_SETUP_TECHNICAL =
-  "No bounded live data yet. Until the live shell receives a bounded wire update or HTTP snapshot, it stays in setup mode and does not emit evidence, episodes, claims, or receipts.";
+  "Setup: no non-empty bounded tail and no completed HTTP snapshot with events yet. Control lines such as session hello do not populate the trust band.";
+
+/** v33 — HTTP F-04 snapshot in flight; trust surfaces suspended. */
+export const VERTICAL_SLICE_V33_LIVE_TRUST_SYNCING_OVERVIEW =
+  "Syncing bounded snapshot — trust panels paused until HTTP reconcile completes.";
+
+export const VERTICAL_SLICE_V33_LIVE_TRUST_SYNCING_TECHNICAL =
+  "F-04 snapshot in flight. Evidence, episodes, claims, and receipt stay hidden until the response is applied — avoids stale panels during resync.";
 
 /** Vertical Slice v28 — receipt empty (minimum words). */
 export const VERTICAL_SLICE_V28_RECEIPT_EMPTY = "Pick a claim or story card.";
