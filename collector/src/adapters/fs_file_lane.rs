@@ -421,8 +421,8 @@ mod tests {
 
     #[test]
     fn rel_key_normalizes_separators() {
-        let root = PathBuf::from(r"C:\tmp\w");
-        let p = PathBuf::from(r"C:\tmp\w\a\b.txt");
+        let root = PathBuf::from("tmp").join("w");
+        let p = root.join("a").join("b.txt");
         let k = rel_key_for(&root, &p).unwrap();
         assert_eq!(k, "a/b.txt");
     }
